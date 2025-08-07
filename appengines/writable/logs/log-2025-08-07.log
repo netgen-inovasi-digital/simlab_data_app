@@ -1,0 +1,408 @@
+ERROR - 2025-08-07 05:46:06 --> Error connecting to the database: mysqli_sql_exception: No connection could be made because the target machine actively refused it in D:\xampp\htdocs\simlab_data_app\appengines\system\Database\MySQLi\Connection.php:201
+Stack trace:
+#0 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\MySQLi\Connection.php(201): mysqli->real_connect('localhost', 'root', Object(SensitiveParameterValue), 'simlab_arsip_db', 3308, '', 0)
+#1 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseConnection.php(421): CodeIgniter\Database\MySQLi\Connection->connect(false)
+#2 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+#3 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*)...', Array, false)
+#4 D:\xampp\htdocs\simlab_data_app\appengines\app\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+#5 D:\xampp\htdocs\simlab_data_app\appengines\app\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray(Array)
+#6 D:\xampp\htdocs\simlab_data_app\appengines\app\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+#7 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(903): App\Controllers\Website->__construct()
+#8 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+#9 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#10 D:\xampp\htdocs\simlab_data_app\appengines\system\Boot.php(334): CodeIgniter\CodeIgniter->run()
+#11 D:\xampp\htdocs\simlab_data_app\appengines\system\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#12 D:\xampp\htdocs\simlab_data_app\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#13 {main}
+
+Next CodeIgniter\Database\Exceptions\DatabaseException: No connection could be made because the target machine actively refused it in D:\xampp\htdocs\simlab_data_app\appengines\system\Database\MySQLi\Connection.php:246
+Stack trace:
+#0 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseConnection.php(421): CodeIgniter\Database\MySQLi\Connection->connect(false)
+#1 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+#2 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*)...', Array, false)
+#3 D:\xampp\htdocs\simlab_data_app\appengines\app\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+#4 D:\xampp\htdocs\simlab_data_app\appengines\app\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray(Array)
+#5 D:\xampp\htdocs\simlab_data_app\appengines\app\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+#6 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(903): App\Controllers\Website->__construct()
+#7 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+#8 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#9 D:\xampp\htdocs\simlab_data_app\appengines\system\Boot.php(334): CodeIgniter\CodeIgniter->run()
+#10 D:\xampp\htdocs\simlab_data_app\appengines\system\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#11 D:\xampp\htdocs\simlab_data_app\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#12 {main}
+CRITICAL - 2025-08-07 05:46:06 --> CodeIgniter\Database\Exceptions\DatabaseException: Unable to connect to the database.
+Main connection [MySQLi]: No connection could be made because the target machine actively refused it
+[Method: GET, Route: /]
+in SYSTEMPATH\Database\BaseConnection.php on line 467.
+ 1 SYSTEMPATH\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+ 2 SYSTEMPATH\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*) AS `numrows`
+FROM `visitor`
+WHERE `ipAddress` = :ipAddress:
+AND `visitDate` = :visitDate:', [...], false)
+ 3 APPPATH\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+ 4 APPPATH\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray([...])
+ 5 APPPATH\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+ 6 SYSTEMPATH\CodeIgniter.php(903): App\Controllers\Website->__construct()
+ 7 SYSTEMPATH\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+ 8 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 9 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+10 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+11 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+ERROR - 2025-08-07 05:53:28 --> Error connecting to the database: mysqli_sql_exception: No connection could be made because the target machine actively refused it in D:\xampp\htdocs\simlab_data_app\appengines\system\Database\MySQLi\Connection.php:201
+Stack trace:
+#0 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\MySQLi\Connection.php(201): mysqli->real_connect('localhost', 'root', Object(SensitiveParameterValue), 'simlab_arsip_db', 3308, '', 0)
+#1 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseConnection.php(421): CodeIgniter\Database\MySQLi\Connection->connect(false)
+#2 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+#3 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*)...', Array, false)
+#4 D:\xampp\htdocs\simlab_data_app\appengines\app\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+#5 D:\xampp\htdocs\simlab_data_app\appengines\app\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray(Array)
+#6 D:\xampp\htdocs\simlab_data_app\appengines\app\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+#7 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(903): App\Controllers\Website->__construct()
+#8 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+#9 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#10 D:\xampp\htdocs\simlab_data_app\appengines\system\Boot.php(334): CodeIgniter\CodeIgniter->run()
+#11 D:\xampp\htdocs\simlab_data_app\appengines\system\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#12 D:\xampp\htdocs\simlab_data_app\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#13 {main}
+
+Next CodeIgniter\Database\Exceptions\DatabaseException: No connection could be made because the target machine actively refused it in D:\xampp\htdocs\simlab_data_app\appengines\system\Database\MySQLi\Connection.php:246
+Stack trace:
+#0 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseConnection.php(421): CodeIgniter\Database\MySQLi\Connection->connect(false)
+#1 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+#2 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*)...', Array, false)
+#3 D:\xampp\htdocs\simlab_data_app\appengines\app\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+#4 D:\xampp\htdocs\simlab_data_app\appengines\app\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray(Array)
+#5 D:\xampp\htdocs\simlab_data_app\appengines\app\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+#6 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(903): App\Controllers\Website->__construct()
+#7 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+#8 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#9 D:\xampp\htdocs\simlab_data_app\appengines\system\Boot.php(334): CodeIgniter\CodeIgniter->run()
+#10 D:\xampp\htdocs\simlab_data_app\appengines\system\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#11 D:\xampp\htdocs\simlab_data_app\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#12 {main}
+CRITICAL - 2025-08-07 05:53:28 --> CodeIgniter\Database\Exceptions\DatabaseException: Unable to connect to the database.
+Main connection [MySQLi]: No connection could be made because the target machine actively refused it
+[Method: GET, Route: /]
+in SYSTEMPATH\Database\BaseConnection.php on line 467.
+ 1 SYSTEMPATH\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+ 2 SYSTEMPATH\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*) AS `numrows`
+FROM `visitor`
+WHERE `ipAddress` = :ipAddress:
+AND `visitDate` = :visitDate:', [...], false)
+ 3 APPPATH\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+ 4 APPPATH\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray([...])
+ 5 APPPATH\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+ 6 SYSTEMPATH\CodeIgniter.php(903): App\Controllers\Website->__construct()
+ 7 SYSTEMPATH\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+ 8 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 9 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+10 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+11 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+ERROR - 2025-08-07 05:54:05 --> Error connecting to the database: mysqli_sql_exception: No connection could be made because the target machine actively refused it in D:\xampp\htdocs\simlab_data_app\appengines\system\Database\MySQLi\Connection.php:201
+Stack trace:
+#0 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\MySQLi\Connection.php(201): mysqli->real_connect('localhost', 'root', Object(SensitiveParameterValue), 'db_template', 3308, '', 0)
+#1 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseConnection.php(421): CodeIgniter\Database\MySQLi\Connection->connect(false)
+#2 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+#3 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*)...', Array, false)
+#4 D:\xampp\htdocs\simlab_data_app\appengines\app\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+#5 D:\xampp\htdocs\simlab_data_app\appengines\app\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray(Array)
+#6 D:\xampp\htdocs\simlab_data_app\appengines\app\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+#7 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(903): App\Controllers\Website->__construct()
+#8 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+#9 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#10 D:\xampp\htdocs\simlab_data_app\appengines\system\Boot.php(334): CodeIgniter\CodeIgniter->run()
+#11 D:\xampp\htdocs\simlab_data_app\appengines\system\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#12 D:\xampp\htdocs\simlab_data_app\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#13 {main}
+
+Next CodeIgniter\Database\Exceptions\DatabaseException: No connection could be made because the target machine actively refused it in D:\xampp\htdocs\simlab_data_app\appengines\system\Database\MySQLi\Connection.php:246
+Stack trace:
+#0 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseConnection.php(421): CodeIgniter\Database\MySQLi\Connection->connect(false)
+#1 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+#2 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*)...', Array, false)
+#3 D:\xampp\htdocs\simlab_data_app\appengines\app\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+#4 D:\xampp\htdocs\simlab_data_app\appengines\app\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray(Array)
+#5 D:\xampp\htdocs\simlab_data_app\appengines\app\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+#6 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(903): App\Controllers\Website->__construct()
+#7 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+#8 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#9 D:\xampp\htdocs\simlab_data_app\appengines\system\Boot.php(334): CodeIgniter\CodeIgniter->run()
+#10 D:\xampp\htdocs\simlab_data_app\appengines\system\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#11 D:\xampp\htdocs\simlab_data_app\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#12 {main}
+CRITICAL - 2025-08-07 05:54:05 --> CodeIgniter\Database\Exceptions\DatabaseException: Unable to connect to the database.
+Main connection [MySQLi]: No connection could be made because the target machine actively refused it
+[Method: GET, Route: /]
+in SYSTEMPATH\Database\BaseConnection.php on line 467.
+ 1 SYSTEMPATH\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+ 2 SYSTEMPATH\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*) AS `numrows`
+FROM `visitor`
+WHERE `ipAddress` = :ipAddress:
+AND `visitDate` = :visitDate:', [...], false)
+ 3 APPPATH\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+ 4 APPPATH\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray([...])
+ 5 APPPATH\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+ 6 SYSTEMPATH\CodeIgniter.php(903): App\Controllers\Website->__construct()
+ 7 SYSTEMPATH\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+ 8 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 9 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+10 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+11 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+ERROR - 2025-08-07 05:54:25 --> Error connecting to the database: mysqli_sql_exception: No connection could be made because the target machine actively refused it in D:\xampp\htdocs\simlab_data_app\appengines\system\Database\MySQLi\Connection.php:201
+Stack trace:
+#0 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\MySQLi\Connection.php(201): mysqli->real_connect('localhost', 'root', Object(SensitiveParameterValue), 'db_template', 3308, '', 0)
+#1 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseConnection.php(421): CodeIgniter\Database\MySQLi\Connection->connect(false)
+#2 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+#3 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*)...', Array, false)
+#4 D:\xampp\htdocs\simlab_data_app\appengines\app\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+#5 D:\xampp\htdocs\simlab_data_app\appengines\app\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray(Array)
+#6 D:\xampp\htdocs\simlab_data_app\appengines\app\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+#7 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(903): App\Controllers\Website->__construct()
+#8 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+#9 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#10 D:\xampp\htdocs\simlab_data_app\appengines\system\Boot.php(334): CodeIgniter\CodeIgniter->run()
+#11 D:\xampp\htdocs\simlab_data_app\appengines\system\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#12 D:\xampp\htdocs\simlab_data_app\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#13 {main}
+
+Next CodeIgniter\Database\Exceptions\DatabaseException: No connection could be made because the target machine actively refused it in D:\xampp\htdocs\simlab_data_app\appengines\system\Database\MySQLi\Connection.php:246
+Stack trace:
+#0 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseConnection.php(421): CodeIgniter\Database\MySQLi\Connection->connect(false)
+#1 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+#2 D:\xampp\htdocs\simlab_data_app\appengines\system\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*)...', Array, false)
+#3 D:\xampp\htdocs\simlab_data_app\appengines\app\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+#4 D:\xampp\htdocs\simlab_data_app\appengines\app\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray(Array)
+#5 D:\xampp\htdocs\simlab_data_app\appengines\app\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+#6 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(903): App\Controllers\Website->__construct()
+#7 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+#8 D:\xampp\htdocs\simlab_data_app\appengines\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#9 D:\xampp\htdocs\simlab_data_app\appengines\system\Boot.php(334): CodeIgniter\CodeIgniter->run()
+#10 D:\xampp\htdocs\simlab_data_app\appengines\system\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#11 D:\xampp\htdocs\simlab_data_app\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#12 {main}
+CRITICAL - 2025-08-07 05:54:25 --> CodeIgniter\Database\Exceptions\DatabaseException: Unable to connect to the database.
+Main connection [MySQLi]: No connection could be made because the target machine actively refused it
+[Method: GET, Route: /]
+in SYSTEMPATH\Database\BaseConnection.php on line 467.
+ 1 SYSTEMPATH\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+ 2 SYSTEMPATH\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*) AS `numrows`
+FROM `visitor`
+WHERE `ipAddress` = :ipAddress:
+AND `visitDate` = :visitDate:', [...], false)
+ 3 APPPATH\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+ 4 APPPATH\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray([...])
+ 5 APPPATH\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+ 6 SYSTEMPATH\CodeIgniter.php(903): App\Controllers\Website->__construct()
+ 7 SYSTEMPATH\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+ 8 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 9 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+10 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+11 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+ERROR - 2025-08-07 05:55:14 --> Error connecting to the database: mysqli_sql_exception: No connection could be made because the target machine actively refused it in D:\xampp\htdocs\simlab-data-app\appengines\system\Database\MySQLi\Connection.php:201
+Stack trace:
+#0 D:\xampp\htdocs\simlab-data-app\appengines\system\Database\MySQLi\Connection.php(201): mysqli->real_connect('localhost', 'root', Object(SensitiveParameterValue), 'db_template', 3308, '', 0)
+#1 D:\xampp\htdocs\simlab-data-app\appengines\system\Database\BaseConnection.php(421): CodeIgniter\Database\MySQLi\Connection->connect(false)
+#2 D:\xampp\htdocs\simlab-data-app\appengines\system\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+#3 D:\xampp\htdocs\simlab-data-app\appengines\system\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*)...', Array, false)
+#4 D:\xampp\htdocs\simlab-data-app\appengines\app\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+#5 D:\xampp\htdocs\simlab-data-app\appengines\app\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray(Array)
+#6 D:\xampp\htdocs\simlab-data-app\appengines\app\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+#7 D:\xampp\htdocs\simlab-data-app\appengines\system\CodeIgniter.php(903): App\Controllers\Website->__construct()
+#8 D:\xampp\htdocs\simlab-data-app\appengines\system\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+#9 D:\xampp\htdocs\simlab-data-app\appengines\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#10 D:\xampp\htdocs\simlab-data-app\appengines\system\Boot.php(334): CodeIgniter\CodeIgniter->run()
+#11 D:\xampp\htdocs\simlab-data-app\appengines\system\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#12 D:\xampp\htdocs\simlab-data-app\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#13 {main}
+
+Next CodeIgniter\Database\Exceptions\DatabaseException: No connection could be made because the target machine actively refused it in D:\xampp\htdocs\simlab-data-app\appengines\system\Database\MySQLi\Connection.php:246
+Stack trace:
+#0 D:\xampp\htdocs\simlab-data-app\appengines\system\Database\BaseConnection.php(421): CodeIgniter\Database\MySQLi\Connection->connect(false)
+#1 D:\xampp\htdocs\simlab-data-app\appengines\system\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+#2 D:\xampp\htdocs\simlab-data-app\appengines\system\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*)...', Array, false)
+#3 D:\xampp\htdocs\simlab-data-app\appengines\app\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+#4 D:\xampp\htdocs\simlab-data-app\appengines\app\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray(Array)
+#5 D:\xampp\htdocs\simlab-data-app\appengines\app\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+#6 D:\xampp\htdocs\simlab-data-app\appengines\system\CodeIgniter.php(903): App\Controllers\Website->__construct()
+#7 D:\xampp\htdocs\simlab-data-app\appengines\system\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+#8 D:\xampp\htdocs\simlab-data-app\appengines\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#9 D:\xampp\htdocs\simlab-data-app\appengines\system\Boot.php(334): CodeIgniter\CodeIgniter->run()
+#10 D:\xampp\htdocs\simlab-data-app\appengines\system\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#11 D:\xampp\htdocs\simlab-data-app\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#12 {main}
+CRITICAL - 2025-08-07 05:55:14 --> CodeIgniter\Database\Exceptions\DatabaseException: Unable to connect to the database.
+Main connection [MySQLi]: No connection could be made because the target machine actively refused it
+[Method: GET, Route: /]
+in SYSTEMPATH\Database\BaseConnection.php on line 467.
+ 1 SYSTEMPATH\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+ 2 SYSTEMPATH\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*) AS `numrows`
+FROM `visitor`
+WHERE `ipAddress` = :ipAddress:
+AND `visitDate` = :visitDate:', [...], false)
+ 3 APPPATH\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+ 4 APPPATH\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray([...])
+ 5 APPPATH\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+ 6 SYSTEMPATH\CodeIgniter.php(903): App\Controllers\Website->__construct()
+ 7 SYSTEMPATH\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+ 8 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 9 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+10 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+11 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+ERROR - 2025-08-07 06:00:24 --> Error connecting to the database: mysqli_sql_exception: No connection could be made because the target machine actively refused it in D:\xampp\htdocs\netx\appengines\system\Database\MySQLi\Connection.php:201
+Stack trace:
+#0 D:\xampp\htdocs\netx\appengines\system\Database\MySQLi\Connection.php(201): mysqli->real_connect('localhost', 'root', Object(SensitiveParameterValue), 'db_template', 3308, '', 0)
+#1 D:\xampp\htdocs\netx\appengines\system\Database\BaseConnection.php(421): CodeIgniter\Database\MySQLi\Connection->connect(false)
+#2 D:\xampp\htdocs\netx\appengines\system\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+#3 D:\xampp\htdocs\netx\appengines\system\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*)...', Array, false)
+#4 D:\xampp\htdocs\netx\appengines\app\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+#5 D:\xampp\htdocs\netx\appengines\app\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray(Array)
+#6 D:\xampp\htdocs\netx\appengines\app\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+#7 D:\xampp\htdocs\netx\appengines\system\CodeIgniter.php(903): App\Controllers\Website->__construct()
+#8 D:\xampp\htdocs\netx\appengines\system\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+#9 D:\xampp\htdocs\netx\appengines\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#10 D:\xampp\htdocs\netx\appengines\system\Boot.php(334): CodeIgniter\CodeIgniter->run()
+#11 D:\xampp\htdocs\netx\appengines\system\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#12 D:\xampp\htdocs\netx\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#13 {main}
+
+Next CodeIgniter\Database\Exceptions\DatabaseException: No connection could be made because the target machine actively refused it in D:\xampp\htdocs\netx\appengines\system\Database\MySQLi\Connection.php:246
+Stack trace:
+#0 D:\xampp\htdocs\netx\appengines\system\Database\BaseConnection.php(421): CodeIgniter\Database\MySQLi\Connection->connect(false)
+#1 D:\xampp\htdocs\netx\appengines\system\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+#2 D:\xampp\htdocs\netx\appengines\system\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*)...', Array, false)
+#3 D:\xampp\htdocs\netx\appengines\app\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+#4 D:\xampp\htdocs\netx\appengines\app\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray(Array)
+#5 D:\xampp\htdocs\netx\appengines\app\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+#6 D:\xampp\htdocs\netx\appengines\system\CodeIgniter.php(903): App\Controllers\Website->__construct()
+#7 D:\xampp\htdocs\netx\appengines\system\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+#8 D:\xampp\htdocs\netx\appengines\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#9 D:\xampp\htdocs\netx\appengines\system\Boot.php(334): CodeIgniter\CodeIgniter->run()
+#10 D:\xampp\htdocs\netx\appengines\system\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#11 D:\xampp\htdocs\netx\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#12 {main}
+CRITICAL - 2025-08-07 06:00:24 --> CodeIgniter\Database\Exceptions\DatabaseException: Unable to connect to the database.
+Main connection [MySQLi]: No connection could be made because the target machine actively refused it
+[Method: GET, Route: /]
+in SYSTEMPATH\Database\BaseConnection.php on line 467.
+ 1 SYSTEMPATH\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+ 2 SYSTEMPATH\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*) AS `numrows`
+FROM `visitor`
+WHERE `ipAddress` = :ipAddress:
+AND `visitDate` = :visitDate:', [...], false)
+ 3 APPPATH\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+ 4 APPPATH\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray([...])
+ 5 APPPATH\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+ 6 SYSTEMPATH\CodeIgniter.php(903): App\Controllers\Website->__construct()
+ 7 SYSTEMPATH\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+ 8 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 9 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+10 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+11 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+ERROR - 2025-08-07 06:02:14 --> Error connecting to the database: mysqli_sql_exception: No connection could be made because the target machine actively refused it in D:\xampp\htdocs\netx\appengines\system\Database\MySQLi\Connection.php:201
+Stack trace:
+#0 D:\xampp\htdocs\netx\appengines\system\Database\MySQLi\Connection.php(201): mysqli->real_connect('localhost', 'root', Object(SensitiveParameterValue), 'db_template', 3308, '', 0)
+#1 D:\xampp\htdocs\netx\appengines\system\Database\BaseConnection.php(421): CodeIgniter\Database\MySQLi\Connection->connect(false)
+#2 D:\xampp\htdocs\netx\appengines\system\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+#3 D:\xampp\htdocs\netx\appengines\system\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*)...', Array, false)
+#4 D:\xampp\htdocs\netx\appengines\app\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+#5 D:\xampp\htdocs\netx\appengines\app\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray(Array)
+#6 D:\xampp\htdocs\netx\appengines\app\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+#7 D:\xampp\htdocs\netx\appengines\system\CodeIgniter.php(903): App\Controllers\Website->__construct()
+#8 D:\xampp\htdocs\netx\appengines\system\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+#9 D:\xampp\htdocs\netx\appengines\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#10 D:\xampp\htdocs\netx\appengines\system\Boot.php(334): CodeIgniter\CodeIgniter->run()
+#11 D:\xampp\htdocs\netx\appengines\system\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#12 D:\xampp\htdocs\netx\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#13 {main}
+
+Next CodeIgniter\Database\Exceptions\DatabaseException: No connection could be made because the target machine actively refused it in D:\xampp\htdocs\netx\appengines\system\Database\MySQLi\Connection.php:246
+Stack trace:
+#0 D:\xampp\htdocs\netx\appengines\system\Database\BaseConnection.php(421): CodeIgniter\Database\MySQLi\Connection->connect(false)
+#1 D:\xampp\htdocs\netx\appengines\system\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+#2 D:\xampp\htdocs\netx\appengines\system\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*)...', Array, false)
+#3 D:\xampp\htdocs\netx\appengines\app\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+#4 D:\xampp\htdocs\netx\appengines\app\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray(Array)
+#5 D:\xampp\htdocs\netx\appengines\app\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+#6 D:\xampp\htdocs\netx\appengines\system\CodeIgniter.php(903): App\Controllers\Website->__construct()
+#7 D:\xampp\htdocs\netx\appengines\system\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+#8 D:\xampp\htdocs\netx\appengines\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#9 D:\xampp\htdocs\netx\appengines\system\Boot.php(334): CodeIgniter\CodeIgniter->run()
+#10 D:\xampp\htdocs\netx\appengines\system\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#11 D:\xampp\htdocs\netx\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#12 {main}
+CRITICAL - 2025-08-07 06:02:14 --> CodeIgniter\Database\Exceptions\DatabaseException: Unable to connect to the database.
+Main connection [MySQLi]: No connection could be made because the target machine actively refused it
+[Method: GET, Route: /]
+in SYSTEMPATH\Database\BaseConnection.php on line 467.
+ 1 SYSTEMPATH\Database\BaseConnection.php(620): CodeIgniter\Database\BaseConnection->initialize()
+ 2 SYSTEMPATH\Database\BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*) AS `numrows`
+FROM `visitor`
+WHERE `ipAddress` = :ipAddress:
+AND `visitDate` = :visitDate:', [...], false)
+ 3 APPPATH\Models\MyModel.php(365): CodeIgniter\Database\BaseBuilder->countAllResults()
+ 4 APPPATH\Libraries\VisitorLogger.php(28): App\Models\MyModel->getCountAllByArray([...])
+ 5 APPPATH\Controllers\Website.php(15): App\Libraries\VisitorLogger::logVisit()
+ 6 SYSTEMPATH\CodeIgniter.php(903): App\Controllers\Website->__construct()
+ 7 SYSTEMPATH\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+ 8 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 9 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+10 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+11 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+WARNING - 2025-08-07 19:47:17 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH\Controllers\BaseController.php on line 56.
+ 1 SYSTEMPATH\CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
+ 2 SYSTEMPATH\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+ 3 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 4 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+ 5 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 6 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+DEBUG - 2025-08-07 19:47:17 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-08-07 19:50:15 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH\Controllers\BaseController.php on line 56.
+ 1 SYSTEMPATH\CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
+ 2 SYSTEMPATH\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+ 3 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 4 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+ 5 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 6 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+DEBUG - 2025-08-07 19:50:15 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-08-07 19:51:06 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH\Controllers\BaseController.php on line 56.
+ 1 SYSTEMPATH\CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
+ 2 SYSTEMPATH\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+ 3 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 4 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+ 5 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 6 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+DEBUG - 2025-08-07 19:51:06 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-08-07 20:13:57 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH\Controllers\BaseController.php on line 56.
+ 1 SYSTEMPATH\CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
+ 2 SYSTEMPATH\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+ 3 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 4 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+ 5 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 6 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+DEBUG - 2025-08-07 20:13:57 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-08-07 20:14:00 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-08-07 20:14:03 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH\Controllers\BaseController.php on line 56.
+ 1 SYSTEMPATH\CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
+ 2 SYSTEMPATH\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+ 3 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 4 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+ 5 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 6 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+DEBUG - 2025-08-07 20:14:03 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-08-07 20:14:04 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-08-07 20:25:09 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH\Controllers\BaseController.php on line 56.
+ 1 SYSTEMPATH\CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
+ 2 SYSTEMPATH\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+ 3 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 4 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+ 5 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 6 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+DEBUG - 2025-08-07 20:25:09 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-08-07 20:37:17 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH\Controllers\BaseController.php on line 56.
+ 1 SYSTEMPATH\CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
+ 2 SYSTEMPATH\CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
+ 3 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 4 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+ 5 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 6 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+DEBUG - 2025-08-07 20:37:17 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
