@@ -14,7 +14,6 @@
                             <th show width="8%">No.</th>
                             <th show>Nama Kategori</th>
                             <th>Slug</th>
-                            <th>Deskripsi</th>
                             <th show class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
                         </tr>
                     </thead>
@@ -69,12 +68,6 @@
                     <label class="col-md-4 col-form-label">Slug</label>
                     <div class="col">
                         <input name="slug" type="text" class="form-control bg-light" value="" readonly>
-                    </div>
-                </div>
-                <div class="row mb-2">
-                    <label class="col-md-4 col-form-label">Deskripsi</label>
-                    <div class="col">
-                        <input name="deskripsi" type="text" class="form-control" required>
                     </div>
                 </div>
             </div>
