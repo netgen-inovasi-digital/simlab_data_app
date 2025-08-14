@@ -45,7 +45,7 @@
         const formData = new FormData(form);
         const actionUrl = form.getAttribute('action');
 
-        saveData({
+        saveDataPengumuman({
             url: actionUrl,
             formData: formData,
             onSuccess: function(data) {
@@ -65,7 +65,7 @@
         });
     });
 
-    function saveData({
+    function saveDataPengumuman({
         url,
         formData,
         onSuccess,
@@ -137,7 +137,7 @@
     if (!window.statusToggleBound) {
         document.addEventListener('change', function(e) {
             const target = e.target;
-            if (target.classList.contains('status-toggle')) {
+            if (target.classList.contains('status-toggle-pengumuman')) {
                 const id = target.dataset.id;
                 const status = target.checked ? 'tampil' : 'tersembunyi';
                 const tokenName = "<?= csrf_token() ?>";

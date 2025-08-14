@@ -32,7 +32,7 @@ class AuthModel extends Model
         $builder->join('otoritas b', 'a.kode_menu=b.kode_menu');
         $builder->where('role_id', $role);
         $builder->where('status_otoritas', 1);
-        $builder->orderBy('a.kode_menu', 'asc');
+        $builder->orderBy('a.sort_order', 'asc');
 		return $builder->get()->getResult();
 	}
 

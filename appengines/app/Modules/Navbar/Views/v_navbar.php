@@ -42,7 +42,7 @@
           ?>
             <div
               id="<?= $id ?>"
-              class="border rounded px-3 py-2 d-flex justify-content-between align-items-center bg-light navbar-item <?= ($row->kode_induk != 0) ? 'ms-4' : '' ?>"
+              class="border rounded px-3 py-2 d-flex justify-content-between align-items-center bg-light navbar-item <?= ($row->kode_induk != 0) ? 'child' : '' ?>"
               draggable="true"
               data-status="<?= $row->status ?>">
 
@@ -204,6 +204,7 @@ function aksi($id)
       formData.append(`items[${i}][id]`, el.id);
       formData.append(`items[${i}][code]`, el.dataset.code);
       formData.append(`items[${i}][parent]`, el.dataset.parent);
+      formData.append(`items[${i}][sort_order]`, i + 1); // urutan disini
     });
     formData.append(tokenName, tokenValue);
 

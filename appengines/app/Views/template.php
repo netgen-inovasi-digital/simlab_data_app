@@ -86,60 +86,8 @@
         </div>
         <nav class="nav d-block pe-2 pb-5">
             <?php
-            $idRole = session()->get('role_id');
-            if ($idRole != 1)
-                echo view('menu');
-            else {
+            echo view('menu');
             ?>
-                <a class="nav-link" href="dashboard/load">
-                    <i class="bi bi-house"></i> Dashboard </a>
-                <a class="nav-link" href="posts">
-                    <i class="bi bi-newspaper"></i> Berita </a>
-                <a class="nav-link" href="pengumuman">
-                    <i class="bi bi-megaphone"></i> Pengumuman
-                </a>
-                <a class="nav-link" href="pages">
-                    <i class="bi bi-file-text"></i> Halaman
-                </a>
-                <a class="nav-link pe-0" href="#" data-bs-toggle="collapse" id="dataMasterToggle">
-                    <i class="bi bi-columns-gap"></i> Data Master
-                    <i class="bi bi-chevron-right caret"></i>
-                </a>
-                <div class="collapse ms-4" id="dataMaster">
-                    <a class="nav-link" href="motif"><i class="bi bi-three-dots-vertical"></i> Motif</a>
-                </div>
-                <a class="nav-link pe-0" href="#" data-bs-toggle="collapse" id="tampilanToggle">
-                    <i class="bi bi-display"></i> Tampilan
-                    <i class="bi bi-chevron-right caret"></i>
-                </a>
-                <div class="collapse ms-4" id="tampilan">
-                    <a class="nav-link" href="navbar"><i class="bi bi-three-dots-vertical"></i> Menu</a>
-                    <a class="nav-link" href="hero"><i class="bi bi-three-dots-vertical"></i> Slider</a>
-                    <a class="nav-link" href="layanan"><i class="bi bi-three-dots-vertical"></i> Layanan</a>
-                    <a class="nav-link" href="mitra"><i class="bi bi-three-dots-vertical"></i> Mitra</a>
-                    <a class="nav-link" href="team"><i class="bi bi-three-dots-vertical"></i> Team</a>
-                    <a class="nav-link" href="konfigurasi"><i class="bi bi-three-dots-vertical"></i> Informasi</a>
-                    <a class="nav-link" href="sosmed"><i class="bi bi-three-dots-vertical"></i> Sosial</a>
-                </div>
-                <a class="nav-link pe-0" href="#" data-bs-toggle="collapse" id="setToggle">
-                    <i class="bi bi-gear"></i> Pengaturan
-                    <i class="bi bi-chevron-right caret"></i>
-                </a>
-                <div class="collapse ms-4" id="set">
-                    <a class="nav-link" href="user">
-                        <i class="bi bi-person"></i> Pengguna
-                    </a>
-                    <a class="nav-link" href="role">
-                        <i class="bi bi-shield-lock"></i> Role
-                    </a>
-                    <a class="nav-link" href="otoritas">
-                        <i class="bi bi-shield-check"></i> Otoritas
-                    </a>
-                    <a class="nav-link" href="menu">
-                        <i class="bi bi-people"></i> Menu
-                    </a>
-                </div>
-            <?php } ?>
         </nav>
         <!-- <div class="sidebar-footer">
             &copy;2025 All Right Reserved.
@@ -152,6 +100,13 @@
                 <span class="navbar-toggler-icon"></span>
             </span>
             <div class="me-4 d-flex">
+                <a href="<?= base_url() ?>" target="_blank">
+                    <button aria-label="button" type="button" class="btn btn-outline-primary btn-sm d-flex align-items-center">
+                        <i class="bi bi-globe" style="font-size: 1rem;"></i>
+                        <span class="ms-1 d-none d-md-inline">Lihat Situs</span>
+                    </button>
+                </a>
+                <span class="divider vr ms-2 me-2"></span>
                 <a href="profil" class="header-link nav-link" title="Profil">
                     <button aria-label="button" type="button" class="btn btn-icon p-0 text-secondary">
                         <i class="bi bi-person-fill" style="font-size: 1.3rem;"></i> </button>

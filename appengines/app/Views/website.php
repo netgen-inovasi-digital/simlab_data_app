@@ -45,6 +45,11 @@
             color: #c78a3b !important;
             font-weight: bold;
         }
+
+        .dropdown-item.active {
+            background-color: #fff;
+            font-weight: bold;
+        }
     </style>
 
     <!-- Navbar -->
@@ -75,11 +80,11 @@
                         <?php else: ?>
                             <?php
                             $activeChild = false;
-                            $menuUrl = rtrim($child['link'], '/');
                             $currentUrl = rtrim(current_url(), '/');
-                            $isActive = $currentUrl === $menuUrl;
+
                             foreach ($menu['children'] as $child) {
-                                if ($isActive) {
+                                $menuUrl = rtrim($child['link'], '/');
+                                if ($currentUrl === $menuUrl) {
                                     $activeChild = true;
                                     break;
                                 }
@@ -92,14 +97,13 @@
                                 <ul class="dropdown-menu">
                                     <?php foreach ($menu['children'] as $child): ?>
                                         <li>
-                                            <a class="dropdown-item <?= current_url() == base_url($child['link']) ? 'active fw-semibold text-primary' : '' ?>" href="<?= $child['link'] ?>">
+                                            <a class="dropdown-item <?= current_url() == rtrim($child['link'], '/') ? 'active fw-semibold text-primary' : '' ?>" href="<?= $child['link'] ?>">
                                                 <?= esc($child['nama']) ?>
                                             </a>
                                         </li>
                                     <?php endforeach; ?>
                                 </ul>
                             </li>
-
                         <?php endif; ?>
                     <?php endforeach; ?>
                 </ul>
@@ -138,9 +142,20 @@
                     LIHAT PETA
                 </button>
                 <h4 class="highlight mt-3">Informasi Kontak</h4>
-                <p>Email: <strong><?= $getInformasi->email ?></strong></p>
-                <h4 class="highlight">Telepon/ WA</h4>
-                <p><?= $getInformasi->telepon ?></p>
+                <p>Email: <strong> <a style="color: inherit; text-decoration: none;" href="mailto:<?= $getInformasi->email ?>" "><?= $getInformasi->email ?></a></strong></p>
+                <?php
+                $nomorWA = $getInformasi->telepon;
+                // Hapus karakter non-digit
+                $nomorWA = preg_replace('/[^0-9]/', '', $nomorWA);
+                // Jika dimulai dengan 08, ganti dengan 628
+                if (substr($nomorWA, 0, 2) == '08') {
+                    $nomorWA = '628' . substr($nomorWA, 2);
+                }
+                ?>
+                <h4 class=" highlight">Telepon/ WA</h4>
+                            <p>
+                                <a href="https://wa.me/<?= $nomorWA ?>" target="_blank" style="color: inherit; text-decoration: none;"><?= $getInformasi->telepon ?></a>
+                            </p>
             </div>
             <div class="footer-col">
                 <h4>Statistik Pengunjung</h4>

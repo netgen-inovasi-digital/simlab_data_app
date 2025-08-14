@@ -66,7 +66,6 @@ class Posts extends BaseController
 		$konten = $this->request->getPost('konten');
 		$excerpt = $this->generateExcerpt($konten);
 		$idenc = $this->request->getPost('id');
-
 		$tanggalPublish = $this->request->getPost('tanggal') ?? date('Y-m-d');
 		$now = date('Y-m-d H:i:s');
 
@@ -79,11 +78,20 @@ class Posts extends BaseController
 			'user_id' => $this->request->getPost('user_id'),
 			'updated_at' => $now, // waktu sekarang
 		];
-
 		$thumbnail = $this->request->getFile('thumbnail');
-		if ($thumbnail && $thumbnail->isValid() && !$thumbnail->hasMoved()) {
-			$filename = $this->doUpload($thumbnail);
-			if ($filename != "") $data['thumbnail'] = $filename;
+		if ($thumbnail && $thumbnail->getName() !== '') {
+			$uploadResult = $this->doUpload($thumbnail);
+
+			if (!$uploadResult['status']) {
+				return $this->response->setJSON([
+					'res' => 'error_custom',
+					'message' => $uploadResult['msg'],
+					'xname' => csrf_token(),
+					'xhash' => csrf_hash()
+				]);
+			}
+
+			$data['thumbnail'] = $uploadResult['filename'];
 		}
 
 		$model = new MyModel($this->table);
@@ -123,27 +131,50 @@ class Posts extends BaseController
 
 	function doUpload($file)
 	{
-		$filename = "";
-		if ($file) {
-			if ($file->isValid() && ! $file->hasMoved()) {
-				$ext = $file->getClientExtension();
-				$filename = time() . bin2hex(random_bytes(5)) . '.' . $ext;
-				$path = FCPATH . 'uploads';
-				$file->move($path, $filename, true);
-			}
+		// Pastikan file valid dan belum dipindahkan
+		if (!($file && $file->isValid() && !$file->hasMoved())) {
+			return ['status' => false, 'msg' => 'File tidak valid atau sudah dipindahkan'];
 		}
-		return $filename;
+
+		// Validasi tipe file (ekstensi & MIME)
+		$allowedExt  = ['jpg', 'jpeg', 'png'];
+		$allowedMime = ['image/jpeg', 'image/png'];
+
+		$ext  = strtolower($file->getClientExtension());
+		$mime = $file->getMimeType();
+
+		if (!in_array($ext, $allowedExt) || !in_array($mime, $allowedMime)) {
+			return ['status' => false, 'msg' => 'Format gambar tidak diperbolehkan'];
+		}
+
+		// Validasi apakah benar file gambar
+		if (@getimagesize($file->getTempName()) === false) {
+			return ['status' => false, 'msg' => 'File bukan gambar asli'];
+		}
+
+		// Validasi ukuran file (contoh: max 2MB)
+		if ($file->getSize() > 2 * 1024 * 1024) {
+			return ['status' => false, 'msg' => 'Ukuran file maksimal 2MB'];
+		}
+
+		// Simpan file
+		$filename = time() . bin2hex(random_bytes(5)) . '.' . $ext;
+		$path = FCPATH . 'uploads';
+		$file->move($path, $filename, true);
+
+		return ['status' => true, 'filename' => $filename];
 	}
+
+
 
 	public function upload()
 	{
 		$file = $this->request->getFile('upload');
 		$filename = $this->doUpload($file);
-
 		if ($filename !== "") {
 			return $this->response->setJSON([
 				'uploaded' => true,
-				'url'      => base_url('uploads/' . $filename),
+				'url'      => base_url('uploads/' . $filename['filename']),
 				'xname'    => csrf_token(),
 				'xhash'    => csrf_hash()
 			]);
@@ -183,15 +214,18 @@ class Posts extends BaseController
 						<div>📂 <span class="fw-semibold">' . esc($row->nama) . '</span></div>
 						<div>👤 ' . esc($row->nama_user) . '</div>
 						<div>🗓️ ' . ($row->status == 'draft'
-							? '(Masih draft)'
-							: formatTanggalIndo($row->published_at)) . '</div>
+				? '(Masih draft)'
+				: formatTanggalIndo($row->published_at)) . '</div>
 					</div>
 				</div>
 			';
 
 			$id = bin2hex($this->encrypter->encrypt($row->id_posts));
 			$response = array();
-			$response[] = ($row->thumbnail != NULL) ? '<img class="img-thumbnail" width="80" src="' . esc(base_url('uploads/' . $row->thumbnail)) . '">' : '';
+			$response[] = ($row->thumbnail != NULL && $row->thumbnail !== '')
+				? '<img class="img-thumbnail" width="80" src="' . esc(base_url('uploads/' . $row->thumbnail)) . '">'
+				: '<img class="img-thumbnail" width="80" src="https://placehold.co/80x80?text=No+Image">';
+
 			if ($row->status == 'draft')
 				$status = '<div class="d-block text-center badge bg-light text-dark">Draft</div>';
 			else if ($row->status == 'publish')

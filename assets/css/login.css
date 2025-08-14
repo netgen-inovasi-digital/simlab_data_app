@@ -1,0 +1,64 @@
+body.bg-custom-green {
+    background: linear-gradient(120deg, #a5c3a3 0%, #6e9f6e 100%);
+    min-height: 100vh;
+    font-family: 'Quicksand', sans-serif;
+}
+
+.rounded-pill{
+    border: none !important;
+    height: 45px;
+    width: 80%;
+}
+
+input::placeholder {
+    color:#a1a1a1 !important;
+}
+
+.card {
+    border: none;
+    border-radius: 20px;
+}
+
+.bg-light-gray {
+    background-color: #F8F8F8;
+}
+
+img{
+    width: 90%;
+}
+
+.footer {
+    color: #fff !important;
+    text-align: center;
+}
+
+.footer a{
+    color: #fff !important;
+    text-decoration: none;
+}
+
+.footer a:hover {
+    text-decoration: underline !important;
+}
+
+@media (max-width: 767.98px) {
+    .card {
+        width: 90%;
+        margin: auto;
+        margin-top: 30px;
+    }
+
+    img{
+        width: 80%;
+    }
+        
+    .footer{
+        margin-bottom: 50px;
+    }
+}
+
+@media (max-width: 1399.98px) {
+    .rounded-pill{
+        width: 100%;
+    }
+}

@@ -23,7 +23,7 @@ class Berita extends BaseController
 
 		$modelPosts = new BeritaModel('posts p');
 
-		$select = 'p.title, p.slug as post_slug, p.konten, p.thumbnail, p.status, p.published_at, p.views, u.nama as nama_user, c.nama, c.slug as category_slug';
+		$select = 'p.title, p.slug as post_slug, p.konten, p.thumbnail, p.status, p.updated_at, p.published_at, p.views, u.nama as nama_user, c.nama, c.slug as category_slug';
 
 		$join = [
 			'users u' => 'u.id_user = p.user_id',
@@ -35,7 +35,7 @@ class Berita extends BaseController
 		if ($search) $where['p.title LIKE'] = "%$search%";
 		if ($kategori) $where['c.slug'] = $kategori;
 
-		$orderBy = ['p.published_at' => ($sort == 'oldest' ? 'ASC' : 'DESC')];
+		$orderBy = ['p.updated_at' => ($sort == 'oldest' ? 'ASC' : 'DESC')];
 
 		$total = $modelPosts->getTotalRowsWithJoin($join, $where);
 		$list = $modelPosts->getAllDataByJoinWithOrderLimit($join, $where, $orderBy, $select, $perPage, $offset);
@@ -55,7 +55,7 @@ class Berita extends BaseController
 			'kategori' => $kategori,
 			'sort' => $sort,
 			'categories' => $modelKategori->getAllData(),
-			'title' => 'Berita',
+			'title' => 'Klinik Medikidz',
 			'content' => 'Modules\Berita\Views\v_berita',
 		];
 
@@ -76,7 +76,7 @@ class Berita extends BaseController
 		// Ambil detail posting berdasarkan slug
 		$modelBerita = new BeritaModel('posts p');
 
-		$select = 'p.id_posts, p.title, p.slug, p.thumbnail, p.konten, u.nama as nama_user, p.categories_id, p.published_at, p.views, c.nama, c.slug as category_slug';
+		$select = 'p.id_posts, p.title, p.slug, p.thumbnail, p.konten, u.nama as nama_user, p.categories_id, p.updated_at, p.published_at, p.views, c.nama, c.slug as category_slug';
 
 		$join = [
 			'users u' => 'u.id_user = p.user_id',

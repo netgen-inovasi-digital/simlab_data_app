@@ -167,11 +167,11 @@
             var file = input.files[0];
             if (file) {
                 const maxSizeMB = 2;
-                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
 
                 // 1. Validasi tipe file
                 if (!allowedTypes.includes(file.type)) {
-                    sayAlert('errorModal', 'Error', 'Hanya file gambar JPG, JPEG, PNG, atau WEBP yang diperbolehkan.', 'warning');
+                    sayAlert('errorModal', 'Error', 'Hanya file gambar JPG, JPEG, atau PNG yang diperbolehkan.', 'warning');
 
                     return;
                 }
@@ -228,8 +228,76 @@
         };
     });
 
+    function saveData({
+        url,
+        formData,
+        onSuccess,
+        onError,
+    }) {
+        showLoading();
+
+        const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
+        const csrfToken = csrfInput ? csrfInput.value : '';
+
+        fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Update token
+                if (data.xname && data.xhash) {
+                    document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
+                        input.value = data.xhash;
+                    });
+                }
+
+                if (typeof onSuccess === 'function') {
+                    onSuccess(data);
+                    return;
+                }
+
+                if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
+
+
+                if (data.res === true) {
+                    if (typeof table !== 'undefined') table.fetchData({
+                        reload: true
+                    });
+                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+                } else if (data.res === 'reload') {
+                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+                } else if (data.res === 'refresh') {
+                    loadContent(data.link);
+                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+                } else if (data.res === 'redirect') {
+                    window.location.href = data.link;
+                } else if (data.res === 'check') {
+                    sayAlert('errorModal', 'Error', data.link, 'warning');
+                } else if (data.res === 'refresh-print') {
+                    loadContent(data.link);
+                    window.open(data.print, "_blank");
+                } else {
+                    sayAlert('errorModal', 'Error', 'Data gagal disimpan.', 'warning');
+                }
+            })
+            .catch(error => {
+                if (typeof onError === 'function') {
+                    onError(error);
+                } else {
+                    sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
+                }
+            })
+            .finally(() => {
+                hideLoading();
+            });
+    }
+
     // ===== nama dan slug ===== //
-    var namaInput = document.querySelector('input[name="nama"]');
+    var namaInput = document.querySelector('input[name="title"]');
     var slugInput = document.querySelector('input[name="slug"]');
 
     if (namaInput && slugInput) {
@@ -287,9 +355,9 @@
                     <div class="col">
                         <label for="konten" class="col-md-3 col-form-label">Konten</label>
                         <div id="toolbar"></div>
-                        <div id="quill-editor" style="height: 400px;"></div>
+                        <div id="quill-editor" spellcheck="false" autocorrect="off" autocomplete="off" autocapitalize="off" style="height: 400px;"></div>
                         <textarea name="konten" id="konten" hidden placeholder="Masukkan konten halaman"></textarea>
-                        <small>Ukuran upload gambar maks. 2mb</small>
+                        <small>Upload gambar maks. 2MB. Hanya file JPG, JPEG, atau PNG.</small>
                     </div>
                 </div>
                 <div class="row mb-2">
@@ -300,7 +368,7 @@
                     </div> -->
                     <div class="col">
                         <label class="col-md-3 col-form-label">Author</label>
-                        <input name="nama" type="text" value="<?= $user->nama ?>" class="form-control bg-light" required readonly>
+                        <input name="nama" style="max-width: 200px;" type="text" value="<?= $user->nama ?>" class="form-control bg-light" required readonly>
                         <input name="user_id" type="text" value="<?= $user->id_user ?>" class="form-control" required hidden>
                     </div>
                     <div class="col">

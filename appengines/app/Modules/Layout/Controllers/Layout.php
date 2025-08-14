@@ -14,7 +14,7 @@ class Layout extends BaseController
 	{
 		$model = new MyModel('layout');
 		$data = [
-			'title' => 'Data Layout',
+			'title' => 'Data Urutan Tampilan',
 			'getLayout' => $model->getAllData('urutan', 'asc')
 		];
 		return view('Modules\Layout\Views\v_layout', $data);

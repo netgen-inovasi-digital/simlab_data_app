@@ -17,7 +17,7 @@ class Navbar extends BaseController
 		$modelPages = new MyModel('pages');
 		$data = [
 			'title' => 'Data Menu',
-			'getNavbar' => $modelNavbar->getAllData('kode_navbar', 'asc'),
+			'getNavbar' => $modelNavbar->getAllData('sort_order', 'asc'),
 			'getPosts' => $modelPosts->getAllData('published_at', 'asc'),
 			'getPages' => $modelPages->getAllData('published_at', 'asc'),
 		];
@@ -82,6 +82,7 @@ class Navbar extends BaseController
 			$code = $this->request->getPost('code');
 			$data['kode_navbar'] = (int)$code  + 1;
 			$data['kode_induk'] = 0;
+			$data['sort_order'] = 0;
 			$res = $model->insertData($data);
 		} else {
 			$id = $this->encrypter->decrypt(hex2bin($idenc));
@@ -103,7 +104,8 @@ class Navbar extends BaseController
 			$data[] = [
 				'id_navbar'     => $this->encrypter->decrypt(hex2bin($item['id'])),
 				'kode_navbar'   => $item['code'],
-				'kode_induk'  => $item['parent']
+				'kode_induk'  => $item['parent'],
+				'sort_order'   => $item['sort_order'],
 			];
 		}
 

@@ -76,12 +76,12 @@
 
     // ===== edit Item with Quill Js ===== //
     function editItem(event) {
-        var closest = event.target.closest('div');
+        const closest = event.target.closest('div');
         if (closest) {
             showLoading();
-            var id = closest.getAttribute('id');
-            var baseURL = window.location.href.split('/').slice(0, -1).join('/') + '/' + currentUrl;
-            var url = `${baseURL}/edit/${id}`;
+            const id = closest.getAttribute('id');
+            const baseURL = window.location.href.split('/').slice(0, -1).join('/') + '/' + currentUrl;
+            const url = `${baseURL}/edit/${id}`;
 
             fetch(url, {
                     method: 'GET',
@@ -100,7 +100,7 @@
                                 quill.root.innerHTML = value || '';
                                 return;
                             }
-                            var elements = document.querySelectorAll(`[name="${key}"], [name="${key}[]"]`);
+                            const elements = document.querySelectorAll(`[name="${key}"], [name="${key}[]"]`);
                             if (elements.length > 0) {
                                 elements.forEach(el => {
                                     if (el.type === "checkbox") {
@@ -159,12 +159,12 @@
         input.onchange = async () => {
             var file = input.files[0];
             if (file) {
-                var maxSizeMB = 2;
-                var allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+                const maxSizeMB = 2;
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
 
                 // 1. Validasi tipe file
                 if (!allowedTypes.includes(file.type)) {
-                    sayAlert('errorModal', 'Error', 'Hanya file gambar JPG, JPEG, PNG, atau WEBP yang diperbolehkan.', 'warning');
+                    sayAlert('errorModal', 'Error', 'Hanya file gambar JPG, JPEG, atau PNG yang diperbolehkan.', 'warning');
 
                     return;
                 }
@@ -176,11 +176,11 @@
                 }
 
                 // (Opsional) 3. Validasi dimensi gambar
-                var img = new Image();
+                const img = new Image();
                 img.src = URL.createObjectURL(file);
                 img.onload = function() {
-                    var maxWidth = 2000;
-                    var maxHeight = 2000;
+                    const maxWidth = 2000;
+                    const maxHeight = 2000;
                     if (img.width > maxWidth || img.height > maxHeight) {
                         sayAlert('errorModal', 'Error', `Resolusi gambar terlalu besar. Maksimal ${maxWidth}x${maxHeight}px.`, 'warning');
 
@@ -188,7 +188,7 @@
                     }
 
                     // Lolos semua validasi, lanjutkan upload
-                    var formData = new FormData();
+                    const formData = new FormData();
                     formData.append('upload', file);
 
                     saveData({
@@ -196,7 +196,7 @@
                         formData: formData,
                         onSuccess: (json) => {
                             if (json && json.url) {
-                                var range = quill.getSelection();
+                                const range = quill.getSelection();
                                 quill.insertEmbed(range.index, 'image', json.url);
 
                                 // Update CSRF token
@@ -219,6 +219,32 @@
                 };
             }
         };
+    });
+
+    // ===== validasi gambar ===== //
+    document.querySelector('#thumbnail').addEventListener('change', function() {
+        var file = this.files[0];
+        var errorMsg = document.querySelector('#errorMsg');
+        var ketThumbnail = document.querySelector('#ketThumbnail');
+        if (file) {
+            var allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+            var maxSizeMB = 2;
+            if (!allowedTypes.includes(file.type)) {
+                errorMsg.textContent = 'Hanya file gambar JPG, JPEG, atau PNG yang diperbolehkan.';
+                errorMsg.classList.remove('d-none');
+                ketThumbnail.classList.add('d-none');
+                this.value = '';
+            } else if (file.size > maxSizeMB * 1024 * 1024) {
+                errorMsg.textContent = 'Ukuran file maksimal 2MB.';
+                errorMsg.classList.remove('d-none');
+                errorMsg.style.removeProperty('font-size');
+                ketThumbnail.classList.add('d-none');
+                this.value = '';
+            } else {
+                errorMsg.classList.add('d-none');
+                ketThumbnail.classList.remove('d-none');
+            }
+        }
     });
 
     // ===== nama dan slug ===== //
@@ -299,10 +325,10 @@
     perbaruiTombol();
 
     btnAksi.addEventListener('click', () => {
-        var mode = btnAksi.getAttribute('data-mode');
+        const mode = btnAksi.getAttribute('data-mode');
 
         if (mode === 'tambah') {
-            var isShown = !formBaru.classList.contains('d-none');
+            const isShown = !formBaru.classList.contains('d-none');
 
             // Toggle tampilan
             if (isShown) {
@@ -314,7 +340,7 @@
             }
 
         } else if (mode === 'edit') {
-            var isShown = formEdit.style.display === 'flex';
+            const isShown = formEdit.style.display === 'flex';
 
             // Toggle tampilan
             if (isShown) {
@@ -352,7 +378,7 @@
 
         var formData = new FormData();
         formData.append('nama', nama);
-        console.log(formData);
+
         saveData({
             url: '<?= base_url("categories/submit") ?>',
             formData: formData,
@@ -382,7 +408,7 @@
         if (!id || !namaBaru) return;
 
         // Cek apakah namaBaru sudah ada di kategori lain
-        var namaBaruLower = namaBaru.toLowerCase();
+        const namaBaruLower = namaBaru.toLowerCase();
         let duplikat = false;
 
         Array.from(select.options).forEach(opt => {
@@ -409,7 +435,7 @@
             formData: formData,
             onSuccess: (json) => {
                 if (json && json.id) {
-                    var option = select.querySelector(`option[value="${id}"]`);
+                    const option = select.querySelector(`option[value="${id}"]`);
                     if (option) {
                         option.text = json.nama;
                         option.selected = true;
@@ -426,7 +452,7 @@
 
     function isKategoriDuplikat(nama) {
         nama = nama.trim().toLowerCase();
-        var options = select.options;
+        const options = select.options;
         for (let i = 0; i < options.length; i++) {
             if (options[i].value !== "" && options[i].text.trim().toLowerCase() === nama) {
                 return true;
@@ -447,7 +473,7 @@
                     id
                 },
                 onSuccess: () => {
-                    var option = select.querySelector(`option[value="${id}"]`);
+                    const option = select.querySelector(`option[value="${id}"]`);
                     if (option) option.remove();
 
                     select.value = "";
@@ -480,7 +506,7 @@
             .then(json => {
                 // Update CSRF
                 if (json.xname && json.xhash) {
-                    var input = document.querySelector(`[name="${json.xname}"]`);
+                    const input = document.querySelector(`[name="${json.xname}"]`);
                     if (input) input.value = json.xhash;
                 }
 
@@ -509,9 +535,8 @@
         onError,
     }) {
         showLoading();
-
-        var csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-        var csrfToken = csrfInput ? csrfInput.value : '';
+        const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
+        const csrfToken = csrfInput ? csrfInput.value : '';
 
         fetch(url, {
                 method: 'POST',
@@ -535,7 +560,6 @@
                 }
 
                 if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
-
 
                 if (data.res === true) {
                     if (typeof table !== 'undefined') table.fetchData({
@@ -593,7 +617,9 @@
                 <div class="row mb-2">
                     <div class="col">
                         <label class="col-md-3 col-form-label">Gambar</label>
-                        <input name="thumbnail" type="file" class="form-control">
+                        <input id="thumbnail" name="thumbnail" type="file" class="form-control" accept="image/*">
+                        <small class="text-muted" id="ketThumbnail" style="font-size: 11px;">Upload maks. 2MB. JPG, JPEG, atau PNG</small>
+                        <small class="text-danger d-none" id="errorMsg">Hanya file gambar yang diperbolehkan!</small>
                     </div>
                     <div class="col">
                         <label class="col-md-3 col-form-label">Tanggal</label>
@@ -610,9 +636,9 @@
                     <div class="col">
                         <label for="konten" class="col-md-3 col-form-label">Konten Post</label>
                         <div id="toolbar"></div>
-                        <div id="quill-editor" style="height: 250px;"></div>
+                        <div id="quill-editor" spellcheck="false" autocorrect="off" autocomplete="off" autocapitalize="off" style="height: 250px;"></div>
                         <textarea name="konten" id="konten" hidden></textarea>
-                        <small>Ukuran upload gambar maks. 2mb</small>
+                        <small>Upload gambar maks. 2MB. Hanya file JPG, JPEG, atau PNG.</small>
                     </div>
                 </div>
                 <div class="row mb-2">

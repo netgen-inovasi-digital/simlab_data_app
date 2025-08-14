@@ -42,7 +42,7 @@ class Pages extends BaseController
 		$data['status'] = $get->status;
 		$data['user_id'] = $get->user_id;
 		$data['nama'] = $user->nama;
-		// $data['tanggal'] = date('Y-m-d', strtotime($get->updated_at));
+		$data['tanggal'] = date('Y-m-d', strtotime($get->updated_at));
 
 		// 'userId' => session()->get('idUser'),
 		return $this->response->setJSON($data);
@@ -79,9 +79,9 @@ class Pages extends BaseController
 			// INSERT
 			$data['created_at'] = $now;
 
-			// if ($data['status'] === 'publish') {
-			// 	$data['published_at'] = $tanggalFormatted;
-			// }
+			if ($data['status'] === 'publish') {
+				// $data['published_at'] = $tanggalFormatted;
+			}
 
 			$data['slug'] = $this->request->getPost('slug');
 
@@ -189,13 +189,13 @@ class Pages extends BaseController
 			$response = array();
 			$titleBlock = '
 				<div class="d-flex flex-column">
-					<strong>' . $row->title . '</strong>
+					<strong>'. $row->title . '</strong>
 					' . $this->generateExcerpt($row->konten) . '
 					<div class="d-flex flex-wrap justify-content-start small text-muted gap-2 mt-2">
 						<div>👤 ' . esc($row->nama) . '</div>
 						<div>🗓️ ' . ($row->status == 'draft'
-				? '(Masih draft)'
-				: formatTanggalIndo($row->updated_at)) . '</div>
+							? '(Masih draft)'
+							: formatTanggalIndo($row->updated_at)) . '</div>
 					</div>
 				</div>
 			';
