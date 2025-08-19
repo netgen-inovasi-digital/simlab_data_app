@@ -17,6 +17,9 @@ $routes->group('dokumen', ['namespace' => 'Modules\Dokumen\Controllers'], functi
   $subroutes->get('(:num)/edit/(:any)', 'Dokumen::edit/$1/$2');
   $subroutes->get('(:num)/delete/(:any)', 'Dokumen::delete/$1/$2');
 
+  // $subroutes->post('(:num)/edit/(:any)', 'Dokumen::edit/$1/$2');
+  // $subroutes->post('(:num)/delete/(:any)', 'Dokumen::delete/$1/$2');
+
   $subroutes->post('upload', 'Dokumen::upload');
   $subroutes->post('toggle', 'Dokumen::toggle');
 });

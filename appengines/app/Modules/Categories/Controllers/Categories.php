@@ -72,7 +72,7 @@ class Categories extends BaseController
 
     $model = new MyModel($this->table);
     if ($id == "") {
-      $res = $model->insertData($data); // akan return id_categories
+      $res = $model->insertData($data, true); // akan return id_categories
       $id = (string)$res;
     } else {
       $res = $model->updateData($data, $this->id, $id);

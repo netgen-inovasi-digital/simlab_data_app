@@ -176,6 +176,43 @@
 
     window.statusToggleBound = true; // Cegah event listener ganda
   }
+
+  //  function deleteDokumen(event, msg = "") {
+  //   const closest = event.target.closest('div');
+  //   if (msg != "") msg = '<br><strong>' + msg + '</strong>';
+  //   if (closest) {
+  //     sayAlert('confirmModal', 'Confirm!', 'Apakah yakin menghapus data ini?' + msg, 'danger', true, () => {
+  //       showLoading();
+  //       const id = closest.getAttribute('id');
+  //       const fullURL = window.location.href;
+  //       const baseURL = fullURL.substring(0, fullURL.lastIndexOf('/') + 1) + currentUrl;
+  //       const url = baseURL + '/delete/' + id;
+  //       fetch(url, {
+  //           method: 'GET',
+  //           headers: {
+  //             'Content-Type': 'application/x-www-form-urlencoded'
+  //           },
+  //         })
+  //         .then(response => response.json())
+  //         .then(data => {
+  //           if (data.res == 'refresh') {
+  //             loadContent(data.link);
+  //             sayAlert('successModal', 'Success', 'Data berhasil dihapus.', 'success');
+  //           } else if (data.res == true) {
+  //             table.fetchData({
+  //               reload: true
+  //             });
+  //             $('[name=' + data.xname + ']').val(data.xhash);
+  //             sayAlert('successModal', 'Success', 'Data berhasil dihapus.', 'success');
+  //           } else sayAlert('errorModal', 'Error', 'Data gagal dihapus.', 'warning');
+  //         }).catch(error => {
+  //           sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.' + error.message, 'warning');
+  //         }).finally(() => {
+  //           hideLoading();
+  //         });
+  //     });
+  //   }
+  // }
 </script>
 
 
