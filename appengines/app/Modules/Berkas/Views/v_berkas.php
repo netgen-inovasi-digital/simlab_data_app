@@ -662,6 +662,10 @@
             <input name="nama" type="text" value="<?= $user->nama ?>" class="form-control bg-light" required readonly>
             <input name="user_id" type="text" value="<?= $user->id_user ?>" class="form-control" required hidden>
           </div>
+          <div class="col">
+            <label class="col-md-3 col-form-label">Revisi</label>
+            <input name="revisi" type="number" class="form-control bg-light" placeholder="Masukkan revisi" required>
+          </div>
         </div>
         <!-- <div class="row mb-2">
                     <div class="col">

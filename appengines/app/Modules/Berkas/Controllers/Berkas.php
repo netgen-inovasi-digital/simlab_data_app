@@ -4,6 +4,7 @@ namespace Modules\Berkas\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\MyModel;
+use BcMath\Number;
 
 class Berkas extends BaseController
 {
@@ -30,20 +31,19 @@ class Berkas extends BaseController
 
   function edit($id)
   {
-    $idenc = $id;
-    $id = $this->encrypter->decrypt(hex2bin($id));
+    $idenc = $this->encrypter->decrypt(hex2bin($id));
     $model = new MyModel($this->table);
-    $get = $model->getDataById($this->id, $id);
+    $get = $model->getDataById($this->id, $idenc);
 
     $modelUser = new MyModel('users');
     $user = $modelUser->getDataById('id_user', $get->user_id);
 
     $data[csrf_token()] = csrf_hash();
-    $data['id'] = $idenc;
+    $data['id'] = $id;
     $data['title'] = $get->title;
     $data['kategori_id'] = $get->categories_id;
     $data['slug'] = $get->slug;
-    // $data['konten'] = $get->konten;
+    $data['revisi'] = $get->revisi;
     $data['status'] = $get->status;
     $data['user_id'] = $get->user_id;
     $data['nama'] = $user->nama;
@@ -75,6 +75,7 @@ class Berkas extends BaseController
       'title' => $this->request->getPost('title'),
       // 'konten' => $konten,
       // 'excerpt' => $excerpt,
+      'revisi' => (int)$this->request->getPost('revisi'),
       'status' => $this->request->getPost('status'),
       'categories_id' => $this->request->getPost('kategori_id'),
       'user_id' => $this->request->getPost('user_id'),
