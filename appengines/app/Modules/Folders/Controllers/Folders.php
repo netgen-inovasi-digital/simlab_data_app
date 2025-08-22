@@ -1,35 +1,35 @@
 <?php
 
-namespace Modules\Dokumen\Controllers;
+namespace Modules\Folders\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\MyModel;
 
-class Dokumen extends BaseController
+class Folders extends BaseController
 {
-  private $table = 'dokumen';
-  private $id = 'id_dokumen';
+  private $table = 'folders';
+  private $id = 'id_folders';
 
-  public function index($docId = null)
+  public function index($foldersId = null)
   {
     $session = session(); // aktifkan session
     $user_id = $session->get('id_user');
 
-    if ($docId) {
-      $session->set('doc_id', $docId);
+    if ($foldersId) {
+      $session->set('folders_id', $foldersId);
     }
 
     $modelUser = new MyModel('users');
 
     $data = [
-      'title' => 'Data dokumen',
+      'title' => 'Data folders', 
       'user' => $modelUser->getDataById('id_user', $user_id),
     ];
 
-    return view('Modules\Dokumen\Views\v_dokumen', $data);
+    return view('Modules\Folders\Views\v_folders', $data);
   }
 
-  function edit($idDoc, $id)
+  function edit($idFolders, $id)
   {
     $idenc = $id;
     $id = $this->encrypter->decrypt(hex2bin($idenc));
@@ -52,7 +52,7 @@ class Dokumen extends BaseController
     return $this->response->setJSON($data);
   }
 
-  function delete($idDoc, $id)
+  function delete($idFolders, $id)
   {
     $idenc = $this->encrypter->decrypt(hex2bin($id));
     $model = new MyModel($this->table);
@@ -64,7 +64,7 @@ class Dokumen extends BaseController
   {
     $idenc = $this->request->getPost('id');
     $statusBaru = $this->request->getPost('status');
-    $docId = session()->get('doc_id');
+    $foldersId = session()->get('folders_id');
 
     $data = array(
       'judul' => $this->request->getPost('judul'),
@@ -72,7 +72,7 @@ class Dokumen extends BaseController
       'status' => $statusBaru,
       'user_id' => $this->request->getPost('user_id'),
       'tanggal' => date('Y-m-d', strtotime($this->request->getPost('tanggal'))),
-      'doc_id' => $docId,
+      'folders_id' => $foldersId,
     );
 
     $model = new MyModel($this->table);
@@ -131,24 +131,24 @@ class Dokumen extends BaseController
   public function dataList()
   {
 
-    $docId = session()->get('doc_id');
+    $foldersId = session()->get('folders_id');
 
     $model = new MyModel($this->table);
     $data = array();
 
     $join = array(
-      'users' => 'users.id_user=dokumen.user_id',
+      'users' => 'users.id_user=folders.user_id',
     );
 
 
     $where = [];
-    if (!empty($docId)) {
-      $where['dokumen.doc_id'] = $docId;
+    if (!empty($foldersId)) {
+      $where['folders.folders_id'] = $foldersId;
     }
 
     $list = $model->getAllDataByJoin($join, $where);
     foreach ($list as $row) {
-      $id = bin2hex($this->encrypter->encrypt($row->id_dokumen));
+      $id = bin2hex($this->encrypter->encrypt($row->id_folders));
       $response = array();
       $titleBlock = '
 				<div class="d-flex flex-column">
@@ -164,7 +164,7 @@ class Dokumen extends BaseController
       $isChecked = $row->status === 'tampil' ? 'checked' : '';
       $status = '
 			<div class="form-check form-switch d-flex justify-content-center">
-				<input class="form-check-input status-toggle-dokumen" type="checkbox" 
+				<input class="form-check-input status-toggle-folders" type="checkbox" 
 					data-id="' . $id . '" ' . $isChecked . ' data-bs-toggle="tooltip"
         	title="Aktif/Nonaktif">
 			</div>';
@@ -219,7 +219,7 @@ class Dokumen extends BaseController
       'status' => $status,
     ];
 
-    $model = new MyModel('dokumen');
+    $model = new MyModel('folders');
     $res = $model->updateData($data, $this->id, $id);
     return $this->response->setJSON(array('res' => $res, 'xhash' => csrf_hash()));
   }

@@ -18,7 +18,7 @@
           <thead>
             <tr>
               <th show width="8%">No.</th>
-              <th show>Dokumen</th>
+              <th show>Folders</th>
               <th>Status</th>
               <th show class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
             </tr>
@@ -34,7 +34,7 @@
 
 <script>
   table = createTable({
-    apiUrl: '<?php echo site_url("dokumen/datalist") ?>',
+    apiUrl: '<?php echo site_url("folders/datalist") ?>',
   });
   addAction();
 
@@ -45,12 +45,12 @@
     const formData = new FormData(form);
     const actionUrl = form.getAttribute('action');
 
-    saveDataDokumen({
+    saveDataFolders({
       url: actionUrl,
       formData: formData,
       onSuccess: function(data) {
         if (data.res === 'limit') {
-          sayAlert('errorModal', 'Batas Tercapai', 'Maksimal hanya 3 dokumen yang bisa ditampilkan.', 'warning');
+          sayAlert('errorModal', 'Batas Tercapai', 'Maksimal hanya 3 folders yang bisa ditampilkan.', 'warning');
           return;
         }
 
@@ -65,7 +65,7 @@
     });
   });
 
-  function saveDataDokumen({
+  function saveDataFolders({
     url,
     formData,
     onSuccess,
@@ -137,7 +137,7 @@
   if (!window.statusToggleBound) {
     document.addEventListener('change', function(e) {
       const target = e.target;
-      if (target.classList.contains('status-toggle-dokumen')) {
+      if (target.classList.contains('status-toggle-folders')) {
         const id = target.dataset.id;
         const status = target.checked ? 'tampil' : 'tersembunyi';
         const tokenName = "<?= csrf_token() ?>";
@@ -149,7 +149,7 @@
         formData.append('status', status);
         formData.append(tokenName, tokenValue);
 
-        fetch('./dokumen/toggle', {
+        fetch('./folders/toggle', {
             method: 'POST',
             body: formData
           })
@@ -157,7 +157,7 @@
           .then(data => {
             if (data.xhash) tokenInput.value = data.xhash;
             if (data.res === 'limit') {
-              sayAlert('errorModal', 'Batas Tercapai', 'Maksimal hanya 3 dokumen yang bisa ditampilkan.', 'warning');
+              sayAlert('errorModal', 'Batas Tercapai', 'Maksimal hanya 3 folders yang bisa ditampilkan.', 'warning');
               target.checked = false;
             }
           })
@@ -177,7 +177,7 @@
     window.statusToggleBound = true; // Cegah event listener ganda
   }
 
-  //  function deleteDokumen(event, msg = "") {
+  //  function deleteFolders(event, msg = "") {
   //   const closest = event.target.closest('div');
   //   if (msg != "") msg = '<br><strong>' + msg + '</strong>';
   //   if (closest) {
@@ -224,20 +224,20 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
         </button>
       </div>
-      <?php echo form_open('dokumen/submit', array('id' => 'myform', 'novalidate' => '')) ?>
+      <?php echo form_open('folders/submit', array('id' => 'myform', 'novalidate' => '')) ?>
       <div class="modal-body">
         <input type="hidden" value="" name="id" />
         <input name="slug" type="text" class="form-control bg-light" value="" hidden>
         <div class="row mb-2">
           <div class="col">
             <label class="col-md-3 col-form-label">Judul</label>
-            <input name="judul" type="text" class="form-control" required placeholder="Masukkan judul dokumen">
+            <input name="judul" type="text" class="form-control" required placeholder="Masukkan judul folders">
           </div>
         </div>
         <div class="row mb-2">
           <div class="col">
             <label for="deskripsi" class="col-md-3 col-form-label">Deskripsi</label>
-            <textarea name="deskripsi" class="form-control" id="deskripsi" placeholder="masukkan deskripsi dokumen"></textarea>
+            <textarea name="deskripsi" class="form-control" id="deskripsi" placeholder="masukkan deskripsi folders"></textarea>
           </div>
         </div>
         <div class="row mb-2">

@@ -616,11 +616,13 @@
 
   function showItem(e, fileUrl) {
     e.preventDefault();
-    if (!fileUrl) {
-      alert("File tidak tersedia!");
-      return;
+    var ext = fileUrl.split('.').pop().toLowerCase();
+
+    if (ext === "pdf") {
+      window.open(fileUrl, "_blank"); // langsung buka pdf
+    } else {
+      window.open(fileUrl, "_blank"); // fallback
     }
-    window.open(fileUrl, "_blank");
   }
 </script>
 

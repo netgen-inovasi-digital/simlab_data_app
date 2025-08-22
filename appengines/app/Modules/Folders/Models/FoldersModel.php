@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Modules\Dokumen\Models;
+namespace App\Modules\Folders\Models;
 
 use CodeIgniter\Model;
 
-class DokumenModel extends Model
+class FoldersModel extends Model
 {
   function getAllData()
   {
