@@ -42,6 +42,7 @@ class Berkas extends BaseController
     $data['id'] = $id;
     $data['title'] = $get->title;
     $data['kategori_id'] = $get->categories_id;
+    $data['nomor_dokumen'] = $get->nomor_dokumen;
     $data['slug'] = $get->slug;
     $data['revisi'] = $get->revisi;
     $data['status'] = $get->status;
@@ -75,6 +76,7 @@ class Berkas extends BaseController
       'title' => $this->request->getPost('title'),
       // 'konten' => $konten,
       // 'excerpt' => $excerpt,
+      'nomor_dokumen' => $this->request->getPost('nomor_dokumen'),
       'revisi' => (int)$this->request->getPost('revisi'),
       'status' => $this->request->getPost('status'),
       'categories_id' => $this->request->getPost('kategori_id'),
@@ -234,6 +236,8 @@ class Berkas extends BaseController
         $status = '<div class="d-block text-center badge bg-light text-dark">Draft</div>';
       else if ($row->status == 'publish')
         $status = '<div class="d-block text-center badge bg-light text-success">Publish</div>';
+
+      $response[] = '<div>' . esc($row->nomor_dokumen) . '</div>';
       $response[] = $titleBlock;
       $response[] = $status;
       $response[] = $this->aksi($id, $fileUrl);
