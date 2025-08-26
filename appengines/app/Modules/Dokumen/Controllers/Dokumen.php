@@ -4,7 +4,6 @@ namespace Modules\Dokumen\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\MyModel;
-use App\Modules\Dokumen\Models\DokumenModel;
 
 class Dokumen extends BaseController
 {
@@ -13,12 +12,15 @@ class Dokumen extends BaseController
 
   public function index()
   {
-    $model = new MyModel('dokumen');
+    $modelDokumen = new MyModel('dokumen');
+    $modelPosts = new MyModel('posts');
+    $modelPages = new MyModel('pages');
     $data = [
-      'title' => 'Data Dokumen',
-      'getDokumen' => $model->getAllData('sort_order', 'asc')
+      'title' => 'Data Menu',
+      'getDokumen' => $modelDokumen->getAllData('sort_order', 'asc'),
+      'getPosts' => $modelPosts->getAllData('published_at', 'asc'),
+      'getPages' => $modelPages->getAllData('published_at', 'asc'),
     ];
-    // dd($data['getDokumen']);
     return view('Modules\Dokumen\Views\v_dokumen', $data);
   }
 
@@ -32,8 +34,7 @@ class Dokumen extends BaseController
     $data[csrf_token()] = csrf_hash();
     $data['id'] = $idenc;
     $data['nama'] = $get->nama;
-    $data['url'] = $get->link;
-    $data['icon'] = $get->icon;
+    $data['url'] = $get->url;
     return $this->response->setJSON($data);
   }
 
@@ -57,32 +58,31 @@ class Dokumen extends BaseController
   public function submit()
   {
     $idenc = $this->request->getPost('id');
+    $sumber = $this->request->getPost('sumber_menu'); // halaman | berita | url
+    $slug   = $this->request->getPost("url_$sumber");
+
+    $url = match ($sumber) {
+      'halaman' => "hal/$slug",
+      'berita'  => "berita/$slug",
+      'manual'   => $slug,
+    };
+
+    $nama_menu = ($sumber === 'manual')
+      ? $this->request->getPost('nama_menu_url')
+      : $this->request->getPost('nama');
+
     $data = [
-      'nama' => $this->request->getPost('nama'),
-      'link' => $this->request->getPost('url'),
-      'icon' => $this->request->getPost('icon'),
+      'nama' => $nama_menu,
+      'url'  => $url,
     ];
+
+
     $model = new MyModel($this->table);
     if ($idenc == "") {
-      // ambil kode & parent dari input hidden
-      $code = $this->request->getPost('code');  // contoh: "2" atau "2.1"
-      $parent = 0;
-      $sort_order = 0;
-
-      if (strpos($code, '.') !== false) {
-        // kalau ada titik berarti child
-        [$parentKode, $childNo] = explode('.', $code);
-        $parent = $parentKode;
-        $sort_order = $childNo;
-      } else {
-        // main dokumen
-        $sort_order = (int)$code + 1;
-      }
-
-      $data['kode_dokumen'] = $sort_order;
-      $data['kode_induk'] = $parent;
-      $data['sort_order'] = $sort_order;
-
+      $code = $this->request->getPost('code');
+      $data['kode_dokumen'] = (int)$code  + 1;
+      $data['kode_induk'] = 0;
+      $data['sort_order'] = 0;
       $res = $model->insertData($data);
     } else {
       $id = $this->encrypter->decrypt(hex2bin($idenc));
@@ -93,13 +93,7 @@ class Dokumen extends BaseController
       $res = 'refresh';
       $link = 'dokumen';
     }
-
-    return $this->response->setJSON([
-      'res' => $res,
-      'link' => $link ?? '',
-      'xname' => csrf_token(),
-      'xhash' => csrf_hash()
-    ]);
+    return $this->response->setJSON(array('res' => $res, 'link' => $link ?? '', 'xname' => csrf_token(), 'xhash' => csrf_hash()));
   }
 
   function updated()
@@ -111,12 +105,26 @@ class Dokumen extends BaseController
         'id_dokumen'     => $this->encrypter->decrypt(hex2bin($item['id'])),
         'kode_dokumen'   => $item['code'],
         'kode_induk'  => $item['parent'],
-        'sort_order'  => $item['sort_order'] // tambahkan ini
+        'sort_order'   => $item['sort_order'],
       ];
     }
 
     $model = new MyModel('dokumen');
     $res = $model->updateDataBatch($data, 'id_dokumen');
+    return $this->response->setJSON(array('res' => $res, 'xhash' => csrf_hash()));
+  }
+
+  function toggle()
+  {
+    $idenc = $this->request->getPost('id');
+    $id = $this->encrypter->decrypt(hex2bin($idenc));
+    $status = $this->request->getPost('status');
+    $data = [
+      'status' => $status,
+    ];
+
+    $model = new MyModel('dokumen');
+    $res = $model->updateData($data, $this->id, $id);
     return $this->response->setJSON(array('res' => $res, 'xhash' => csrf_hash()));
   }
 }
