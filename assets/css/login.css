@@ -4,14 +4,14 @@ body.bg-custom-green {
     font-family: 'Quicksand', sans-serif;
 }
 
-.rounded-pill{
+.rounded-pill {
     border: none !important;
     height: 45px;
     width: 80%;
 }
 
 input::placeholder {
-    color:#a1a1a1 !important;
+    color: #a1a1a1 !important;
 }
 
 .card {
@@ -23,7 +23,7 @@ input::placeholder {
     background-color: #F8F8F8;
 }
 
-img{
+img {
     width: 90%;
 }
 
@@ -32,7 +32,7 @@ img{
     text-align: center;
 }
 
-.footer a{
+.footer a {
     color: #fff !important;
     text-decoration: none;
 }
@@ -48,17 +48,17 @@ img{
         margin-top: 30px;
     }
 
-    img{
+    img {
         width: 80%;
     }
-        
-    .footer{
+
+    .footer {
         margin-bottom: 50px;
     }
 }
 
 @media (max-width: 1399.98px) {
-    .rounded-pill{
+    .rounded-pill {
         width: 100%;
     }
 }
