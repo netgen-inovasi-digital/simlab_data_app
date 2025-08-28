@@ -8,6 +8,12 @@
     transition: margin-left 0.2s ease;
   }
 
+  .flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
   /* .child {
     margin-left: 30px;
   } */
@@ -29,7 +35,7 @@
       <div class="card-header d-flex justify-content-between align-items-center">
         <label class="card-title mb-0"><?= $title ?></label>
         <button id="add" class="btn btn-primary">
-          <i class="bi bi-plus-circle-dotted"></i> Tambah
+          <i class="bi bi-plus-circle-dotted"></i> Tambah Folder
         </button>
       </div>
 
@@ -49,7 +55,7 @@
           ?>
             <div
               id="<?= $id ?>"
-              class="border rounded px-3 py-2 d-flex justify-content-between align-items-center bg-light dokumen-item"
+              class="border rounded px-3 py-2 flex bg-light dokumen-item"
               style="margin-left: <?= $level * 30; ?>px"
               draggable="true"
               data-count="<?= $level ?>"
@@ -119,19 +125,40 @@ function aksi($id)
     });
 
     item.addEventListener("dragend", (e) => {
-      item.style.display = "block";
+      item.style.display = "flex";
       item.style.opacity = "1";
 
       var currentIndex = [...dokumenMenu.children].indexOf(placeholder);
-      var previousItem = dokumenMenu.children[currentIndex - 1];
+      var previousItem = dokumenMenu.children[currentIndex - 2];
       var count = parseInt(item.dataset.count) || 0;
-      var marginLeft;
+      var deltaX = e.clientX - dragStartX; // geser horizontal
+      var change = Math.floor(deltaX / 30); // hitung berapa step (kelipatan 30px)
 
-      if (e.clientX - dragStartX > 20 && dokumenMenu.firstElementChild !== draggedItem) {
-        count++;
-      } else if (e.clientX - dragStartX < -20 && count > 0) {
-        count--;
+      if (change != 0) {
+        count += change;
       }
+
+      // Pastikan tidak negatif dan bukan item pertama
+      if (count < 0 || dokumenMenu.firstElementChild === draggedItem) count = 0;
+
+      var maxLevel = previousItem ? parseInt(previousItem.dataset.count) + 1 : 0;
+      if (count > maxLevel) {
+        count = maxLevel;
+      };
+
+
+      // // Cari parent terdekat di atasnya
+      // var maxLevel = 0;
+      // for (var i = currentIndex - 1; i >= 0; i--) {
+      //   var prev = dokumenMenu.children[i];
+      //   var prevLevel = parseInt(prev.dataset.count) || 0;
+      //   if (prevLevel < count) {
+      //     maxLevel = prevLevel + 1;
+      //     break;
+      //   }
+      // }
+      // // Jika tidak ketemu parent, tetap 0
+      // if (count > maxLevel) count = maxLevel;
 
       item.dataset.count = count;
       item.style.marginLeft = (count * 30) + "px";
@@ -176,17 +203,20 @@ function aksi($id)
     items.forEach((item) => {
       var level = parseInt(item.dataset.count) || 0;
 
-      if (!levelCounters[level]) {
+      if (level > levelCounters.length) {
+        level = levelCounters.length;
+      }
+
+      // Reset semua level setelahnya (lebih dalam) dengan memotong array
+      levelCounters.length = level + 1;
+
+      // Inisialisasi levelCounters jika undefined
+      if (typeof levelCounters[level] === "undefined") {
         levelCounters[level] = 0;
       }
 
       // Increment counter di level ini
       levelCounters[level]++;
-
-      // Reset semua level setelahnya
-      for (var i = level + 1; i < levelCounters.length; i++) {
-        levelCounters[i] = 0;
-      }
 
       // Generate kode: ambil semua level > 0 (yang > 0)
       var kodeParts = levelCounters.slice(0, level + 1).filter(n => n > 0);
@@ -399,15 +429,29 @@ function aksi($id)
         <input type="hidden" value="" name="code" />
         <input type="hidden" name="nama" id="namaHidden">
         <div class="row mb-2">
-          <label class="col-md-4 col-form-label">Sumber Menu</label>
-          <div class="col">
+          <label class="col-form-label">Sumber Menu</label>
+          <div class="col-9">
             <select id="sumberMenu" name="sumber_menu" class="form-select" required>
-              <option value="">-- Pilih Sumber --</option>
-              <option value="halaman">Halaman</option>
-              <option value="berita">Berita</option>
-              <option value="manual">URL</option>
+              <option value="">-- pilih data --</option>
+              <?php
+              $encrypter = \Config\Services::encrypter();
+
+              foreach ($getDokumen as $row) {
+                $id = bin2hex($encrypter->encrypt($row->id_dokumen));
+                $kodeInduk = $row->kode_induk;
+                $level = 0;
+
+                if (!empty($kodeInduk)) {
+                  $level = count(explode('.', $kodeInduk));
+                }
+              ?>
+                <option value="dokumen"><?= $row->nama ?></option>
+              <?php } ?>
             </select>
           </div>
+          <button id="add" class="btn btn-primary col-3">
+            <i class="bi bi-plus-circle-dotted"></i> SubFolder
+          </button>
         </div>
 
         <div class="row mb-2 d-none" id="opsiHalaman">
