@@ -3,17 +3,35 @@
             transform: translateY(-2px);
             background-color: white;
         }
+
+        .greeting-text {
+            font-size: 1.1rem;
+            color: #6c757d;
+        }
+
+        .greeting-text .user-name {
+            color: #FFCA28;
+            /* Warna kuning/emas untuk nama user */
+            font-weight: bold;
+        }
+
+        .board-right .board-icon {
+            width: 50px;
+            /* Atur ukuran ikon folder */
+            height: auto;
+        }
     </style>
 
     <div class="row">
         <div class=" col-lg">
             <div class="board">
                 <div class="board-left">
-                    <p class="text-muted mb-1"><?= $greeting ?? '' ?>, <strong><?= $nama_user ?? '' ?></strong> 👋</p>
+                    <p class="greeting-text mb-1"><?= $greeting ?? '' ?>, <strong
+                            class="user-name"><?= $nama_user ?? '' ?></strong> 👋</p>
                     <div class="value">DASHBOARD</div>
                 </div>
                 <div class="board-right">
-                    <i class="bi bi-bar-chart-fill fs-2 text-primary"></i>
+                    <img src="<?= base_url('assets/img/data-table-icon.png') ?>" alt="Folder" class="board-icon">
                 </div>
             </div>
         </div>
@@ -29,7 +47,7 @@
                         <div class="value"><?= $viewsToday ?? 0 ?></div>
                     </div>
                     <div class="board-right">
-                        <i class="bi bi-eye fs-2 text-primary"></i>
+                        <img src="<?= base_url('assets/img/folder-icon.png') ?>" alt="Folder" class="board-icon">
                     </div>
                 </div>
             </div>
@@ -42,7 +60,7 @@
                         <div class="value"><?= $viewsThisMonth ?? 0 ?></div>
                     </div>
                     <div class="board-right">
-                        <i class="bi bi-eye fs-2 text-primary"></i>
+                        <img src="<?= base_url('assets/img/folder-icon.png') ?>" alt="Folder" class="board-icon">
                     </div>
                 </div>
             </div>
@@ -55,7 +73,7 @@
                         <div class="value"><?= $viewsAllTime ?? 0 ?></div>
                     </div>
                     <div class="board-right">
-                        <i class="bi bi-eye fs-2 text-primary"></i>
+                        <img src="<?= base_url('assets/img/folder-icon.png') ?>" alt="Folder" class="board-icon">
                     </div>
                 </div>
             </div>
@@ -70,7 +88,7 @@
                         <div class="value"><?= $totalPosts ?? 0 ?></div>
                     </div>
                     <div class="board-right">
-                        <i class="bi bi-newspaper fs-2 text-primary"></i>
+                        <img src="<?= base_url('assets/img/folder-icon.png') ?>" alt="Folder" class="board-icon">
                     </div>
                 </div>
             </div>
@@ -84,7 +102,7 @@
                     </div>
                     <div class="board-right">
                         <!-- User Icon -->
-                        <i class="bi bi-file-earmark-text fs-2 text-primary"></i>
+                        <img src="<?= base_url('assets/img/folder-icon.png') ?>" alt="Folder" class="board-icon">
 
                     </div>
                 </div>
@@ -99,7 +117,7 @@
                     </div>
                     <div class="board-right">
                         <!-- Chart Icon -->
-                        <i class="bi bi-megaphone fs-2 text-primary"></i>
+                        <img src="<?= base_url('assets/img/folder-icon.png') ?>" alt="Folder" class="board-icon">
                     </div>
                 </div>
             </div>

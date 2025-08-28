@@ -15,104 +15,160 @@
     --text-dark: #4A4A4A;
     --yellow-light: #D8E8EE;
 }
+
 .bg-primary {
     background-color: var(--primary) !important;
-}.bg-secondary {
-    background-color: var(--secondary) !important;
-}.bg-info {
-    background-color: var(--info) !important;
-}.bg-success {
-    background-color: var(--success) !important;
-}.bg-warning {
-    background-color: var(--warning) !important;
-}.bg-danger {
-    background-color: var(--danger) !important;
-}.bg-yellow-light {
-    background-color: var(--yellow-light) !important;
-}.text-primary {
-    color: var(--primary) !important;
-}.text-secondary {
-    color: var(--secondary) !important;
-}.text-info {
-    color: var(--info) !important;
-}.text-success {
-    color: var(--success) !important;
-}.text-warning {
-    color: var(--warning) !important;
-}.text-danger {
-    color: var(--danger) !important;}
+}
 
-.btn{
+.bg-secondary {
+    background-color: var(--secondary) !important;
+}
+
+.bg-info {
+    background-color: var(--info) !important;
+}
+
+.bg-success {
+    background-color: var(--success) !important;
+}
+
+.bg-warning {
+    background-color: var(--warning) !important;
+}
+
+.bg-danger {
+    background-color: var(--danger) !important;
+}
+
+.bg-yellow-light {
+    background-color: var(--yellow-light) !important;
+}
+
+.text-primary {
+    color: var(--primary) !important;
+}
+
+.text-secondary {
+    color: var(--secondary) !important;
+}
+
+.text-info {
+    color: var(--info) !important;
+}
+
+.text-success {
+    color: var(--success) !important;
+}
+
+.text-warning {
+    color: var(--warning) !important;
+}
+
+.text-danger {
+    color: var(--danger) !important;
+}
+
+.btn {
     border-radius: 50px !important;
 }
-.btn-primary,  .btn-primary:active {
-    background-color: var(--primary) !important;
+
+.btn-primary,
+.btn-primary:active {
+    background-color: #2E66FF !important;
+    /* [DIUBAH] Warna tombol jadi biru */
     color: var(--text-light);
     border: none;
-}.btn-primary:hover {
-    background-color: var(--primary-hover) !important;
 }
-.btn-secondary, .btn-secondary:active {
+
+.btn-primary:hover {
+    background-color: #1a4ecc !important;
+    /* [DIUBAH] Warna hover biru lebih gelap */
+}
+
+.btn-secondary,
+.btn-secondary:active {
     background-color: var(--secondary) !important;
     color: var(--text-light);
     border: none;
-}.btn-secondary:hover {
+}
+
+.btn-secondary:hover {
     background-color: var(--secondary-hover) !important;
 }
-.btn-info, .btn-info:active {
+
+.btn-info,
+.btn-info:active {
     background-color: var(--info) !important;
     color: var(--text-light);
-}.btn-info:hover {
+}
+
+.btn-info:hover {
     background-color: var(--info-hover) !important;
 }
-.btn-success, .btn-success:active {
+
+.btn-success,
+.btn-success:active {
     background-color: var(--success) !important;
     color: var(--text-light);
-}.btn-success:hover {
+}
+
+.btn-success:hover {
     background-color: var(--success-hover) !important;
 }
-.btn-warning, .btn-warning:active {
+
+.btn-warning,
+.btn-warning:active {
     background-color: var(--warning) !important;
     color: var(--text-dark);
-}.btn-warning:hover {
+}
+
+.btn-warning:hover {
     background-color: var(--warning-hover) !important;
 }
-.btn-danger, .btn-danger:active {
+
+.btn-danger,
+.btn-danger:active {
     background-color: var(--danger) !important;
     color: var(--text-light);
-}.btn-danger:hover {
+}
+
+.btn-danger:hover {
     background-color: var(--danger-hover) !important;
-}.btn-action {
+}
+
+.btn-action {
     padding-left: 5px;
     padding-right: 5px;
     cursor: pointer;
     border: 1px solid #b7b7b7;
 }
 
+/* [DIUBAH] Mengganti background dari hijau ke kuning */
 body.bg-custom-green {
-    background: linear-gradient(120deg, #218A70 0%, #218A70 100%);
+    background: #FFCA28;
+    /* Warna kuning baru */
     min-height: 100vh;
     font-family: 'Quicksand', sans-serif;
 }
 
-.rounded-pill{
+.rounded-pill {
     border: none !important;
     height: 45px;
     width: 80%;
 }
 
 .textarea-pill {
-  border: none !important;
-  width: 80%;
-  height: 100px; /* lebih tinggi dari input biasa */
-  padding: 10px 20px;
-  border-radius: 1rem !important;
-  resize: none;
+    border: none !important;
+    width: 80%;
+    height: 100px;
+    padding: 10px 20px;
+    border-radius: 1rem !important;
+    resize: none;
 }
 
 
 input::placeholder {
-    color:#a1a1a1 !important;
+    color: #a1a1a1 !important;
 }
 
 .card {
@@ -124,17 +180,19 @@ input::placeholder {
     background-color: #F8F8F8;
 }
 
-img{
+img {
     width: 90%;
 }
 
 .footer {
-    color: #fff !important;
+    color: #333 !important;
+    /* [DIUBAH] Warna teks footer jadi gelap agar terbaca */
     text-align: center;
 }
 
-.footer a{
-    color: #fff !important;
+.footer a {
+    color: #333 !important;
+    /* [DIUBAH] Warna link footer jadi gelap */
     text-decoration: none;
 }
 
@@ -149,17 +207,17 @@ img{
         margin-top: 30px;
     }
 
-    img{
+    img {
         width: 80%;
     }
-        
-    .footer{
+
+    .footer {
         margin-bottom: 50px;
     }
 }
 
 @media (max-width: 1399.98px) {
-    .rounded-pill{
+    .rounded-pill {
         width: 100%;
     }
 }

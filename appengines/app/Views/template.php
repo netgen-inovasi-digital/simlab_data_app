@@ -76,13 +76,13 @@
     <!-- Sidebar -->
     <div id="sidebar" class="sidebar pe-0">
         <div class="sidebar-header">
-            <a href="<?php echo base_url('/') ?>">
-                <img src="https://placehold.co/500x180?text=Logo+Template"
-                    alt="Logo Ecomel"
-                    class="img-fluid rounded"
-                    style="width: 180px; object-fit: contain;" />
+            <!-- Menampilkan logo ULM.png -->
+            <img src="<?= base_url('assets/img/ULM.png') ?>" alt="Logo ULM">
 
-            </a>
+            <!-- Wadah untuk teks berjalan -->
+            <div class="logo-text-wrapper">
+                <h2>LAB TERPADU ULM</h2>
+            </div>
         </div>
         <nav class="nav d-block pe-2 pb-5">
             <?php
@@ -101,7 +101,8 @@
             </span>
             <div class="me-4 d-flex">
                 <a href="<?= base_url() ?>" target="_blank">
-                    <button aria-label="button" type="button" class="btn btn-outline-primary btn-sm d-flex align-items-center">
+                    <button aria-label="button" type="button"
+                        class="btn btn-outline-primary btn-sm d-flex align-items-center">
                         <i class="bi bi-globe" style="font-size: 1rem;"></i>
                         <span class="ms-1 d-none d-md-inline">Lihat Situs</span>
                     </button>

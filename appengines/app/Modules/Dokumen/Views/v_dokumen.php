@@ -1,34 +1,49 @@
 <style>
   .dokumen-item {
-    padding: 5px 15px;
-    border: 1px solid #ccc;
-    /* background-color: #f8f9fa; */
-    margin-bottom: 5px;
+    padding: 0.8rem 1rem;
+    /* Sedikit padding agar lebih rapi */
+    border: 1px solid #e9ecef;
+    /* Border abu-abu muda */
+    background-color: #ffffff;
+    /* Latar belakang putih */
+    margin-bottom: 8px;
+    /* Jarak antar item */
     cursor: grab;
-    transition: margin-left 0.2s ease;
-  }
-
-  .flex {
+    transition: all 0.2s ease-in-out;
+    border-radius: 8px;
+    /* Sudut tumpul */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
 
-  /* .child {
-    margin-left: 30px;
-  } */
+  .dokumen-item:hover {
+    background-color: #f8f9fa;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .dokumen-item .bi-folder-fill {
+    font-size: 1.3rem;
+    /* Ukuran ikon folder */
+    color: #FFCA28;
+    /* Warna kuning/emas untuk ikon folder */
+  }
 
   .drag-placeholder {
-    height: 40px;
+    height: 60px;
+    /* Sesuaikan tinggi dengan item */
     border: 2px dashed #0d6efd;
-    margin-bottom: 5px;
-    border-radius: 5px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    background-color: rgba(13, 110, 253, 0.05);
   }
 
   .toggle-status {
     cursor: pointer;
   }
 </style>
+
 <div class="row">
   <div class="col-md-12">
     <div class="card">
@@ -53,36 +68,29 @@
               $level = count(explode('.', $kodeInduk));
             }
           ?>
-            <div
-              id="<?= $id ?>"
-              class="border rounded px-3 py-2 flex bg-light dokumen-item"
-              style="margin-left: <?= $level * 30; ?>px"
-              draggable="true"
-              data-count="<?= $level ?>"
-              data-status="<?= $row->status ?>">
 
-              <!-- Kiri: Drag handle dan nama -->
-              <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-grip-vertical text-muted" title="Drag untuk urutkan"></i>
-                <span><?= esc($row->nama) ?></span>
-              </div>
+            <div id="<?= $id ?>" class="dokumen-item" style="margin-left: <?= $level * 30; ?>px"
+              draggable="true" data-count="<?= $level ?>" data-status="<?= $row->status ?>">
 
-              <!-- Kanan: Toggle & aksi -->
-              <div class="d-flex align-items-center gap-2">
-                <div class="form-check form-switch m-0">
-                  <input
-                    class="form-check-input toggle-status"
-                    type="checkbox"
-                    role="switch"
-                    data-id="<?= $id ?>"
-                    <?= $row->status === 'Y' ? 'checked' : '' ?>
-                    data-bs-toggle="tooltip"
-                    title="Aktif / Nonaktif">
+              <!-- Kiri: Ikon Folder dan nama -->
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                  <i class="bi bi-folder-fill" title="Drag untuk urutkan"></i> <!-- IKON DIUBAH DI SINI -->
+                  <span><?= esc($row->nama) ?></span>
                 </div>
 
-                <?= (!in_array($row->id_dokumen, [11, 38, 33, 34, 35, 36]))
-                  ? aksi($id)
-                  : '<span class="text-muted">---</span>'; ?>
+                <!-- Kanan: Toggle & aksi -->
+                <div class="d-flex align-items-center gap-2">
+                  <div class="form-check form-switch m-0">
+                    <input class="form-check-input toggle-status" type="checkbox" role="switch"
+                      data-id="<?= $id ?>" <?= $row->status === 'Y' ? 'checked' : '' ?>
+                      data-bs-toggle="tooltip" title="Aktif / Nonaktif">
+                  </div>
+
+                  <?= (!in_array($row->id_dokumen, [11, 38, 33, 34, 35, 36]))
+                    ? aksi($id)
+                    : '<span class="text-muted">---</span>'; ?>
+                </div>
               </div>
             </div>
           <?php } ?>
@@ -105,6 +113,7 @@ function aksi($id)
 }
 ?>
 
+<!-- JavaScript di bawah ini tidak perlu diubah, biarkan seperti aslinya -->
 <script>
   addAction();
   var draggedItem = null;
@@ -290,16 +299,13 @@ function aksi($id)
         .then(res => res.json())
         .then(data => {
           document.querySelector(`[name="${tokenName}"]`).value = data.xhash;
-          // Optional: tampilkan notifikasi berhasil
         })
         .catch(error => {
           console.error('Gagal toggle status:', error);
-          // Optional: kembalikan checkbox jika gagal
           this.checked = !this.checked;
         });
     });
   });
-
 
   function resetOpsiSumber() {
     opsiHalaman.classList.add('d-none');
@@ -308,7 +314,6 @@ function aksi($id)
     opsiUrlInput.classList.add('d-none');
   }
 
-  // ===== dropdown sumber menu ===== //
   var opsiHalaman = document.querySelector('#opsiHalaman');
   var opsiBerita = document.querySelector('#opsiBerita');
   var opsiUrlNama = document.querySelector('#opsiUrl');
@@ -316,20 +321,14 @@ function aksi($id)
 
   document.querySelector('#sumberMenu').addEventListener('change', function() {
     var value = this.value;
-
-    // Sembunyikan semua
     resetOpsiSumber();
-
-    if (value === 'halaman') {
-      opsiHalaman.classList.remove('d-none');
-    } else if (value === 'berita') {
-      opsiBerita.classList.remove('d-none');
-    } else if (value === 'manual') {
+    if (value === 'halaman') opsiHalaman.classList.remove('d-none');
+    else if (value === 'berita') opsiBerita.classList.remove('d-none');
+    else if (value === 'manual') {
       opsiUrlNama.classList.remove('d-none');
       opsiUrlInput.classList.remove('d-none');
     }
   });
-
 
   document.querySelectorAll('#opsiHalaman select, #opsiBerita select').forEach(select => {
     select.addEventListener('change', function() {
@@ -339,12 +338,10 @@ function aksi($id)
     });
   });
 
-  //===== edit Item ===== //
   function editItemDokumen(event) {
     var closest = event.target.closest('div');
     if (closest) {
       showLoading();
-
       var id = closest.getAttribute('id');
       var baseURL = window.location.href.split('/').slice(0, -1).join('/') + '/' + currentUrl;
       var url = `${baseURL}/edit/${id}`;
@@ -353,23 +350,17 @@ function aksi($id)
           method: 'GET',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
-          },
+          }
         })
         .then(response => response.json())
         .then(data => {
           if (data) {
             $('.modal-title').text('Ubah Data');
             $('#modalForm').modal('show');
-
-            // Reset semua opsi sumber menu
             resetOpsiSumber();
-
-            // Isi nilai nama (nama_menu)
             const inputNama = document.querySelector('[name="nama"]');
             if (inputNama) inputNama.value = data.nama || '';
 
-
-            // Tentukan sumber dari URL
             var selectSumber = document.querySelector('[name="sumber_menu"]');
             var selectHalaman = document.querySelector('[name="url_halaman"]');
             var selectBerita = document.querySelector('[name="url_berita"]');
@@ -392,7 +383,6 @@ function aksi($id)
               document.querySelector('#opsiUrlInput')?.classList.remove('d-none');
             }
 
-            // Isi ID terenkripsi
             document.querySelector('[name="id"]').value = data.id || '';
           }
         })
@@ -408,14 +398,14 @@ function aksi($id)
     }
   }
 
-  // ===== tooltip ===== //
   var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
   tooltipTriggerList.forEach(function(tooltipTriggerEl) {
     new bootstrap.Tooltip(tooltipTriggerEl)
   })
 </script>
 
-<div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+<div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+  aria-labelledby="staticBackdropLabel" aria-hidden="true">
   <div class="modal-dialog" role="document" style="margin: 2% auto">
     <div class="modal-content">
       <div class="modal-header">
@@ -460,7 +450,8 @@ function aksi($id)
             <select name="url_halaman" class="form-select">
               <option value="">-- pilih data --</option>
               <?php foreach ($getPages as $pages): ?>
-                <option value="<?= $pages->slug ?>" data-nama="<?= htmlspecialchars($pages->title) ?>"><?= $pages->title ?> </option>
+                <option value="<?= $pages->slug ?>" data-nama="<?= htmlspecialchars($pages->title) ?>">
+                  <?= $pages->title ?> </option>
               <?php endforeach ?>
             </select>
           </div>
@@ -472,7 +463,8 @@ function aksi($id)
             <select name="url_berita" class="form-select">
               <option value="">-- pilih data --</option>
               <?php foreach ($getPosts as $post): ?>
-                <option value="<?= $post->slug ?>" data-nama="<?= htmlspecialchars($post->title) ?>"><?= $post->title ?></option>
+                <option value="<?= $post->slug ?>" data-nama="<?= htmlspecialchars($post->title) ?>">
+                  <?= $post->title ?></option>
               <?php endforeach ?>
             </select>
           </div>
@@ -492,7 +484,8 @@ function aksi($id)
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Batal</button>
+        <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>
+          Batal</button>
         <button class="btn btn-success" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
       </div>
       </form>
