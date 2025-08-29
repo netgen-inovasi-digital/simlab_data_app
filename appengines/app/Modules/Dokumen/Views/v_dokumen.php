@@ -13,9 +13,7 @@
     border-radius: 8px;
     /* Sudut tumpul */
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+
   }
 
   .dokumen-item:hover {
@@ -28,6 +26,11 @@
     /* Ukuran ikon folder */
     color: #FFCA28;
     /* Warna kuning/emas untuk ikon folder */
+  }
+
+  .flex {
+    display: flex;
+    align-items: center;
   }
 
   .drag-placeholder {
@@ -69,11 +72,11 @@
             }
           ?>
 
-            <div id="<?= $id ?>" class="dokumen-item" style="margin-left: <?= $level * 30; ?>px"
+            <div id="<?= $id ?>" class="dokumen-item flex " style="margin-left: <?= $level * 30; ?>px"
               draggable="true" data-count="<?= $level ?>" data-status="<?= $row->status ?>">
 
               <!-- Kiri: Ikon Folder dan nama -->
-              <div class="d-flex justify-content-between align-items-center">
+              <div class="d-flex justify-content-between align-items-center col-12">
                 <div class="d-flex align-items-center gap-3">
                   <i class="bi bi-folder-fill" title="Drag untuk urutkan"></i> <!-- IKON DIUBAH DI SINI -->
                   <span><?= esc($row->nama) ?></span>
@@ -81,15 +84,13 @@
 
                 <!-- Kanan: Toggle & aksi -->
                 <div class="d-flex align-items-center gap-2">
-                  <div class="form-check form-switch m-0">
+                  <!-- <div class="form-check form-switch m-0">
                     <input class="form-check-input toggle-status" type="checkbox" role="switch"
                       data-id="<?= $id ?>" <?= $row->status === 'Y' ? 'checked' : '' ?>
                       data-bs-toggle="tooltip" title="Aktif / Nonaktif">
-                  </div>
+                  </div> -->
 
-                  <?= (!in_array($row->id_dokumen, [11, 38, 33, 34, 35, 36]))
-                    ? aksi($id)
-                    : '<span class="text-muted">---</span>'; ?>
+                  <?= aksi($id, $row->is_folder) ?>
                 </div>
               </div>
             </div>
@@ -101,9 +102,28 @@
 </div>
 
 <?php
-function aksi($id)
+function aksi($id, $is_folder)
 {
+
+  $btnLihat = !$is_folder ? '
+    <span class="text-dark" title="Lihat" onclick="editItemDokumen(event)">
+      <i class="bi bi-eye"></i>
+    </span>
+    <label class="divider">|</label>
+  ' : '';
+
+  $btnTambah = $is_folder ? '
+    <span class="text-dark" title="Tambah" onclick="editItemDokumen(event)">
+      <i class="bi bi-plus-circle"></i>
+    </span>
+    <label class="divider">|</label>
+  ' : '';
+
   return '<div id="' . $id . '">
+        ' . $btnLihat . $btnTambah . '
+        <span class="text-dark" title="Otorisasi" onclick="editItemDokumen(event)">
+            <i class="bi bi-shield-check"></i></span> 
+        <label class="divider">|</label>
         <span class="text-dark" title="Ubah" onclick="editItemDokumen(event)">
             <i class="bi bi-pencil-square"></i></span> 
         <label class="divider">|</label>
@@ -126,7 +146,7 @@ function aksi($id)
     item.addEventListener("dragstart", (e) => {
       draggedItem = item;
       dragStartX = e.clientX;
-      item.style.opacity = "0.5";
+      item.style.opacity = "0.7";
       setTimeout(() => {
         dokumenMenu.insertBefore(placeholder, item.nextSibling);
         item.style.display = "none";
@@ -138,10 +158,24 @@ function aksi($id)
       item.style.opacity = "1";
 
       var currentIndex = [...dokumenMenu.children].indexOf(placeholder);
-      var previousItem = dokumenMenu.children[currentIndex - 2];
+
+      // Cari previous dokumen-item yang benar sebelum placeholder
+      var previousItem = null;
+      for (var i = currentIndex - 1; i >= 0; i--) {
+        var el = dokumenMenu.children[i];
+        // Skip jika ini adalah item yang sedang di-drag (display: none)
+        if (el === draggedItem) continue;
+        if (el.classList && el.classList.contains('dokumen-item')) {
+          previousItem = el;
+          break;
+        }
+      }
+
       var count = parseInt(item.dataset.count) || 0;
       var deltaX = e.clientX - dragStartX; // geser horizontal
-      var change = Math.floor(deltaX / 30); // hitung berapa step (kelipatan 30px)
+      var change = deltaX > 0 ?
+        Math.floor(deltaX / 30) :
+        Math.ceil(deltaX / 30); // hitung berapa step (kelipatan 30px)
 
       if (change != 0) {
         count += change;
@@ -154,20 +188,6 @@ function aksi($id)
       if (count > maxLevel) {
         count = maxLevel;
       };
-
-
-      // // Cari parent terdekat di atasnya
-      // var maxLevel = 0;
-      // for (var i = currentIndex - 1; i >= 0; i--) {
-      //   var prev = dokumenMenu.children[i];
-      //   var prevLevel = parseInt(prev.dataset.count) || 0;
-      //   if (prevLevel < count) {
-      //     maxLevel = prevLevel + 1;
-      //     break;
-      //   }
-      // }
-      // // Jika tidak ketemu parent, tetap 0
-      // if (count > maxLevel) count = maxLevel;
 
       item.dataset.count = count;
       item.style.marginLeft = (count * 30) + "px";
