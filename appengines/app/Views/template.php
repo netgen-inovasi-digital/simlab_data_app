@@ -7,7 +7,7 @@
     <title>Template | Netx Template</title>
     <link rel="stylesheet" href="<?php echo base_url('assets/css/bootstrap.min.css') ?>">
     <link rel="stylesheet" href="<?php echo base_url('assets/css/bootstrap-icons.min.css') ?>">
-    <link rel="stylesheet" href="<?php echo base_url('assets/css/style.css?v=0.1112') ?>">
+    <link rel="stylesheet" href="<?php echo base_url('assets/css/style.css?v=0.1113') ?>">
 
     <!-- CDN Quill js -->
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" />
@@ -25,50 +25,50 @@
 </head>
 
 <style>
-    /* CSS For Quill JS */
-    .ql-toolbar {
-        border-radius: 8px;
-        background: #f9f9f9;
-        padding: 10px;
-        border: 1px solid #ddd;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    }
+/* CSS For Quill JS */
+.ql-toolbar {
+    border-radius: 8px;
+    background: #f9f9f9;
+    padding: 10px;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
 
-    .ql-editor {
-        font-family: 'Quicksand', sans-serif;
-    }
+.ql-editor {
+    font-family: 'Quicksand', sans-serif;
+}
 
-    .ql-toolbar .ql-picker {
-        margin-right: 8px;
-    }
+.ql-toolbar .ql-picker {
+    margin-right: 8px;
+}
 
-    .ql-toolbar .ql-formats {
-        margin-right: 10px;
-    }
+.ql-toolbar .ql-formats {
+    margin-right: 10px;
+}
 
-    .ql-toolbar button,
-    .ql-toolbar .ql-picker-label {
-        border-radius: 6px;
-        transition: background-color 0.2s ease;
-    }
+.ql-toolbar button,
+.ql-toolbar .ql-picker-label {
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
 
-    .ql-toolbar button:hover,
-    .ql-toolbar .ql-picker-label:hover {
-        background-color: #e6e6e6;
-    }
+.ql-toolbar button:hover,
+.ql-toolbar .ql-picker-label:hover {
+    background-color: #e6e6e6;
+}
 
-    .ql-toolbar .ql-formats {
-        position: relative;
-        margin-right: 12px;
-        padding-right: 12px;
-        border-right: 1px solid #ccc;
-    }
+.ql-toolbar .ql-formats {
+    position: relative;
+    margin-right: 12px;
+    padding-right: 12px;
+    border-right: 1px solid #ccc;
+}
 
-    .ql-toolbar .ql-formats:last-child {
-        border-right: none;
-        margin-right: 0;
-        padding-right: 0;
-    }
+.ql-toolbar .ql-formats:last-child {
+    border-right: none;
+    margin-right: 0;
+    padding-right: 0;
+}
 </style>
 
 <body>

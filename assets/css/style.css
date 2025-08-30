@@ -1,12 +1,12 @@
 :root {
-    --primary: #218A70;
-    --primary-hover: #1C6B64;
+    --primary: #FFCA28;
+    --primary-hover: #e8b419;
     --secondary: #707070;
     --secondary-hover: #5a5a5a;
     --info: #39A5D6;
     --info-hover: #2585B0;
-    --success: #4F9355;
-    --success-hover: #407845;
+    --success: #2E66FF;
+    --success-hover: #2E66FF;
     --warning: #FFCA28;
     /* Warna kuning dari desain baru */
     --warning-hover: #FFCA28;
