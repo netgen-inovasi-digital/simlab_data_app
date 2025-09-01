@@ -18,727 +18,725 @@
 }
 
 .bg-primary {
-    background-color: var(--primary) !important;
+  background-color: var(--primary) !important;
 }
 
 .bg-secondary {
-    background-color: var(--secondary) !important;
+  background-color: var(--secondary) !important;
 }
 
 .bg-info {
-    background-color: var(--info) !important;
+  background-color: var(--info) !important;
 }
 
 .bg-success {
-    background-color: var(--success) !important;
+  background-color: var(--success) !important;
 }
 
 .bg-warning {
-    background-color: var(--warning) !important;
+  background-color: var(--warning) !important;
 }
 
 .bg-danger {
-    background-color: var(--danger) !important;
+  background-color: var(--danger) !important;
 }
 
 .bg-yellow-light {
-    background-color: var(--yellow-light) !important;
+  background-color: var(--yellow-light) !important;
 }
 
 .text-primary {
-    color: var(--primary) !important;
+  color: var(--primary) !important;
 }
 
 .text-secondary {
-    color: var(--secondary) !important;
+  color: var(--secondary) !important;
 }
 
 .text-info {
-    color: var(--info) !important;
+  color: var(--info) !important;
 }
 
 .text-success {
-    color: var(--success) !important;
+  color: var(--success) !important;
 }
 
 .text-warning {
-    color: var(--warning) !important;
+  color: var(--warning) !important;
 }
 
 .text-danger {
-    color: var(--danger) !important;
+  color: var(--danger) !important;
 }
 
 .btn {
-    border-radius: 50px !important;
+  border-radius: 50px !important;
 }
 
 .btn-primary,
 .btn-primary:active {
-    background-color: var(--primary) !important;
-    color: var(--text-light);
-    border: none;
+  background-color: var(--primary) !important;
+  color: var(--text-light);
+  border: none;
 }
 
 .btn-primary:hover {
-    background-color: var(--primary-hover) !important;
+  background-color: var(--primary-hover) !important;
 }
 
 .btn-secondary,
 .btn-secondary:active {
-    background-color: var(--secondary) !important;
-    color: var(--text-light);
-    border: none;
+  background-color: var(--secondary) !important;
+  color: var(--text-light);
+  border: none;
 }
 
 .btn-secondary:hover {
-    background-color: var(--secondary-hover) !important;
+  background-color: var(--secondary-hover) !important;
 }
 
 .btn-info,
 .btn-info:active {
-    background-color: var(--info) !important;
-    color: var(--text-light);
+  background-color: var(--info) !important;
+  color: var(--text-light);
 }
 
 .btn-info:hover {
-    background-color: var(--info-hover) !important;
+  background-color: var(--info-hover) !important;
 }
 
 .btn-success,
 .btn-success:active {
-    background-color: var(--success) !important;
-    color: var(--text-light);
+  background-color: var(--success) !important;
+  color: var(--text-light);
 }
 
 .btn-success:hover {
-    background-color: var(--success-hover) !important;
+  background-color: var(--success-hover) !important;
 }
 
 .btn-warning,
 .btn-warning:active {
-    background-color: var(--warning) !important;
-    color: var(--text-dark);
+  background-color: var(--warning) !important;
+  color: var(--text-dark);
 }
 
 .btn-warning:hover {
-    background-color: var(--warning-hover) !important;
+  background-color: var(--warning-hover) !important;
 }
 
 .btn-danger,
 .btn-danger:active {
-    background-color: var(--danger) !important;
-    color: var(--text-light);
+  background-color: var(--danger) !important;
+  color: var(--text-light);
 }
 
 .btn-danger:hover {
-    background-color: var(--danger-hover) !important;
+  background-color: var(--danger-hover) !important;
 }
 
 .btn-action {
-    padding-left: 5px;
-    padding-right: 5px;
-    cursor: pointer;
-    border: 1px solid #b7b7b7;
+  padding-left: 5px;
+  padding-right: 5px;
+  cursor: pointer;
+  border: 1px solid #b7b7b7;
 }
 
 .badge {
-    font-size: 0.85rem !important;
+  font-size: 0.85rem !important;
 }
 
 .form-select,
 .form-control {
-    font-size: 0.9rem !important;
+  font-size: 0.9rem !important;
 }
 
 .date-format {
-    font-family: 'Segoe UI', sans-serif;
-    letter-spacing: 0.3px;
+  font-family: "Segoe UI", sans-serif;
+  letter-spacing: 0.3px;
 }
 
 html,
 body {
-    height: 100%;
-    margin: 0;
+  height: 100%;
+  margin: 0;
 }
 
 body {
-    font-family: 'Quicksand', sans-serif;
-    display: flex;
-    flex-direction: column;
-    overflow-x: hidden;
-    font-size: 0.95rem;
-    background-color: #f7f7f7;
+  font-family: "Quicksand", sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  font-size: 0.95rem;
+  background-color: #f7f7f7;
 }
 
 a {
-    text-decoration: none;
+  text-decoration: none;
 }
 
 .navbar {
-    position: fixed;
-    top: 0;
-    left: 260px;
-    right: 0;
-    z-index: 1030;
-    height: 56px;
-    transition: left 0.3s ease-in-out;
+  position: fixed;
+  top: 0;
+  left: 260px;
+  right: 0;
+  z-index: 1030;
+  height: 56px;
+  transition: left 0.3s ease-in-out;
 }
 
 .navbar.fullwidth {
-    left: 0;
+  left: 0;
 }
 
 .navbar-light {
-    background-color: white;
-    box-shadow: 0px 4px 30px 10px rgba(0, 0, 0, 0.02);
+  background-color: white;
+  box-shadow: 0px 4px 30px 10px rgba(0, 0, 0, 0.02);
 }
 
 .container-fluid {
-    margin-left: 260px;
-    margin-top: 56px;
-    padding-top: 20px;
-    transition: margin-left 0.3s ease-in-out;
-    transition: margin-left 0.3s ease-in-out;
-    max-width: calc(100% - 260px);
-    padding-right: 0 !important;
+  margin-left: 260px;
+  margin-top: 56px;
+  padding-top: 20px;
+  transition: margin-left 0.3s ease-in-out;
+  transition: margin-left 0.3s ease-in-out;
+  max-width: calc(100% - 260px);
+  padding-right: 0 !important;
 }
 
 .container-fluid.content-fullwidth {
-    margin-left: 0;
-    margin-right: 0;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 /* === PERUBAHAN SIDEBAR DIMULAI DARI SINI === */
 
 .sidebar {
-    width: 260px;
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 1040;
-    background-color: #ffffff;
-    /* Mengubah latar belakang menjadi putih */
-    border-right: 1px solid #e9ecef;
-    /* Menambah garis batas kanan */
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+  width: 260px;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1040;
+  background-color: #ffffff;
+  /* Mengubah latar belakang menjadi putih */
+  border-right: 1px solid #e9ecef;
+  /* Menambah garis batas kanan */
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .sidebar .nav {
-    overflow-y: auto;
-    position: relative;
-    padding: 1rem;
+  overflow-y: auto;
+  position: relative;
+  padding: 1rem;
 }
 
 .sidebar-hide {
-    transform: translateX(-100%);
+  transform: translateX(-100%);
 }
 
 .sidebar-header {
-    align-items: center;
-    padding-top: 0.8rem;
-    padding-bottom: 0.8rem;
-    background-color: #ffffff;
-    text-align: left !important;
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-    display: flex;
-    gap: 15px;
-    border-bottom: 1px solid #e9ecef;
-    /* Garis pemisah bawah header */
+  align-items: center;
+  padding-top: 0.8rem;
+  padding-bottom: 0.8rem;
+  background-color: #ffffff;
+  text-align: left !important;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  display: flex;
+  gap: 15px;
+  border-bottom: 1px solid #e9ecef;
+  /* Garis pemisah bawah header */
 }
 
 .sidebar-header img {
-    width: 45px;
-    height: auto;
-    margin-bottom: 0;
-    border-radius: 7px;
-    flex-shrink: 0;
-    /* Mencegah logo mengecil */
+  width: 45px;
+  height: auto;
+  margin-bottom: 0;
+  border-radius: 7px;
+  flex-shrink: 0;
+  /* Mencegah logo mengecil */
 }
 
 /* CSS Baru untuk Teks Berjalan (Marquee) */
 .logo-text-wrapper {
-    flex-grow: 1;
-    overflow: hidden;
-    white-space: nowrap;
+  flex-grow: 1;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .sidebar-header h2 {
-    display: inline-block;
-    color: var(--text-dark);
-    font-size: 1.8rem;
-    font-weight: bold;
-    margin: 0;
-    padding-left: 100%;
-    /* Mulai dari luar layar kanan */
-    animation: scroll-left 10s linear infinite;
+  display: inline-block;
+  color: var(--text-dark);
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin: 0;
+  padding-left: 100%;
+  /* Mulai dari luar layar kanan */
+  animation: scroll-left 10s linear infinite;
 }
 
 /* Keyframe untuk animasi scroll */
 @keyframes scroll-left {
-    0% {
-        transform: translateX(0%);
-    }
+  0% {
+    transform: translateX(0%);
+  }
 
-    100% {
-        transform: translateX(-100%);
-    }
+  100% {
+    transform: translateX(-100%);
+  }
 }
 
 .sidebar .nav-link {
-    color: var(--text-dark);
-    /* Warna teks link menjadi gelap */
-    font-weight: 500;
-    margin-bottom: 10px;
-    border-radius: 12px;
-    /* Membuat sudut lebih bulat */
+  color: var(--text-dark);
+  /* Warna teks link menjadi gelap */
+  font-weight: 500;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  /* Membuat sudut lebih bulat */
 }
 
 .sidebar .nav-link.active {
-    background-color: var(--warning);
-    /* Warna background aktif menjadi kuning */
-    color: #ffffff;
-    /* Warna teks aktif menjadi putih */
+  background-color: var(--warning);
+  /* Warna background aktif menjadi kuning */
+  color: #ffffff;
+  /* Warna teks aktif menjadi putih */
 }
 
 .sidebar .nav-link:hover {
-    background-color: #f8f9fa;
-    /* Warna hover abu-abu muda */
-    color: var(--text-dark);
-    /* Pastikan teks tetap gelap saat hover */
+  background-color: #f8f9fa;
+  /* Warna hover abu-abu muda */
+  color: var(--text-dark);
+  /* Pastikan teks tetap gelap saat hover */
 }
 
 .sidebar .nav-link.active:hover {
-    background-color: var(--warning-hover);
-    /* Warna hover kuning lebih gelap */
-    cursor: default;
+  background-color: var(--warning-hover);
+  /* Warna hover kuning lebih gelap */
+  cursor: default;
 }
 
 /* Mengubah warna icon di dalam link */
 .sidebar .nav-link i {
-    color: var(--text-dark);
+  color: var(--text-dark);
 }
 
 /* Mengubah warna icon saat link aktif */
 .sidebar .nav-link.active i {
-    color: #ffffff;
+  color: #ffffff;
 }
 
 /* === AKHIR PERUBAHAN SIDEBAR === */
 
-
 .card .card-title {
-    font-size: 1.15rem;
-    font-weight: 500;
+  font-size: 1.15rem;
+  font-weight: 500;
 }
 
 .board {
-    background: linear-gradient(-135deg, #F0F0F0, #FFFFFF);
-    border-radius: 10px;
-    padding: 15px;
-    box-shadow: 1px 1px 10px 3px rgba(0, 0, 0, 0.02);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+  background: linear-gradient(-135deg, #f0f0f0, #ffffff);
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 1px 1px 10px 3px rgba(0, 0, 0, 0.02);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
 .board:hover {
-    transform: translateY(-2px);
-    background-color: white;
+  transform: translateY(-2px);
+  background-color: white;
 }
 
 .board-left {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 .board-right svg {
-    width: 80px;
-    height: 80px;
+  width: 80px;
+  height: 80px;
 }
 
 .board .label {
-    font-size: 18px;
-    color: #4A4A4A;
-    margin: 0;
+  font-size: 18px;
+  color: #4a4a4a;
+  margin: 0;
 }
 
 .board .value {
-    font-size: 35px;
-    font-weight: bold;
-    margin: 4px 0 0;
-    color: #4A4A4A;
+  font-size: 35px;
+  font-weight: bold;
+  margin: 4px 0 0;
+  color: #4a4a4a;
 }
 
 .content-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 1040;
-    background: rgba(0, 0, 0, 0.5);
-    display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
 }
 
 .content-overlay.show {
-    display: block;
+  display: block;
 }
 
 .container-fluid {
-    margin-left: 260px;
-    transition: margin-left 0.3s ease-in-out;
-    padding-left: 0 !important;
+  margin-left: 260px;
+  transition: margin-left 0.3s ease-in-out;
+  padding-left: 0 !important;
 }
 
 .container-fluid.content-fullwidth {
-    margin-left: 0;
-    padding-left: 0 !important;
-    max-width: 100%;
+  margin-left: 0;
+  padding-left: 0 !important;
+  max-width: 100%;
 }
 
 @media (max-width: 767.98px) {
-    .navbar {
-        left: 0;
-        width: 100%;
-        transition: none;
-    }
+  .navbar {
+    left: 0;
+    width: 100%;
+    transition: none;
+  }
 
-    .container-fluid {
-        margin-left: 0 !important;
-        max-width: 100%;
-    }
+  .container-fluid {
+    margin-left: 0 !important;
+    max-width: 100%;
+  }
 
-    .sidebar {
-        transform: translateX(-100%);
-    }
+  .sidebar {
+    transform: translateX(-100%);
+  }
 
-    .sidebar-show {
-        transform: translateX(0);
-    }
+  .sidebar-show {
+    transform: translateX(0);
+  }
 
-    .container-fluid {
-        margin-left: 0;
-    }
+  .container-fluid {
+    margin-left: 0;
+  }
 
-    .content-overlay {
-        display: none;
-    }
+  .content-overlay {
+    display: none;
+  }
 
-    .content-overlay.show {
-        display: block;
-    }
-
+  .content-overlay.show {
+    display: block;
+  }
 }
 
 @media (max-width: 991.98px) {
-    .board {
-        margin: 0 20px 20px 20px;
-    }
+  .board {
+    margin: 0 20px 20px 20px;
+  }
 }
 
 .sidebar .sidebar-footer {
-    position: absolute;
-    bottom: 10px;
-    left: 0;
-    width: 100%;
-    color: #888;
-    /* Warna footer menjadi abu-abu */
-    text-align: center;
-    font-size: 0.9rem;
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  width: 100%;
+  color: #888;
+  /* Warna footer menjadi abu-abu */
+  text-align: center;
+  font-size: 0.9rem;
 }
 
 .submenu {
-    padding-left: 1.5rem;
-    display: none;
+  padding-left: 1.5rem;
+  display: none;
 }
 
 .submenu.show {
-    display: block;
-    border-top: 1px solid #ccc;
-    border-bottom: 1px solid #ccc;
+  display: block;
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
 }
 
 .caret {
-    float: right;
-    margin-left: auto;
+  float: right;
+  margin-left: auto;
 }
 
 .submenu {
-    padding-left: 1.5rem;
-    display: none;
-    list-style-type: none;
+  padding-left: 1.5rem;
+  display: none;
+  list-style-type: none;
 }
 
 .submenu li {
-    margin: 0;
+  margin: 0;
 }
 
 .nav-link i {
-    margin-right: 0.5rem;
+  margin-right: 0.5rem;
 }
 
 .divider {
-    color: #ccc;
+  color: #ccc;
 }
 
 table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.93rem;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.93rem;
 }
 
 th {
-    padding: 8px;
-    padding-left: 5px;
-    text-align: left;
-    cursor: pointer;
-    position: relative;
+  padding: 8px;
+  padding-left: 5px;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
 }
 
 th:hover {
-    background-color: #f0f0f0;
+  background-color: #f0f0f0;
 }
 
 th.action {
-    width: 12%;
+  width: 12%;
 }
 
 td {
-    padding: 8px;
-    text-align: left;
+  padding: 8px;
+  text-align: left;
 }
 
 @media (max-width: 767.98px) {
-    th.action {
-        width: 23%;
-    }
+  th.action {
+    width: 23%;
+  }
 
-    th,
-    td {
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-    }
+  th,
+  td {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
 }
 
 table.default th,
 table.default td {
-    border: none;
+  border: none;
 }
 
 table.border th,
 table.border td {
-    border: 1px solid #ddd;
+  border: 1px solid #ddd;
 }
 
 table.striped tr:nth-child(even) {
-    background-color: #f2f2f2;
+  background-color: #f2f2f2;
 }
 
 table.hover tr:hover {
-    background-color: #ddd;
+  background-color: #ddd;
 }
 
 table.border.striped tr:nth-child(even) {
-    background-color: #f2f2f2;
+  background-color: #f2f2f2;
 }
 
 table.border-top-bottom th,
 table.border-top-bottom td {
-    border-top: 1px solid #ddd;
-    border-bottom: 1px solid #ddd;
+  border-top: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
 }
 
 .sort-icon {
-    margin-left: 10px;
-    line-height: inherit;
-    color: #ccc;
+  margin-left: 10px;
+  line-height: inherit;
+  color: #ccc;
 }
 
 #search-input {
-    float: right;
+  float: right;
 }
 
 .paging {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 20px;
-    overflow-x: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+  overflow-x: auto;
 }
 
 .paging .active {
-    font-weight: bold;
-    background-color: var(--primary);
-    color: white;
-    border-radius: 4px;
+  font-weight: bold;
+  background-color: var(--primary);
+  color: white;
+  border-radius: 4px;
 }
 
 .page-buttons {
-    display: flex;
-    margin: 0 10px;
+  display: flex;
+  margin: 0 10px;
 }
 
 .paging button {
-    /* margin: 0 3px; */
-    cursor: pointer;
+  /* margin: 0 3px; */
+  cursor: pointer;
 }
 
 .paging button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .page-buttons .dots {
-    display: inline-block;
-    vertical-align: bottom;
-    padding: 0 5px;
-    font-size: 14px;
-    line-height: 30px;
+  display: inline-block;
+  vertical-align: bottom;
+  padding: 0 5px;
+  font-size: 14px;
+  line-height: 30px;
 }
 
 @media (max-width: 767.98px) {
-    th:not([show]) {
-        display: none;
-    }
+  th:not([show]) {
+    display: none;
+  }
 
-    .treeview-toggle {
-        display: table-cell;
-        cursor: pointer;
-        font-weight: bold;
-    }
+  .treeview-toggle {
+    display: table-cell;
+    cursor: pointer;
+    font-weight: bold;
+  }
 
-    .treeview-row {
-        display: none;
-    }
+  .treeview-row {
+    display: none;
+  }
 
-    .treeview-icon {
-        cursor: pointer;
-        font-weight: bold;
-        margin-right: 8px;
-    }
+  .treeview-icon {
+    cursor: pointer;
+    font-weight: bold;
+    margin-right: 8px;
+  }
 }
 
 /* Untuk tampilan desktop atau lebih besar dari 768px */
 @media (min-width: 768px) {
-    .treeview-toggle {
-        display: none;
-    }
+  .treeview-toggle {
+    display: none;
+  }
 
-    .treeview-row,
-    .treeview-icon {
-        display: none !important;
-    }
+  .treeview-row,
+  .treeview-icon {
+    display: none !important;
+  }
 }
 
 .sayalert .icon {
-    font-size: 45px;
-    /* Ukuran ikon */
+  font-size: 45px;
+  /* Ukuran ikon */
 }
 
 .sayalert .button-container {
-    display: flex;
-    flex-direction: column;
-    /* Mengatur tombol secara vertikal */
-    align-items: stretch;
-    /* Menjaga tombol lebar penuh */
-    height: auto;
-    /* Memastikan tombol mengisi tinggi yang tersedia */
-    border-left: 2px solid #dee2e6;
+  display: flex;
+  flex-direction: column;
+  /* Mengatur tombol secara vertikal */
+  align-items: stretch;
+  /* Menjaga tombol lebar penuh */
+  height: auto;
+  /* Memastikan tombol mengisi tinggi yang tersedia */
+  border-left: 2px solid #dee2e6;
 }
 
 .sayalert .button-divider {
-    border-bottom: 1px solid #dee2e6;
-    /* Border antara tombol */
-    margin: 10px 0;
-    /* Jarak vertikal antara tombol dan border */
+  border-bottom: 1px solid #dee2e6;
+  /* Border antara tombol */
+  margin: 10px 0;
+  /* Jarak vertikal antara tombol dan border */
 }
 
 .sayalert .alert-title {
-    font-weight: bold;
-    margin-bottom: 5px;
-    font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 5px;
+  font-size: 1.2rem;
 }
 
 .sayalert .alert-subtitle {
-    color: #6c757d;
-    font-size: 1rem;
+  color: #6c757d;
+  font-size: 1rem;
 }
 
 /* Overlay Style */
 #loadingOverlay {
-    position: fixed;
-    inset: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1050;
-    /* sama dengan backdrop modal */
-    opacity: 1;
-    transition: opacity 0.3s ease;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  /* sama dengan backdrop modal */
+  opacity: 1;
+  transition: opacity 0.3s ease;
 }
 
 #loadingOverlay.fade-out {
-    opacity: 0;
+  opacity: 0;
 }
 
 /* Spinner Style */
 .spinner {
-    border: 8px solid #f3f3f3;
-    border-top: 8px solid #ccc;
-    border-radius: 50%;
-    width: 60px;
-    height: 60px;
-    animation: spin 1s linear infinite;
+  border: 8px solid #f3f3f3;
+  border-top: 8px solid #ccc;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
 }
 
 /* Spinner Style */
 .spinner-table {
-    border: 8px solid #f3f3f3;
-    border-top: 8px solid #ccc;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    margin-right: 15px;
-    vertical-align: middle;
-    display: inline-flex;
-    animation: spin 1s linear infinite;
+  border: 8px solid #f3f3f3;
+  border-top: 8px solid #ccc;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  margin-right: 15px;
+  vertical-align: middle;
+  display: inline-flex;
+  animation: spin 1s linear infinite;
 }
 
 /* Animasi berputar */
 @keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
+  0% {
+    transform: rotate(0deg);
+  }
 
-    100% {
-        transform: rotate(360deg);
-    }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 ::-webkit-scrollbar {
-    width: 8px;
+  width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-    background: transparent;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.5);
-    border-radius: 10px;
-    border: 2px solid transparent;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
+  border: 2px solid transparent;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.5);
 }
 
 * {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 }
