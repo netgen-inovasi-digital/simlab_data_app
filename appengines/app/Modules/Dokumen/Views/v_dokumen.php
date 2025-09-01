@@ -113,7 +113,7 @@ function aksi($id, $is_folder)
   ' : '';
 
   $btnTambah = $is_folder ? '
-    <span class="text-dark" title="Tambah" onclick="editItemDokumen(event)">
+    <span class="text-dark" title="Tambah" onclick="tambahItemFile(event)">
       <i class="bi bi-plus-circle"></i>
     </span>
     <label class="divider">|</label>
@@ -136,6 +136,31 @@ function aksi($id, $is_folder)
 <!-- JavaScript di bawah ini tidak perlu diubah, biarkan seperti aslinya -->
 <script>
   addAction();
+
+  function addActionFile() {
+    $('#addFile').on('click', () => {
+      const form = document.getElementById('myform');
+      const errorDivs = form.querySelectorAll('.error');
+      errorDivs.forEach(errorDiv => {
+        errorDiv.remove();
+      });
+      form.reset();
+      // Kosongkan input file (jika ada)
+      const fileInputs = document.querySelectorAll('input[type="file"]');
+      fileInputs.forEach(fileInput => fileInput.value = '');
+      // Kosongkan selectSearch (jika ada)
+      document.querySelectorAll('select').forEach(el => {
+        if (el.id != "items-per-page") el.value = "";
+        const wrapper = el.parentElement.querySelector('.selected');
+        if (wrapper) wrapper.textContent = "-- pilih data --";
+      });
+      document.querySelector('[name="id"]').value = '';
+      $('.modal-title').text('Tambah Data');
+      $('#modalForm').modal('show');
+    })
+    $('#myform').submit();
+  }
+
   var draggedItem = null;
   var dragStartX = 0;
   var dokumenMenu = document.getElementById("dokumen");
@@ -418,12 +443,49 @@ function aksi($id, $is_folder)
     }
   }
 
+  function tambahItemFile(event) {
+    var closest = event.target.closest('div');
+    if (closest) {
+
+      $('.modal-title-file').text('Tambah File');
+      $('#modalFormFile').modal('show');
+      resetOpsiSumber();
+      const inputNama = document.querySelector('[name="nama"]');
+      if (inputNama) inputNama.value = data.nama || '';
+
+      var selectSumber = document.querySelector('[name="sumber_menu"]');
+      var selectHalaman = document.querySelector('[name="url_halaman"]');
+      var selectBerita = document.querySelector('[name="url_berita"]');
+      var inputUrlManual = document.querySelector('[name="url_manual"]');
+      var inputNamaManual = document.querySelector('[name="nama_menu_url"]');
+
+      if (data.url?.startsWith('hal/')) {
+        if (selectSumber) selectSumber.value = 'halaman';
+        if (selectHalaman) selectHalaman.value = data.url.replace('hal/', '');
+        document.querySelector('#opsiHalaman')?.classList.remove('d-none');
+      } else if (data.url?.startsWith('berita/')) {
+        if (selectSumber) selectSumber.value = 'berita';
+        if (selectBerita) selectBerita.value = data.url.replace('berita/', '');
+        document.querySelector('#opsiBerita')?.classList.remove('d-none');
+      } else {
+        if (selectSumber) selectSumber.value = 'manual';
+        if (inputUrlManual) inputUrlManual.value = data.url || '';
+        if (inputNamaManual) inputNamaManual.value = data.nama || '';
+        document.querySelector('#opsiUrl')?.classList.remove('d-none');
+        document.querySelector('#opsiUrlInput')?.classList.remove('d-none');
+      }
+
+      document.querySelector('[name="id"]').value = data.id || '';
+    }
+  }
+
   var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
   tooltipTriggerList.forEach(function(tooltipTriggerEl) {
     new bootstrap.Tooltip(tooltipTriggerEl)
   })
 </script>
 
+<!-- Modal Folder -->
 <div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
   aria-labelledby="staticBackdropLabel" aria-hidden="true">
   <div class="modal-dialog" role="document" style="margin: 2% auto">
@@ -507,6 +569,108 @@ function aksi($id, $is_folder)
         <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>
           Batal</button>
         <button class="btn btn-success" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
+      </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- Modal File -->
+<div class="modal fade" id="modalFormFile" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document" style="margin: 2% auto">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title-file">Modal title</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+        </button>
+      </div>
+      <?php echo form_open('berkas/submit', array('id' => 'myform', 'novalidate' => '')) ?>
+      <div class="modal-body">
+        <input type="hidden" value="" name="id" />
+        <input name="slug" type="text" class="form-control bg-light" value="" hidden>
+
+        <div class="row mb-2">
+          <div class="col">
+            <label class="col-md-3 col-form-label">Judul Berkas</label>
+            <input name="title" type="text" class="form-control" required placeholder="Masukkan judul berita">
+          </div>
+        </div>
+        <div class="row mb-2">
+          <div class="col">
+            <label class="col-md-6 col-form-label">No. Dokumen</label>
+            <input name="nomor_dokumen" type="text" class="form-control bg-light" placeholder="Masukkan nomor dokumen" required>
+          </div>
+          <div class="col">
+            <label class="col-md-3 col-form-label">Revisi</label>
+            <input name="revisi" type="number" class="form-control bg-light" placeholder="Masukkan revisi" required>
+          </div>
+        </div>
+        <div class="row mb-2">
+          <div class="col">
+            <label class="col-md-3 col-form-label">File</label>
+            <input id="berkas" name="berkas" type="file" class="form-control" accept=".pdf,.doc,.docx">
+            <small class="text-muted" id="ketBerkas" style="font-size: 11px;">Upload maks. 100MB</small>
+            <small class="text-danger d-none" id="errorMsg">Hanya file docs/pdf yang diperbolehkan!</small>
+          </div>
+          <div class="col">
+            <label class="col-md-3 col-form-label">Tanggal</label>
+            <input name="tanggal" id="tanggal-input" type="date" class="form-control"
+              value="<?= esc(date('Y-m-d')) ?>" required>
+          </div>
+          <div class="col">
+            <label class="col-md-3 col-form-label">Author</label>
+            <input name="nama" type="text" value="<?= $user->nama ?>" class="form-control bg-light" required readonly>
+            <input name="user_id" type="text" value="<?= $user->id_user ?>" class="form-control" required hidden>
+          </div>
+        </div>
+
+        <div class="row mb-2">
+          <div class="col">
+            <label class="col-md col-form-label">Kategori</label>
+            <div class="d-flex gap-2 align-items-start">
+              <select id="kategori_id" name="kategori_id" class="form-select" required style="max-width: 150px;">
+                <option value="">-- pilih data --</option>
+                <?php foreach ($categories as $kategori): ?>
+                  <option value="<?= $kategori->id_categories ?>">
+                    <?= esc($kategori->nama) ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+              <button type="button" class="btn btn-outline-secondary" id="btn-kategori-aksi">Tambah</button>
+            </div>
+            <!-- Form tambah kategori akan muncul di sini -->
+            <div id="form-kategori-baru" class="mt-2 d-none">
+              <div class="input-group" style="max-width: 400px;">
+                <input type="text" class="form-control" id="input-kategori-baru" placeholder="Nama kategori baru">
+                <button class="btn btn-success ms-2" type="button" id="btn-simpan-kategori">Simpan</button>
+                <button class="btn btn-danger ms-2" type="button" id="btn-batal-kategori">Batal</button>
+              </div>
+            </div>
+            <div class="d-flex gap-2 align-items-start mt-2" id="form-edit-kategori" style="display: none;">
+              <input type="text" class="form-control" id="input-edit-kategori" style="max-width: 200px;" placeholder="Edit nama kategori">
+              <button type="button" class="btn btn-success" id="btn-update-kategori">Update</button>
+              <button type="button" class="btn btn-danger" id="btn-delete-kategori">Hapus</button>
+            </div>
+          </div>
+          <div class="col">
+            <div class="mb-3">
+              <label class="form-label d-block">Status</label>
+              <div class="btn-group" role="group" aria-label="Status pilihan">
+                <input type="radio" class="btn-check" name="status" id="status-draft" value="draft" autocomplete="off" checked>
+                <label class="btn btn-outline-secondary me-1" for="status-draft">Draft</label>
+
+                <input type="radio" class="btn-check" name="status" id="status-publish" value="publish" autocomplete="off">
+                <label class="btn btn-outline-success" for="status-publish">Publish</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Batal</button>
+        <button class="btn btn-success" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
       </div>
       </form>
     </div>
