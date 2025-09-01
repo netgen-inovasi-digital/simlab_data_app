@@ -1,20 +1,20 @@
 :root {
-  --primary: #218a70;
-  --primary-hover: #1c6b64;
-  --secondary: #707070;
-  --secondary-hover: #5a5a5a;
-  --info: #39a5d6;
-  --info-hover: #2585b0;
-  --success: #4f9355;
-  --success-hover: #407845;
-  --warning: #ffca28;
-  /* Warna kuning dari desain baru */
-  --warning-hover: #ffca28;
-  --danger: #dc3a3a;
-  --danger-hover: #b32a2a;
-  --text-light: #ffffff;
-  --text-dark: #4a4a4a;
-  --yellow-light: #d8e8ee;
+    --primary: #FFCA28;
+    --primary-hover: #e8b419;
+    --secondary: #707070;
+    --secondary-hover: #5a5a5a;
+    --info: #39A5D6;
+    --info-hover: #2585B0;
+    --success: #2E66FF;
+    --success-hover: #2E66FF;
+    --warning: #FFCA28;
+    /* Warna kuning dari desain baru */
+    --warning-hover: #FFCA28;
+    --danger: #DC3A3A;
+    --danger-hover: #B32A2A;
+    --text-light: #ffffff;
+    --text-dark: #4A4A4A;
+    --yellow-light: #D8E8EE;
 }
 
 .bg-primary {
