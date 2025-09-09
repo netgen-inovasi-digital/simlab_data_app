@@ -542,50 +542,6 @@
                   <i class="bi bi-plus-circle-dotted"></i> SubFolder
                 </button>
               </div>
-
-
-
-
-              <!-- <div class="row mb-2 d-none" id="opsiHalaman">
-                <label class="col-md-4 col-form-label">Pilih Halaman</label>
-                <div class="col">
-                  <select name="url_halaman" class="form-select">
-                    <option value="">-- pilih data --</option>
-                    <?php foreach ($getPages as $pages): ?>
-                      <option value="<?= $pages->slug ?>" data-nama="<?= htmlspecialchars($pages->title) ?>">
-                        <?= $pages->title ?> </option>
-                    <?php endforeach ?>
-                  </select>
-                </div>
-              </div>
-
-              <div class="row mb-2 d-none" id="opsiBerita">
-                <label class="col-md-4 col-form-label">Pilih Berita</label>
-                <div class="col">
-                  <select name="url_berita" class="form-select">
-                    <option value="">-- pilih data --</option>
-                    <?php foreach ($getPosts as $post): ?>
-                      <option value="<?= $post->slug ?>" data-nama="<?= htmlspecialchars($post->title) ?>">
-                        <?= $post->title ?></option>
-                    <?php endforeach ?>
-                  </select>
-                </div>
-              </div>
-              <div class="row mb-2 d-none" id="opsiUrl">
-                <label class="col-md-4 col-form-label">Nama Menu</label>
-                <div class="col">
-                  <input name="nama_menu_url" type="text" class="form-control" placeholder="Contoh: Youtube">
-                </div>
-              </div>
-
-              <div class="row mb-2 d-none" id="opsiUrlInput">
-                <label class="col-md-4 col-form-label">URL</label>
-                <div class="col">
-                  <input name="url_manual" type="text" class="form-control" placeholder="https://youtube.com">
-                </div>
-              </div> -->
-
-
             </div>
             <div class="modal-footer">
               <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>
