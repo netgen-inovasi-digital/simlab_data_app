@@ -96,7 +96,7 @@
     <!-- Main Content -->
     <div class="container-fluid">
         <nav class="navbar navbar-light bg-light">
-            <span class="navbar-toggler" id="sidebarToggle">
+            <span class="navbar-toggler ms-4" id="sidebarToggle">
                 <span class="navbar-toggler-icon"></span>
             </span>
             <div class="me-4 d-flex">

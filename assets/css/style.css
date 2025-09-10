@@ -7,6 +7,10 @@
     --info-hover: #2585B0;
     --success: #2E66FF;
     --success-hover: #2E66FF;
+    --true-success: #198754;
+    /* Warna hijau baru untuk sukses */
+    --true-success-hover: #157347;
+    /* Warna hover hijau baru */
     --warning: #FFCA28;
     /* Warna kuning dari desain baru */
     --warning-hover: #FFCA28;
