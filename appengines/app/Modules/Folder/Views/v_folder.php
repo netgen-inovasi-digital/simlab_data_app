@@ -284,10 +284,27 @@
             }
 
 
+            // Fungsi merapikan anak folder
+            function rapikanAnakFolder(folderEl) {
+              const folderLevel = parseInt(folderEl.dataset.count) || 0;
+              let nextEl = folderEl.nextSibling;
+
+              while (nextEl) {
+                const lvl = parseInt(nextEl.dataset.count) || 0;
+                if (lvl <= folderLevel) break; // keluar kalau sudah bukan anak folder
+
+                // update count dan margin
+                nextEl.dataset.count = folderLevel + 1;
+                nextEl.style.marginLeft = (folderLevel + 1) * 30 + "px";
+
+                nextEl = nextEl.nextSibling;
+              }
+            }
+
+            // Folder
             if (draggedItem.dataset.type === "folder") {
               // cegah folder tepat di bawah file
               if (previousItem && previousItem.dataset.type === "file") {
-                // cari folder sebelumnya
                 let prevFolder = null;
                 for (let i = currentIndex - 1; i >= 0; i--) {
                   const el = folderMenu.children[i];
@@ -306,13 +323,17 @@
               } else {
                 folderMenu.insertBefore(draggedItem, placeholder);
               }
+
+              // rapikan semua anak folder agar rapi
+              rapikanAnakFolder(draggedItem);
             }
 
-            // update indent
+            // update indent folder yang dipindahkan
             item.dataset.count = count;
             item.style.marginLeft = (count * 30) + "px";
 
-            placeholder.remove();
+            // hapus placeholder
+            if (placeholder.parentNode) placeholder.remove();
 
             updateKodeFolder();
             saveAll();
@@ -373,17 +394,19 @@
         }
 
         function updateKodeFolder() {
-          var items = [...document.querySelectorAll(".folder-item, .file-item")];
+          const items = [...document.querySelectorAll(".folder-item, .file-item")];
 
           items.forEach((item, index) => {
-            var level = parseInt(item.dataset.count) || 0;
+            const level = parseInt(item.dataset.count) || 0;
 
-            // Cari parent berdasarkan item sebelumnya yang level lebih rendah
+            // Cari parent sebelumnya yang level lebih rendah **dan type folder**
             let parentId = 0;
             for (let i = index - 1; i >= 0; i--) {
-              let prev = items[i];
-              let prevLevel = parseInt(prev.dataset.count) || 0;
-              if (prevLevel < level) {
+              const prev = items[i];
+              const prevLevel = parseInt(prev.dataset.count) || 0;
+
+              // Hanya folder yang bisa jadi parent
+              if (prevLevel < level && prev.dataset.type === "folder") {
                 parentId = prev.id; // id asli parent
                 break;
               }
@@ -393,6 +416,7 @@
             item.dataset.parent = parentId || 0;
           });
         }
+
         // Inisialisasi
         document.querySelectorAll(".folder-item, .file-item").forEach(addDragEvents);
         updateKodeFolder();

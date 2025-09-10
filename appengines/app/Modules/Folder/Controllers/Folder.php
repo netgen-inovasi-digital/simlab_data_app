@@ -142,26 +142,40 @@ class Folder extends BaseController
 
   function updated()
   {
-    $data = [];
     $items = $this->request->getPost('items');
 
+    $folderData = [];
+    $fileData   = [];
+
     foreach ($items as $item) {
-      $childId = $this->encrypter->decrypt(hex2bin($item['id']));
+      $type = $item['type'];
+      $id   = $this->encrypter->decrypt(hex2bin($item['id']));
+      $parentId = !empty($item['parent_id']) ? $this->encrypter->decrypt(hex2bin($item['parent_id'])) : null;
+      $sortOrder = $item['sort_order'];
 
-      $parentId = !empty($item['parent_id'])
-        ? $this->encrypter->decrypt(hex2bin($item['parent_id']))
-        : null;
-
-      $data[] = [
-        'child_id'   => $childId,
-        'parent_id'  => $parentId,
-        'sort_order' => $item['sort_order'],
-      ];
+      if ($type === 'folder') {
+        $folderData[] = [
+          'child_id'   => $id,
+          'parent_id'  => $parentId,
+          'sort_order' => $sortOrder,
+        ];
+      } elseif ($type === 'file') {
+        $fileData[] = [
+          'id_files'  => $id,
+          'id_folder' => $parentId ?? 0,
+        ];
+      }
     }
 
-    /// update ke tabel links
-    $linkModel = new MyModel('folder_links');
-    $linkModel->updateDataBatch($data, 'child_id');
+    if (!empty($folderData)) {
+      $linkModel = new MyModel('folder_links');
+      $linkModel->updateDataBatch($folderData, 'child_id');
+    }
+
+    if (!empty($fileData)) {
+      $fileModel = new MyModel('files');
+      $fileModel->updateDataBatch($fileData, 'id_files');
+    }
 
     return $this->response->setJSON([
       'res'   => true,
