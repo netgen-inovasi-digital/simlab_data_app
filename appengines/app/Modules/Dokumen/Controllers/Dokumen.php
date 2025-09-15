@@ -12,6 +12,11 @@ class Dokumen extends BaseController
 
   public function index()
   {
+    $session = session(); // aktifkan session
+    $user_id = $session->get('id_user');
+
+    $modelCategories = new MyModel('categories');
+    $modelUser = new MyModel('users');
     $modelDokumen = new MyModel('dokumen');
     $modelPosts = new MyModel('posts');
     $modelPages = new MyModel('pages');
@@ -20,6 +25,8 @@ class Dokumen extends BaseController
       'getDokumen' => $modelDokumen->getAllData('sort_order', 'asc'),
       'getPosts' => $modelPosts->getAllData('published_at', 'asc'),
       'getPages' => $modelPages->getAllData('published_at', 'asc'),
+      'categories' => $modelCategories->getAllData(),
+      'user' => $modelUser->getDataById('id_user', $user_id),
     ];
     return view('Modules\Dokumen\Views\v_dokumen', $data);
   }
