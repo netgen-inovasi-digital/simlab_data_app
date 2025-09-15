@@ -444,15 +444,35 @@
               const prev = items[i];
               const prevLevel = parseInt(prev.dataset.count) || 0;
 
-              // Hanya folder yang bisa jadi parent
               if (prevLevel < level && prev.dataset.type === "folder") {
-                parentId = prev.id; // id asli parent
+                parentId = prev.id;
                 break;
               }
             }
-            item.dataset.parent = parentId || 0;
+
+            // kalau folder normal
+            if (parentId) {
+              item.dataset.parent = parentId;
+            } else {
+              // kalau dia FILE tapi ga punya parent → kasih parent folder sebelumnya
+              if (item.dataset.type === "file") {
+                for (let j = index - 1; j >= 0; j--) {
+                  const prev = items[j];
+                  if (prev.dataset.type === "folder") {
+                    item.dataset.parent = prev.id;
+                    item.dataset.count = (parseInt(prev.dataset.count) || 0) + 1;
+                    item.style.marginLeft = (parseInt(item.dataset.count) * 30) + "px";
+                    break;
+                  }
+                }
+              } else {
+                // folder root
+                item.dataset.parent = 0;
+              }
+            }
           });
         }
+
 
         folderMenu.addEventListener("click", function(e) {
           if (e.target.classList.contains("bi-caret-down")) {
