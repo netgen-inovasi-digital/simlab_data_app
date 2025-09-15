@@ -168,8 +168,7 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0"><?php echo $title ?></h5>
-                <button id="addPersonelButton" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Tambah
-                    Personel</button>
+                <button id="add" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Tambah Personel</button>
             </div>
             <div class="card-body">
 
@@ -257,16 +256,16 @@ function aksi($id)
 </div>
 
 <!-- Modal Form untuk Tambah/Edit -->
-<div class="modal fade" id="personelModalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+<div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
     aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="personelModalFormLabel">Form Personel</h5><button type="button"
-                    class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="modalFormLabel">Form Personel</h5><button type="button" class="btn-close"
+                    data-bs-dismiss="modal"></button>
             </div>
-            <form id="personelForm" action="<?= site_url('personel/submit') ?>" method="post"
-                enctype="multipart/form-data" class="needs-validation" novalidate>
+            <form id="myform" action="<?= site_url('personel/submit') ?>" method="post" enctype="multipart/form-data"
+                class="needs-validation" novalidate>
                 <?= csrf_field() ?>
                 <div class="modal-body">
                     <input type="hidden" name="id" /><input type="hidden" name="code"
@@ -386,8 +385,7 @@ function aksi($id)
                 <div class="modal-footer">
                     <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>
                         Batal</button>
-                    <button id="btn-save-personel" class="btn btn-success" type="button"><i
-                            class="bi bi-check2-circle"></i>
+                    <button id="btn-save" class="btn btn-success" type="button"><i class="bi bi-check2-circle"></i>
                         Simpan</button>
                 </div>
             </form>
@@ -395,12 +393,11 @@ function aksi($id)
     </div>
 </div>
 
-<!-- [UBAH] Seluruh logika JavaScript dipindahkan dari app.js kembali ke sini -->
 <script>
     // === Variabel Global ===
     var biodataModal = new bootstrap.Modal(document.getElementById('biodataModal'));
-    var personelModalFormEl = document.getElementById('personelModalForm');
-    var personelModalForm = new bootstrap.Modal(personelModalFormEl);
+    var modalFormEl = document.getElementById('modalForm');
+    var modalForm = new bootstrap.Modal(modalFormEl);
     var contentArea = document.getElementById('biodata-content');
     var modalAksiContainer = document.getElementById('modal-aksi-container');
     var draggedItem = null;
@@ -408,35 +405,56 @@ function aksi($id)
     var placeholder = document.createElement("div");
     placeholder.classList.add("col-12", "col-sm-6", "col-md-4", "col-lg-3", "drag-placeholder");
 
-    // [BARU] Hapus event listener lama sebelum menambahkan yang baru untuk mencegah duplikasi
-    if (document.personelModuleClickHandler) {
-        document.removeEventListener('click', document.personelModuleClickHandler);
+    // =========================================================================
+    // === PERBAIKAN: Fungsi baru untuk membersihkan form secara tuntas ===
+    // =========================================================================
+    function resetFormForAdd() {
+        const form = document.getElementById('myform');
+        form.reset();
+        form.querySelector('[name="id"]').value = '';
+        form.querySelectorAll('input[name^="delete_files"]').forEach(el => el.remove());
+        form.classList.remove('was-validated');
+
+        const fotoInput = form.querySelector('[name="foto"]');
+        if (fotoInput) {
+            fotoInput.setAttribute('required', 'required');
+        }
+        document.querySelectorAll('.file-preview-container').forEach(p => p.innerHTML = '');
+        const previewWrapper = document.getElementById('previewWrapper');
+        if (previewWrapper) {
+            previewWrapper.style.display = 'none';
+            const previewImg = document.getElementById('fotoPreview');
+            if (previewImg) {
+                previewImg.setAttribute('src', '#');
+            }
+        }
     }
 
-    // Definisikan handler terpusat yang baru
-    document.personelModuleClickHandler = function(e) {
-        // 1. Handler untuk Tombol "Tambah Personel"
-        if (e.target.closest('#addPersonelButton')) {
-            resetPersonelFormForAdd();
-            document.querySelector('#personelModalForm .modal-title').textContent = 'Tambah Data Personel';
-            personelModalForm.show();
+    // =========================================================================
+    // === EVENT LISTENERS ===
+    // =========================================================================
+
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('#add')) {
+            // PERBAIKAN: Panggil fungsi pembersihan baru
+            resetFormForAdd();
+            document.querySelector('#modalForm .modal-title').textContent = 'Tambah Data Personel';
+            modalForm.show();
         }
 
-        // 2. Handler untuk Tombol "Simpan Personel"
-        if (e.target.closest('#btn-save-personel')) {
+        if (e.target.closest('#btn-save')) {
+            // PERBAIKAN: Hentikan event submit ganda
             e.preventDefault();
-            const saveButton = e.target.closest('#btn-save-personel');
-            const form = document.getElementById('personelForm');
+            const form = document.getElementById('myform');
             if (!form.checkValidity()) {
                 e.stopPropagation();
                 form.classList.add('was-validated');
                 return;
             }
             const formData = new FormData(form);
-            saveDataPersonel(form.getAttribute('action'), formData, saveButton);
+            saveDataPersonel(form.getAttribute('action'), formData);
         }
 
-        // 3. Handler untuk Tombol "Hapus File"
         const removeBtn = e.target.closest('.btn-remove-preview, .btn-remove-file');
         if (removeBtn) {
             e.preventDefault();
@@ -483,73 +501,7 @@ function aksi($id)
                 }
             }
         }
-    };
-
-    // Pasang satu handler terpusat
-    document.addEventListener('click', document.personelModuleClickHandler);
-
-    // Fungsi untuk menyimpan data Personel
-    function saveDataPersonel(url, formData, buttonElement) {
-        showLoading();
-        buttonElement.disabled = true;
-        formData.set('<?= csrf_token() ?>', document.querySelector('[name="<?= csrf_token() ?>"]').value);
-
-        fetch(url, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.xname && data.xhash) {
-                    document.querySelectorAll(`[name="${data.xname}"]`).forEach(input => input.value = data.xhash);
-                }
-                if (data.res === 'validation_error') {
-                    sayAlert('errorModal', 'Input Tidak Lengkap', data.message, 'warning');
-                } else if (data.res === 'refresh') {
-                    personelModalForm.hide();
-                    sayAlert('successModal', 'Berhasil', 'Data berhasil disimpan.', 'success');
-                    if (typeof loadContent === 'function') {
-                        loadContent(data.link);
-                    } else {
-                        window.location.reload();
-                    }
-                } else {
-                    sayAlert('errorModal', 'Gagal', 'Data gagal disimpan. Silakan coba lagi.', 'warning');
-                }
-            })
-            .catch(error => {
-                console.error("Save error:", error);
-                sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
-            })
-            .finally(() => {
-                hideLoading();
-                buttonElement.disabled = false;
-            });
-    }
-
-    // Fungsi lainnya
-    function resetPersonelFormForAdd() {
-        const form = document.getElementById('personelForm');
-        if (!form) return;
-        form.reset();
-        form.querySelector('[name="id"]').value = '';
-        form.querySelectorAll('input[name^="delete_files"]').forEach(el => el.remove());
-        form.classList.remove('was-validated');
-
-        const fotoInput = form.querySelector('[name="foto"]');
-        if (fotoInput) {
-            fotoInput.setAttribute('required', 'required');
-        }
-        document.querySelectorAll('.file-preview-container').forEach(p => p.innerHTML = '');
-        const previewWrapper = document.getElementById('previewWrapper');
-        if (previewWrapper) {
-            previewWrapper.style.display = 'none';
-            const previewImg = document.getElementById('fotoPreview');
-            if (previewImg) {
-                previewImg.setAttribute('src', '#');
-            }
-        }
-    }
+    });
 
     document.addEventListener('input', e => {
         if (e.target.id === 'searchInput') applyFiltersAndSearch();
@@ -563,6 +515,10 @@ function aksi($id)
             handleFilePreview(e.target);
         }
     });
+
+    // =========================================================================
+    // === FUNGSI-FUNGSI UTAMA ===
+    // =========================================================================
 
     function handleFilePreview(input) {
         const parentContainer = input.closest('.mb-3');
@@ -619,6 +575,44 @@ function aksi($id)
         noResultsMessage.style.display = visibleCount === 0 ? 'block' : 'none';
     }
 
+    // PERBAIKAN UTAMA: Penanganan Respon Server
+    function saveDataPersonel(url, formData) {
+        showLoading();
+        formData.set('<?= csrf_token() ?>', document.querySelector('[name="<?= csrf_token() ?>"]').value);
+
+        fetch(url, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.xname && data.xhash) {
+                    document.querySelectorAll(`[name="${data.xname}"]`).forEach(input => input.value = data.xhash);
+                }
+                if (data.res === 'validation_error') {
+                    sayAlert('errorModal', 'Input Tidak Lengkap', data.message, 'warning');
+                } else if (data.res === 'refresh') {
+                    modalForm.hide();
+                    sayAlert('successModal', 'Berhasil', 'Data berhasil disimpan.', 'success');
+                    // Memuat ulang konten tanpa refresh browser
+                    if (typeof loadContent === 'function') {
+                        loadContent(data.link);
+                    } else {
+                        window.location.reload(); // Fallback jika fungsi tidak ada
+                    }
+                } else {
+                    sayAlert('errorModal', 'Gagal', 'Data gagal disimpan. Silakan coba lagi.', 'warning');
+                }
+            })
+            .catch(error => {
+                console.error("Save error:", error);
+                sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
+            })
+            .finally(() => {
+                hideLoading();
+            });
+    }
+
     function editPersonel(event) {
         const closest = event.target.closest('div');
         if (closest) {
@@ -626,9 +620,10 @@ function aksi($id)
             const id = closest.getAttribute('id');
             const url = `<?= site_url('personel/edit/') ?>${id}`;
 
-            resetPersonelFormForAdd();
+            // PERBAIKAN: Panggil fungsi reset untuk membersihkan state
+            resetFormForAdd();
 
-            const form = document.getElementById('personelForm');
+            const form = document.getElementById('myform');
             form.querySelector('[name="foto"]').removeAttribute('required');
 
             fetch(url, {
@@ -648,9 +643,9 @@ function aksi($id)
                             csrfTokenName]);
                     }
 
-                    document.querySelector('#personelModalForm .modal-title').textContent = 'Ubah Data Personel';
+                    document.querySelector('#modalForm .modal-title').textContent = 'Ubah Data Personel';
                     Object.entries(data).forEach(([key, value]) => {
-                        const el = document.querySelector(`#personelForm [name="${key}"]`);
+                        const el = document.querySelector(`#myform [name="${key}"]`);
                         if (el && !el.matches('[name="doc_lainnya[]"]')) {
                             if (el.type !== 'file') el.value = value || "";
                         }
@@ -688,7 +683,7 @@ function aksi($id)
                             }
                         }
                     });
-                    personelModalForm.show();
+                    modalForm.show();
                 })
                 .catch(error => {
                     console.error('Fetch error:', error);
