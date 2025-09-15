@@ -54,6 +54,10 @@
   .toggle-status {
     cursor: pointer;
   }
+
+  .bi-caret-down.collapsed {
+    transform: rotate(-90deg);
+  }
 </style>
 
 <div class="row">
@@ -78,7 +82,6 @@
         }
 
         foreach ($nodes as $node) {
-          // ambil ID sesuai type
           $rawId = $node->type === 'folder' ? $node->id_folder : $node->id_files;
           $encId = bin2hex($encrypter->encrypt($rawId));
       ?>
@@ -163,6 +166,8 @@
 
       <!-- JavaScript di bawah ini tidak perlu diubah, biarkan seperti aslinya -->
       <script>
+        folderState = {}; // Menyimpan state collapsed/expanded folder
+
         addAction();
 
         function addActionFile() {
@@ -190,6 +195,7 @@
         }
 
 
+
         var draggedItem = null;
         var dragStartX = 0;
         var folderMenu = document.getElementById("folder");
@@ -198,6 +204,15 @@
 
         function addDragEvents(item) {
           item.addEventListener("dragstart", (e) => {
+            // kalau item folder dan collapsed → jangan bisa drag
+            if (item.dataset.type === "folder") {
+              const caret = item.querySelector(".bi-caret-down");
+              if (caret && caret.classList.contains("collapsed")) {
+                e.preventDefault(); // blokir drag
+                return;
+              }
+            }
+
             draggedItem = item;
             dragStartX = e.clientX;
             item.style.opacity = "0.7";
@@ -218,15 +233,18 @@
 
             for (let i = currentIndex - 1; i >= 0; i--) {
               const el = folderMenu.children[i];
-              if (el === draggedItem) continue;
+              if (el === draggedItem || el.style.display === "none") continue;
 
               if (el.dataset.type === "folder") {
-                parentFolder = el;
-                previousItem = el;
-                break;
+                const caret = el.querySelector(".bi-caret-down");
+                if (!caret || !caret.classList.contains("collapsed")) {
+                  // hanya ambil folder kalau tidak collapsed
+                  parentFolder = el;
+                  previousItem = el;
+                  break;
+                }
               }
 
-              // file di-skip karena file tidak bisa jadi parent folder
               if (el.dataset.type === "file") continue;
             }
 
@@ -249,10 +267,17 @@
             // max level = parentFolder + 1
             let maxLevel = parentFolder ? parseInt(parentFolder.dataset.count) + 1 : 0;
 
+            if (parentFolder) {
+              const caret = parentFolder.querySelector(".bi-caret-down");
+              if (caret && caret.classList.contains("collapsed")) {
+                // taruh sejajar dengan parent, bukan dibatalkan
+                count = parseInt(parentFolder.dataset.count);
+              }
+            }
+
+
             // batasi level
             if (count > maxLevel) count = maxLevel;
-
-
 
             if (draggedItem.dataset.type === "file") {
               const childrenArray = [...folderMenu.children];
@@ -303,6 +328,17 @@
 
             // Folder
             if (draggedItem.dataset.type === "folder") {
+
+              const caret = draggedItem.querySelector(".bi-caret-down");
+              if (caret && caret.classList.contains("collapsed")) {
+                // balikin ke posisi awal
+                folderMenu.insertBefore(draggedItem, draggedItem);
+                item.dataset.count = parseInt(draggedItem.dataset.count) || 0;
+                item.style.marginLeft = (item.dataset.count * 30) + "px";
+
+                if (placeholder.parentNode) placeholder.remove();
+                return;
+              }
               // cegah folder tepat di bawah file
               if (previousItem && previousItem.dataset.type === "file") {
                 let prevFolder = null;
@@ -344,8 +380,7 @@
           item.addEventListener("dragover", (e) => {
             e.preventDefault();
             var after = getDragAfterElement(folderMenu, e.clientY);
-            if (after == null)
-              folderMenu.appendChild(placeholder);
+            if (after == null) folderMenu.appendChild(placeholder);
             else folderMenu.insertBefore(placeholder, after);
           });
         }
@@ -372,26 +407,30 @@
         }
 
         function updateCarets() {
-          // Reset semua caret
           document.querySelectorAll(".folder-item i.bi-caret-down").forEach(el => el.remove());
 
-          // Loop folder
           document.querySelectorAll(".folder-item").forEach(folder => {
             const folderId = folder.id;
             const hasChild = [...document.querySelectorAll(".folder-item, .file-item")]
               .some(item => item.dataset.parent == folderId);
 
             if (hasChild) {
-              // Tambahin caret di awal folder (sebelum icon folder)
               let iconContainer = folder.querySelector(".d-flex.align-items-center.gap-3");
               if (iconContainer && !iconContainer.querySelector(".bi-caret-down")) {
                 let caret = document.createElement("i");
                 caret.className = "bi bi-caret-down";
+
+                // restore state caret
+                if (folderState[folderId] === false) {
+                  caret.classList.add("collapsed"); // kalau sebelumnya collapsed
+                }
+
                 iconContainer.prepend(caret);
               }
             }
           });
         }
+
 
         function updateKodeFolder() {
           const items = [...document.querySelectorAll(".folder-item, .file-item")];
@@ -411,11 +450,52 @@
                 break;
               }
             }
-
-            // Set dataset parent (0 kalau root)
             item.dataset.parent = parentId || 0;
           });
         }
+
+        folderMenu.addEventListener("click", function(e) {
+          if (e.target.classList.contains("bi-caret-down")) {
+            const folder = e.target.closest(".folder-item");
+            const folderId = folder.id;
+
+            e.target.classList.toggle("collapsed");
+
+            const isCollapsed = e.target.classList.contains("collapsed");
+            folderState[folderId] = !isCollapsed; // true = expanded, false = collapsed
+
+            toggleChildren(folderId, isCollapsed);
+          }
+        });
+
+
+
+        function toggleChildren(parentId, isCollapsed) {
+          const children = [...document.querySelectorAll(".folder-item, .file-item")]
+            .filter(el => el.dataset.parent == parentId);
+
+          children.forEach(child => {
+            if (isCollapsed) {
+              child.style.display = "none";
+              child.setAttribute("draggable", "false");
+              if (child.dataset.type === "folder") {
+                toggleChildren(child.id, true);
+              }
+            } else {
+              child.style.display = "flex";
+              child.setAttribute("draggable", "true");
+
+              if (child.dataset.type === "folder") {
+                const caret = child.querySelector(".bi-caret-down");
+                if (caret && caret.classList.contains("collapsed")) {
+                  return;
+                }
+                toggleChildren(child.id, false);
+              }
+            }
+          });
+        }
+
 
         // Inisialisasi
         document.querySelectorAll(".folder-item, .file-item").forEach(addDragEvents);
@@ -609,7 +689,6 @@
         })
       </script>
 
-      <!-- Modal Folder -->
       <!-- Modal Folder -->
       <div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
         aria-labelledby="staticBackdropLabel" aria-hidden="true">

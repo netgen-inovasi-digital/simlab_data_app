@@ -162,7 +162,7 @@ class Folder extends BaseController
       } elseif ($type === 'file') {
         $fileData[] = [
           'id_files'  => $id,
-          'id_folder' => $parentId ?? 0,
+          'id_folder' => $parentId ?? null,
         ];
       }
     }
