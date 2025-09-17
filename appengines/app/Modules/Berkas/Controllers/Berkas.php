@@ -66,21 +66,18 @@ class Berkas extends BaseController
 
   public function submit()
   {
-    // $konten = $this->request->getPost('konten');
-    // $excerpt = $this->generateExcerpt($konten);
-    $idenc = $this->request->getPost('id');
-    $tanggalPublish = $this->request->getPost('tanggal') ?? date('Y-m-d');
+    $idenc = $this->request->getPost('idFile');
+    $tanggalUp = $this->request->getPost('tanggal') ?? date('Y-m-d');
     $now = date('Y-m-d H:i:s');
+    $id_folder = $this->encrypter->decrypt(hex2bin($this->request->getPost('id_folder')));
 
     $data = [
-      'title' => $this->request->getPost('title'),
-      // 'konten' => $konten,
-      // 'excerpt' => $excerpt,
+      'title' => $this->request->getPost('titleFile'),
       'nomor_dokumen' => $this->request->getPost('nomor_dokumen'),
       'revisi' => (int)$this->request->getPost('revisi'),
-      'status' => $this->request->getPost('status'),
       'categories_id' => $this->request->getPost('kategori_id'),
       'user_id' => $this->request->getPost('user_id'),
+      'id_folder' => (int)$id_folder,
       'updated_at' => $now, // waktu sekarang
     ];
     $berkas = $this->request->getFile('berkas');
@@ -102,18 +99,11 @@ class Berkas extends BaseController
     $model = new MyModel($this->table);
 
     if (empty($idenc)) {
-      $data['created_at'] = $now; // waktu sekarang saat dibuat
-
-      if ($data['status'] === 'publish') {
-        $data['published_at'] = $tanggalPublish; // dari input form
-      }
-
+      $data['created_at'] = $tanggalUp; // waktu sekarang saat dibuat
       $data['slug'] = $this->request->getPost('slug');
       $res = $model->insertData($data);
     } else {
-      if ($data['status'] === 'publish') {
-        $data['published_at'] = $tanggalPublish;
-      }
+      $data['updated_at'] = $now; // waktu sekarang saat diupdate
 
       $id = $this->encrypter->decrypt(hex2bin($idenc));
       $res = $model->updateData($data, $this->id, $id);

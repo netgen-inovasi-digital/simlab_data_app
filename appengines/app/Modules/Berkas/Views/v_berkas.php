@@ -234,21 +234,6 @@
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       ];
       var maxSizeMB = 10;
-      // if (!allowedTypes.includes(file.type)) {
-      //   errorMsg.textContent = 'Hanya file gambar JPG, JPEG, atau PNG yang diperbolehkan.';
-      //   errorMsg.classList.remove('d-none');
-      //   ketBerkas.classList.add('d-none');
-      //   this.value = '';
-      // } else if (file.size > maxSizeMB * 1024 * 1024) {
-      //   errorMsg.textContent = 'Ukuran file maksimal 2MB.';
-      //   errorMsg.classList.remove('d-none');
-      //   errorMsg.style.removeProperty('font-size');
-      //   ketBerkas.classList.add('d-none');
-      //   this.value = '';
-      // } else {
-      //   errorMsg.classList.add('d-none');
-      //   ketBerkas.classList.remove('d-none');
-      // }
       if (!allowedTypes.includes(file.type)) {
         errorMsg.textContent = 'Hanya file PDF, DOC, atau DOCX yang diperbolehkan.';
         errorMsg.classList.remove('d-none');

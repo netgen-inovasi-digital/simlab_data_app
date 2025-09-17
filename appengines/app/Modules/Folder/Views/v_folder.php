@@ -144,7 +144,7 @@
   ' : '';
 
         $btnTambah = ($type === 'folder') ? '
-    <span class="text-dark" title="Tambah" onclick="tambahItemFile(event)">
+    <span class="text-dark" title="Tambah" onclick="tambahItemFile(event)" id="addFile">
       <i class="bi bi-plus-circle"></i>
     </span>
     <label class="divider">|</label>
@@ -170,34 +170,9 @@
 
         addAction();
 
-        function addActionFile() {
-          $('#addFile').on('click', () => {
-            const form = document.getElementById('myform');
-            const errorDivs = form.querySelectorAll('.error');
-            errorDivs.forEach(errorDiv => {
-              errorDiv.remove();
-            });
-            form.reset();
-            // Kosongkan input file (jika ada)
-            const fileInputs = document.querySelectorAll('input[type="file"]');
-            fileInputs.forEach(fileInput => fileInput.value = '');
-            // Kosongkan selectSearch (jika ada)
-            document.querySelectorAll('select').forEach(el => {
-              if (el.id != "items-per-page") el.value = "";
-              const wrapper = el.parentElement.querySelector('.selected');
-              if (wrapper) wrapper.textContent = "-- pilih data --";
-            });
-            document.querySelector('[name="id"]').value = '';
-            $('.modal-title').text('Tambah Data');
-            $('#modalForm').modal('show');
-          })
-          $('#myform').submit();
-        }
-
-
-
         var draggedItem = null;
         var dragStartX = 0;
+
         var folderMenu = document.getElementById("folder");
         var placeholder = document.createElement("div");
         placeholder.classList.add("drag-placeholder");
@@ -431,7 +406,6 @@
           });
         }
 
-
         function updateKodeFolder() {
           const items = [...document.querySelectorAll(".folder-item, .file-item")];
 
@@ -473,7 +447,6 @@
           });
         }
 
-
         folderMenu.addEventListener("click", function(e) {
           if (e.target.classList.contains("bi-caret-down")) {
             const folder = e.target.closest(".folder-item");
@@ -487,8 +460,6 @@
             toggleChildren(folderId, isCollapsed);
           }
         });
-
-
 
         function toggleChildren(parentId, isCollapsed) {
           const children = [...document.querySelectorAll(".folder-item, .file-item")]
@@ -515,7 +486,6 @@
             }
           });
         }
-
 
         // Inisialisasi
         document.querySelectorAll(".folder-item, .file-item").forEach(addDragEvents);
@@ -668,39 +638,388 @@
         // }
 
         function tambahItemFile(event) {
-          var closest = event.target.closest('div');
-          if (closest) {
+          var id = event.target.closest("div").id;
+          console.log("ID item:", id);
+          var form = document.getElementById('myFileForm');
+          var errorDivs = form.querySelectorAll('.error');
+          errorDivs.forEach(errorDiv => {
+            errorDiv.remove();
+          });
+          form.reset();
+          // Kosongkan input file (jika ada)
+          var fileInputs = document.querySelectorAll('input[type="file"]');
+          fileInputs.forEach(fileInput => fileInput.value = '');
+          // Kosongkan selectSearch (jika ada)
+          document.querySelectorAll('select').forEach(el => {
+            if (el.id != "items-per-page") el.value = "";
+            var wrapper = el.parentElement.querySelector('.selected');
+            if (wrapper) wrapper.textContent = "-- pilih data --";
+          });
+          document.querySelector('input[name="idFile"]').value = '';
+          document.querySelector('input[name="id_folder"]').value = id;
+          console.log("id_folder hidden:", document.querySelector('[name="id_folder"]').value);
 
-            $('.modal-title-file').text('Tambah File');
-            $('#modalFormFile').modal('show');
-            resetOpsiSumber();
-            const inputNama = document.querySelector('[name="nama"]');
-            if (inputNama) inputNama.value = data.nama || '';
+          $('.modal-title-file').text('Tambah File');
+          $('#modalFormFile').modal('show');
 
-            var selectSumber = document.querySelector('[name="sumber_menu"]');
-            var selectHalaman = document.querySelector('[name="url_halaman"]');
-            var selectBerita = document.querySelector('[name="url_berita"]');
-            var inputUrlManual = document.querySelector('[name="url_manual"]');
-            var inputNamaManual = document.querySelector('[name="nama_menu_url"]');
+          $('#myFileForm').submit();
+        }
 
-            if (data.url?.startsWith('hal/')) {
-              if (selectSumber) selectSumber.value = 'halaman';
-              if (selectHalaman) selectHalaman.value = data.url.replace('hal/', '');
-              document.querySelector('#opsiHalaman')?.classList.remove('d-none');
-            } else if (data.url?.startsWith('berita/')) {
-              if (selectSumber) selectSumber.value = 'berita';
-              if (selectBerita) selectBerita.value = data.url.replace('berita/', '');
-              document.querySelector('#opsiBerita')?.classList.remove('d-none');
+        // ===== validasi gambar ===== //
+        document.querySelector('#berkas').addEventListener('change', function() {
+          var file = this.files[0];
+          var errorMsg = document.querySelector('#errorMsg');
+          var ketBerkas = document.querySelector('#ketBerkas');
+          if (file) {
+            var allowedTypes = [
+              'application/pdf',
+              'application/msword',
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            ];
+            var maxSizeMB = 10;
+            if (!allowedTypes.includes(file.type)) {
+              errorMsg.textContent = 'Hanya file PDF, DOC, atau DOCX yang diperbolehkan.';
+              errorMsg.classList.remove('d-none');
+              ketBerkas.classList.add('d-none');
+              this.value = '';
+            } else if (file.size > maxSizeMB * 1024 * 1024) {
+              errorMsg.textContent = 'Ukuran file maksimal ' + maxSizeMB + 'MB.';
+              errorMsg.classList.remove('d-none');
+              errorMsg.style.removeProperty('font-size');
+              ketBerkas.classList.add('d-none');
+              this.value = '';
             } else {
-              if (selectSumber) selectSumber.value = 'manual';
-              if (inputUrlManual) inputUrlManual.value = data.url || '';
-              if (inputNamaManual) inputNamaManual.value = data.nama || '';
-              document.querySelector('#opsiUrl')?.classList.remove('d-none');
-              document.querySelector('#opsiUrlInput')?.classList.remove('d-none');
+              errorMsg.classList.add('d-none');
+              ketBerkas.classList.remove('d-none');
+            }
+          }
+        });
+
+        // ===== nama dan slug ===== //
+        var namaInput = document.querySelector('input[name="titleFile"]');
+        var slugInput = document.querySelector('input[name="slug"]');
+
+        if (namaInput && slugInput) {
+          namaInput.addEventListener('input', function() {
+            var slug = namaInput.value
+              .toLowerCase()
+              .trim()
+              .replace(/[^a-z0-9\s-]/g, '')
+              .replace(/\s+/g, '-')
+              .replace(/-+/g, '-');
+            slugInput.value = slug;
+          });
+        }
+
+        // ===== Tambah Kategori Baru ===== // 
+        var select = document.getElementById('kategori_id');
+        var btnAksi = document.getElementById('btn-kategori-aksi');
+        var formBaru = document.getElementById('form-kategori-baru');
+        var inputBaru = document.getElementById('input-kategori-baru');
+        var formEdit = document.getElementById('form-edit-kategori');
+        var inputEdit = document.getElementById('input-edit-kategori');
+        var btnSimpan = document.getElementById('btn-simpan-kategori');
+        var btnBatal = document.getElementById('btn-batal-kategori');
+        var btnUpdate = document.getElementById('btn-update-kategori');
+        var btnDelete = document.getElementById('btn-delete-kategori');
+        // ===== function perbarui Tombol ===== //
+        function perbaruiTombol() {
+          var selectedValue = select.value;
+          if (selectedValue === "") {
+            btnAksi.innerText = 'Tambah';
+            btnAksi.classList.remove('btn-primary');
+            btnAksi.classList.add('btn-outline-secondary');
+            btnAksi.setAttribute('data-mode', 'tambah');
+            btnUpdate.classList.add('d-none');
+            btnDelete.classList.add('d-none');
+            inputEdit.classList.add('d-none');
+            inputBaru.classList.remove('d-none');
+            btnSimpan.classList.remove('d-none');
+            btnBatal.classList.remove('d-none');
+            formEdit.style.display = 'none';
+          } else {
+            btnAksi.innerText = 'Edit / Hapus';
+            btnAksi.classList.remove('btn-outline-secondary');
+            btnAksi.classList.add('btn-primary');
+            btnAksi.setAttribute('data-mode', 'edit');
+            inputBaru.classList.add('d-none');
+            btnSimpan.classList.add('d-none');
+            btnBatal.classList.add('d-none');
+            inputEdit.value = select.options[select.selectedIndex].text;
+          }
+        }
+
+        select.addEventListener('change', perbaruiTombol);
+        perbaruiTombol();
+
+        btnAksi.addEventListener('click', () => {
+          const mode = btnAksi.getAttribute('data-mode');
+
+          if (mode === 'tambah') {
+            const isShown = !formBaru.classList.contains('d-none');
+
+            // Toggle tampilan
+            if (isShown) {
+              formBaru.classList.add('d-none');
+            } else {
+              formBaru.classList.remove('d-none');
+              formEdit.style.display = 'none';
+              inputBaru.focus();
             }
 
-            document.querySelector('[name="id"]').value = data.id || '';
+          } else if (mode === 'edit') {
+            const isShown = formEdit.style.display === 'flex';
+
+            // Toggle tampilan
+            if (isShown) {
+              formEdit.style.display = 'none';
+              inputEdit.classList.add('d-none');
+              btnUpdate.classList.add('d-none');
+              btnDelete.classList.add('d-none');
+            } else {
+              formBaru.classList.add('d-none');
+              formEdit.style.display = 'flex';
+              inputEdit.classList.remove('d-none');
+              btnUpdate.classList.remove('d-none');
+              btnDelete.classList.remove('d-none');
+              inputEdit.focus();
+            }
           }
+        });
+
+
+        // ===== button batal kategori ===== //
+        document.getElementById('btn-batal-kategori').addEventListener('click', () => {
+          formBaru.classList.add('d-none');
+          inputBaru.value = '';
+        });
+
+        // ===== button simpan kategori ===== //
+        document.getElementById('btn-simpan-kategori').addEventListener('click', () => {
+          var nama = inputBaru.value.trim();
+          if (!nama) return;
+
+          if (isKategoriDuplikat(nama)) {
+            sayAlert('errorModal', 'Error', 'Kategori dengan nama yang sama sudah ada.', 'warning');
+            return;
+          }
+
+          var formData = new FormData();
+          formData.append('nama', nama);
+
+          saveData({
+            url: '<?= base_url("categories/submit") ?>',
+            formData: formData,
+            onSuccess: (json) => {
+              if (json && json.id) {
+                var option = document.createElement('option');
+                option.value = json.id;
+                option.text = json.nama;
+                option.selected = true;
+                select.appendChild(option);
+
+                inputBaru.value = '';
+                formBaru.classList.add('d-none');
+                perbaruiTombol();
+                sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+              } else {
+                alert('Gagal menambahkan kategori');
+              }
+            }
+          });
+        });
+
+        // ===== button update kategori ===== //
+        btnUpdate.addEventListener('click', () => {
+          var id = select.value;
+          var namaBaru = inputEdit.value.trim();
+          if (!id || !namaBaru) return;
+
+          // Cek apakah namaBaru sudah ada di kategori lain
+          const namaBaruLower = namaBaru.toLowerCase();
+          let duplikat = false;
+
+          Array.from(select.options).forEach(opt => {
+            if (
+              opt.value !== "" &&
+              opt.value !== id &&
+              opt.text.trim().toLowerCase() === namaBaruLower
+            ) {
+              duplikat = true;
+            }
+          });
+
+          if (duplikat) {
+            sayAlert('errorModal', 'Error', 'Kategori dengan nama yang sama sudah ada.', 'warning');
+            return;
+          }
+
+          var formData = new FormData();
+          formData.append('id', id);
+          formData.append('nama', namaBaru);
+
+          saveData({
+            url: '<?= base_url("categories/submit") ?>',
+            formData: formData,
+            onSuccess: (json) => {
+              if (json && json.id) {
+                const option = select.querySelector(`option[value="${id}"]`);
+                if (option) {
+                  option.text = json.nama;
+                  option.selected = true;
+                }
+                formEdit.style.display = 'none';
+                perbaruiTombol();
+                sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+              } else {
+                alert('Gagal mengubah kategori');
+              }
+            }
+          });
+        });
+
+        function isKategoriDuplikat(nama) {
+          nama = nama.trim().toLowerCase();
+          const options = select.options;
+          for (let i = 0; i < options.length; i++) {
+            if (options[i].value !== "" && options[i].text.trim().toLowerCase() === nama) {
+              return true;
+            }
+          }
+          return false;
+        }
+
+
+        // ===== button hapus kategori ===== //
+        btnDelete.addEventListener('click', () => {
+          var id = select.value;
+          if (!id) return;
+          sayAlert('confirmModal', 'Hapus Kategori', 'Yakin ingin menghapus kategori ini?', 'danger', true, () => {
+            deleteData({
+              url: '<?= base_url("categories/delete") ?>',
+              data: {
+                id
+              },
+              onSuccess: () => {
+                const option = select.querySelector(`option[value="${id}"]`);
+                if (option) option.remove();
+
+                select.value = "";
+                formEdit.style.display = 'none';
+                perbaruiTombol();
+                sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+              }
+            });
+          });
+        });
+
+
+        function deleteData({
+          url,
+          data,
+          onSuccess,
+          onError
+        }) {
+          showLoading();
+
+          fetch(url, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('[name="<?= csrf_token() ?>"]').value
+              },
+              body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(json => {
+              // Update CSRF
+              if (json.xname && json.xhash) {
+                const input = document.querySelector(`[name="${json.xname}"]`);
+                if (input) input.value = json.xhash;
+              }
+
+              if (json.success || json.res === true) {
+                if (typeof onSuccess === 'function') onSuccess(json);
+
+              } else {
+                if (typeof onError === 'function') onError(json);
+                else sayAlert('errorModal', 'Error', 'Data gagal dihapus.', 'warning');
+              }
+            })
+            .catch(error => {
+              console.error(error);
+              sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
+            })
+            .finally(() => {
+              hideLoading();
+            });
+        }
+
+        // ===== function simpan data ===== //
+        function saveData({
+          url,
+          formData,
+          onSuccess,
+          onError,
+        }) {
+          showLoading();
+          const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
+          const csrfToken = csrfInput ? csrfInput.value : '';
+
+          fetch(url, {
+              method: 'POST',
+              body: formData,
+              headers: {
+                'X-CSRF-TOKEN': csrfToken
+              }
+            })
+            .then(response => response.json())
+            .then(data => {
+              // Update token
+              if (data.xname && data.xhash) {
+                document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
+                  input.value = data.xhash;
+                });
+              }
+
+              if (typeof onSuccess === 'function') {
+                onSuccess(data);
+                return;
+              }
+
+              if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
+
+              if (data.res === true) {
+                if (typeof table !== 'undefined') table.fetchData({
+                  reload: true
+                });
+                sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+              } else if (data.res === 'reload') {
+                sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+              } else if (data.res === 'refresh') {
+                loadContent(data.link);
+                sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+              } else if (data.res === 'redirect') {
+                window.location.href = data.link;
+              } else if (data.res === 'check') {
+                sayAlert('errorModal', 'Error', data.link, 'warning');
+              } else if (data.res === 'refresh-print') {
+                loadContent(data.link);
+                window.open(data.print, "_blank");
+              } else {
+                sayAlert('errorModal', 'Error', 'Data gagal disimpan.', 'warning');
+              }
+            })
+            .catch(error => {
+              if (typeof onError === 'function') {
+                onError(error);
+              } else {
+                sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
+              }
+            })
+            .finally(() => {
+              hideLoading();
+            });
         }
 
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
@@ -757,3 +1076,90 @@
 
 
     <!-- Modal File -->
+    <div class="modal fade" id="modalFormFile" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg" role="document" style="margin: 2% auto">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title-file">Modal title</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+            </button>
+          </div>
+          <?php echo form_open('berkas/submit', array('id' => 'myFileForm', 'novalidate' => '')) ?>
+          <div class="modal-body">
+            <input type="hidden" value="" name="idFile" />
+            <input type="hidden" class="form-control" name="id_folder">
+            <input name="slug" type="text" class="form-control bg-light" value="" hidden>
+
+            <div class="row mb-2">
+              <div class="col">
+                <label class="col-md-3 col-form-label">Judul Berkas</label>
+                <input name="titleFile" type="text" class="form-control" required placeholder="Masukkan judul file">
+              </div>
+            </div>
+            <div class="row mb-2">
+              <div class="col">
+                <label class="col-md-6 col-form-label">No. Dokumen</label>
+                <input name="nomor_dokumen" type="text" class="form-control bg-light" placeholder="Masukkan nomor dokumen" required>
+              </div>
+              <div class="col">
+                <label class="col-md-3 col-form-label">Revisi</label>
+                <input name="revisi" type="number" class="form-control bg-light" placeholder="Masukkan revisi" required>
+              </div>
+            </div>
+            <div class="row mb-2">
+              <div class="col">
+                <label class="col-md-3 col-form-label">File</label>
+                <input id="berkas" name="berkas" type="file" class="form-control" accept=".pdf,.doc,.docx">
+                <small class="text-muted" id="ketBerkas" style="font-size: 11px;">Upload maks. 100MB</small>
+                <small class="text-danger d-none" id="errorMsg">Hanya file docs/pdf yang diperbolehkan!</small>
+              </div>
+              <div class="col">
+                <label class="col-md-3 col-form-label">Tanggal</label>
+                <input name="tanggal" id="tanggal-input" type="date" class="form-control"
+                  value="<?= esc(date('Y-m-d')) ?>" required>
+              </div>
+              <div class="col">
+                <label class="col-md-3 col-form-label">Author</label>
+                <input name="nama" type="text" value="<?= $user->nama ?>" class="form-control bg-light" required readonly>
+                <input name="user_id" type="text" value="<?= $user->id_user ?>" class="form-control" required hidden>
+              </div>
+            </div>
+
+            <div class="row mb-2">
+              <div class="col">
+                <label class="col-md col-form-label">Kategori</label>
+                <div class="d-flex gap-2 align-items-start">
+                  <select id="kategori_id" name="kategori_id" class="form-select" required style="max-width: 150px;">
+                    <option value="">-- pilih data --</option>
+                    <?php foreach ($categories as $kategori): ?>
+                      <option value="<?= $kategori->id_categories ?>">
+                        <?= esc($kategori->nama) ?>
+                      </option>
+                    <?php endforeach; ?>
+                  </select>
+                  <button type="button" class="btn btn-outline-secondary" id="btn-kategori-aksi">Tambah</button>
+                </div>
+                <!-- Form tambah kategori akan muncul di sini -->
+                <div id="form-kategori-baru" class="mt-2 d-none">
+                  <div class="input-group" style="max-width: 400px;">
+                    <input type="text" class="form-control" id="input-kategori-baru" placeholder="Nama kategori baru">
+                    <button class="btn btn-success ms-2" type="button" id="btn-simpan-kategori">Simpan</button>
+                    <button class="btn btn-danger ms-2" type="button" id="btn-batal-kategori">Batal</button>
+                  </div>
+                </div>
+                <div class="d-flex gap-2 align-items-start mt-2" id="form-edit-kategori" style="display: none;">
+                  <input type="text" class="form-control" id="input-edit-kategori" style="max-width: 200px;" placeholder="Edit nama kategori">
+                  <button type="button" class="btn btn-success" id="btn-update-kategori">Update</button>
+                  <button type="button" class="btn btn-danger" id="btn-delete-kategori">Hapus</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Batal</button>
+            <button class="btn btn-success" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
+          </div>
+          </form>
+        </div>
+      </div>
+    </div>

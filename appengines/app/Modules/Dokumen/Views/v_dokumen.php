@@ -489,6 +489,7 @@
             document.querySelector('[name="id"]').value = data.id || '';
           }
         }
+        
 
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
         tooltipTriggerList.forEach(function(tooltipTriggerEl) {
