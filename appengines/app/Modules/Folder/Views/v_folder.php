@@ -71,7 +71,8 @@
       </div>
 
       <div>
-        <input type="text" class="form-control" id="search" placeholder="Cari folder" style="max-width: 300px; margin: 10px; margin-bottom: 0px;">
+        <input type="text" class="form-control" id="search" placeholder="Cari folder"
+          style="max-width: 300px; margin: 10px; margin-bottom: 0px;">
       </div>
 
       <?php
@@ -85,12 +86,8 @@
           $rawId = $node->type === 'folder' ? $node->id_folder : $node->id_files;
           $encId = bin2hex($encrypter->encrypt($rawId));
       ?>
-          <div id="<?= $encId ?>"
-            class="<?= $node->type ?>-item flex"
-            style="margin-left: <?= $level * 30; ?>px"
-            draggable="true"
-            data-type="<?= $node->type ?>"
-            data-count="<?= $level ?>">
+          <div id="<?= $encId ?>" class="<?= $node->type ?>-item flex" style="margin-left: <?= $level * 30; ?>px"
+            draggable="true" data-type="<?= $node->type ?>" data-count="<?= $level ?>">
 
             <div class="d-flex justify-content-between align-items-center col-12">
               <div class="d-flex align-items-center gap-3">
@@ -363,7 +360,8 @@
         function getDragAfterElement(container, y) {
           // 🔑 file + folder sekarang sama-sama ikut
           var elements = [
-            ...container.querySelectorAll(".folder-item:not([style*='display: none']), .file-item:not([style*='display: none'])"),
+            ...container.querySelectorAll(
+              ".folder-item:not([style*='display: none']), .file-item:not([style*='display: none'])"),
           ];
           return elements.reduce(
             (closest, child) => {
@@ -1054,7 +1052,8 @@
               <div class="row mb-2">
                 <label class="col-form-label">Nama Folder</label>
                 <div class="col-9">
-                  <input name="title" type="text" class="form-control" required placeholder="Masukkan nama folder">
+                  <input name="title" type="text" class="form-control" required
+                    placeholder="Masukkan nama folder">
                 </div>
                 <button id="add" class="btn btn-primary col-3">
                   <i class="bi bi-plus-circle-dotted"></i> SubFolder
@@ -1062,9 +1061,11 @@
               </div>
             </div>
             <div class="modal-footer">
-              <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>
+              <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i
+                  class="bi bi-x-circle"></i>
                 Batal</button>
-              <button class="btn btn-success" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
+              <button class="btn btn-success" type="submit"><i class="bi bi-check2-circle"></i>
+                Simpan</button>
             </div>
             </form>
           </div>

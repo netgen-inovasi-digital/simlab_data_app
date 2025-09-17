@@ -41,37 +41,18 @@ class Dashboard extends BaseController
 			$greeting = 'Selamat malam';
 		}
 
-		$modelVisitor = new MyModel('visitor');
-		// ---------- Hari Ini ----------
-		$today = date('Y-m-d');
-		$whereToday = ['DATE(visitDate)' => $today];
-		$totalViewsToday = $modelVisitor->getCountAllbyManyWhere($whereToday);
-		// ---------- Bulan Ini ----------
-		$thisMonth = date('m');
-		$thisYear = date('Y');
-		$whereMonth = ['MONTH(visitDate)' => $thisMonth, 'YEAR(visitDate)' => $thisYear];
-		$totalViewsThisMonth = $modelVisitor->getCountAllbyManyWhere($whereMonth);
-		// ---------- Sepanjang Masa ----------
-		$totalViewsAllTime = $modelVisitor->getCountAllbyManyWhere([]);
-
-
-		$modelPengumuman = new MyModel('pengumuman');
-		$dataPengumuman = $modelPengumuman->getCountAll('status', 'tampil');
-		$modelPosts = new MyModel('posts');
-		$dataPosts = $modelPosts->getCountAll('status', 'publish');
-		$modelPages = new MyModel('pages');
-		$dataPages = $modelPages->getCountAll('status', 'publish');
+		// Hanya ambil data yang diperlukan
+		$modelFolders = new MyModel('folder');
+		$dataFolders = $modelFolders->getCountAllbyManyWhere([]);
+		$modelFiles = new MyModel('files');
+		$dataFiles = $modelFiles->getCountAllbyManyWhere([]);
+		$modelPersonel = new MyModel('personel');
+		$dataPersonel = $modelPersonel->getCountAllbyManyWhere([]);
 
 		return [
-			// ===== statistik hari ini ini ===== //
-			'viewsToday' => formatAngkaSingkat($totalViewsToday),
-			// ===== statistik bulan ini ===== //
-			'viewsThisMonth' => formatAngkaSingkat($totalViewsThisMonth),
-			// ===== statistik sepanjang masa ===== //
-			'viewsAllTime' => formatAngkaSingkat($totalViewsAllTime),
-			'totalPengumuman' => $dataPengumuman,
-			'totalPosts' => $dataPosts,
-			'totalPages' => $dataPages,
+			'totalFolders' => $dataFolders,
+			'totalFiles' => $dataFiles,
+			'totalPersonel' => $dataPersonel,
 			'greeting' => $greeting,
 			'nama_user' => $nama,
 			'role_id' => $role_id,
