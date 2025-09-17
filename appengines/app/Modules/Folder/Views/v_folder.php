@@ -663,6 +663,44 @@
           $('#myFileForm').submit();
         }
 
+        function save(form) {
+          showLoading();
+          const formData = new FormData(form);
+          const url = form.getAttribute('action');
+          fetch(url, {
+              method: 'POST',
+              body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+              $('[name=' + data.xname + ']').val(data.xhash);
+              if ($('#modalFormFile').hasClass('show')) $('#modalFormFile').modal('hide');
+              if (data.res == true) {
+                if (table) table.fetchData({
+                  reload: true
+                });
+                sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+              } else if (data.res == 'reload') {
+                sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+              } else if (data.res == 'refresh') {
+                loadContent(data.link);
+                sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+              } else if (data.res == 'redirect') {
+                window.location.href = data.link;
+              } else if (data.res == 'check') {
+                sayAlert('errorModal', 'Error', data.link, 'warning');
+              } else if (data.res == 'refresh-print') {
+                loadContent(data.link);
+                window.open(data.print, "_blank");
+              } else sayAlert('errorModal', 'Error', 'Data gagal disimpan.', 'warning');
+            })
+            .catch(error => {
+              sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
+            }).finally(() => {
+              hideLoading();
+            });
+        }
+
         // ===== validasi gambar ===== //
         document.querySelector('#berkas').addEventListener('change', function() {
           var file = this.files[0];
@@ -784,7 +822,6 @@
             }
           }
         });
-
 
         // ===== button batal kategori ===== //
         document.getElementById('btn-batal-kategori').addEventListener('click', () => {

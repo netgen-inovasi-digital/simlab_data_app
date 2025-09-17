@@ -19,7 +19,6 @@ class Berkas extends BaseController
     $modelCategories = new MyModel('categories');
     $modelUser = new MyModel('users');
 
-
     $data = [
       'title' => 'Data Berkas',
       'categories' => $modelCategories->getAllData(),
@@ -109,11 +108,19 @@ class Berkas extends BaseController
       $res = $model->updateData($data, $this->id, $id);
     }
 
+    if ($res) {
+      $res = 'refresh';
+      $link = 'folder';
+    }
+
     return $this->response->setJSON([
       'res' => $res,
+      'link' => $link ?? '',
       'xname' => csrf_token(),
       'xhash' => csrf_hash()
     ]);
+
+    // return $this->response->setJSON(array('res' => $res, 'link' => $link ?? '', 'xname' => csrf_token(), 'xhash' => csrf_hash()));
   }
 
 
@@ -141,11 +148,6 @@ class Berkas extends BaseController
     if (!in_array($ext, $allowedExt) || !in_array($mime, $allowedMime)) {
       return ['status' => false, 'msg' => 'Format file tidak diperbolehkan (hanya PDF/DOC/DOCX)'];
     }
-
-    // // Validasi apakah benar file gambar
-    // if (@getimagesize($file->getTempName()) === false) {
-    //   return ['status' => false, 'msg' => 'File bukan gambar asli'];
-    // }
 
     // Validasi ukuran file (contoh: max 10MB)
     if ($file->getSize() > 10 * 1024 * 1024) {
