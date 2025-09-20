@@ -38,16 +38,16 @@ class Berkas extends BaseController
     $user = $modelUser->getDataById('id_user', $get->user_id);
 
     $data[csrf_token()] = csrf_hash();
-    $data['id'] = $id;
-    $data['title'] = $get->title;
+    $data['idFile'] = $id;
+    $data['titleFile'] = $get->title;
     $data['kategori_id'] = $get->categories_id;
+    $data['id_folder'] = $get->id_folder;
     $data['nomor_dokumen'] = $get->nomor_dokumen;
     $data['slug'] = $get->slug;
     $data['revisi'] = $get->revisi;
-    $data['status'] = $get->status;
     $data['user_id'] = $get->user_id;
     $data['nama'] = $user->nama;
-    $data['tanggal'] = $get->published_at != null ? date('Y-m-d', strtotime($get->published_at)) : date('Y-m-d', strtotime($get->created_at));
+    $data['tanggal'] = $get->updated_at != null ? date('Y-m-d', strtotime($get->updated_at)) : date('Y-m-d', strtotime($get->created_at));
 
     // 'userId' => session()->get('idUser'),
     return $this->response->setJSON($data);
@@ -60,7 +60,18 @@ class Berkas extends BaseController
     $file = $model->getDataById($this->id, $idenc);
     unlink('uploads/' . $file->berkas); // hapus file berkas
     $res = $model->deleteData($this->id, $idenc);
-    return $this->response->setJSON(array('res' => $res, 'xname' => csrf_token(), 'xhash' => csrf_hash()));
+    // return $this->response->setJSON(array('res' => $res, 'xname' => csrf_token(), 'xhash' => csrf_hash()));
+
+    if ($res) {
+      $res = 'refresh';
+      $link = 'folder';
+    }
+    return $this->response->setJSON(array(
+      'res' => $res,
+      'link' => $link ?? '',
+      'xname' => csrf_token(),
+      'xhash' => csrf_hash()
+    ));
   }
 
   public function submit()
@@ -68,12 +79,21 @@ class Berkas extends BaseController
     $idenc = $this->request->getPost('idFile');
     $tanggalUp = $this->request->getPost('tanggal') ?? date('Y-m-d');
     $now = date('Y-m-d H:i:s');
-    $id_folder = $this->encrypter->decrypt(hex2bin($this->request->getPost('id_folder')));
+    $idFolderRaw = $this->request->getPost('id_folder');
+
+    if (ctype_xdigit($idFolderRaw) && strlen($idFolderRaw) % 2 === 0) {
+      // string hex valid → decrypt
+      $id_folder = $this->encrypter->decrypt(hex2bin($idFolderRaw));
+    } else {
+
+      $id_folder = $idFolderRaw;
+    }
 
     $data = [
       'title' => $this->request->getPost('titleFile'),
       'nomor_dokumen' => $this->request->getPost('nomor_dokumen'),
       'revisi' => (int)$this->request->getPost('revisi'),
+      'slug' => $this->request->getPost('slug'),
       'categories_id' => $this->request->getPost('kategori_id'),
       'user_id' => $this->request->getPost('user_id'),
       'id_folder' => (int)$id_folder,
@@ -97,15 +117,16 @@ class Berkas extends BaseController
 
     $model = new MyModel($this->table);
 
-    if (empty($idenc)) {
-      $data['created_at'] = $tanggalUp; // waktu sekarang saat dibuat
-      $data['slug'] = $this->request->getPost('slug');
-      $res = $model->insertData($data);
-    } else {
+    if (!empty($idenc) && ctype_xdigit($idenc) && strlen($idenc) % 2 === 0) {
       $data['updated_at'] = $now; // waktu sekarang saat diupdate
 
       $id = $this->encrypter->decrypt(hex2bin($idenc));
       $res = $model->updateData($data, $this->id, $id);
+    } else {
+      // kalau ga valid → anggap insert aja, atau return error
+      $data['created_at'] = $tanggalUp; // waktu sekarang saat dibuat
+
+      $res = $model->insertData($data);
     }
 
     if ($res) {
@@ -119,8 +140,6 @@ class Berkas extends BaseController
       'xname' => csrf_token(),
       'xhash' => csrf_hash()
     ]);
-
-    // return $this->response->setJSON(array('res' => $res, 'link' => $link ?? '', 'xname' => csrf_token(), 'xhash' => csrf_hash()));
   }
 
 

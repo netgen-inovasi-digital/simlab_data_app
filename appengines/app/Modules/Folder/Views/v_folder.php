@@ -87,7 +87,10 @@
           $encId = bin2hex($encrypter->encrypt($rawId));
       ?>
           <div id="<?= $encId ?>" class="<?= $node->type ?>-item flex" style="margin-left: <?= $level * 30; ?>px"
-            draggable="true" data-type="<?= $node->type ?>" data-count="<?= $level ?>">
+            draggable="true" data-type="<?= $node->type ?>" data-count="<?= $level ?>"
+            <?php if ($node->type === 'file'): ?>
+            data-url="<?= base_url('uploads/' . $node->berkas) ?>"
+            <?php endif; ?>>
 
             <div class="d-flex justify-content-between align-items-center col-12">
               <div class="d-flex align-items-center gap-3">
@@ -133,30 +136,40 @@
       function aksi($id, $type)
       {
 
-        $btnLihat = ($type === 'file') ? '
-    <span class="text-dark" title="Lihat" onclick="editItemFolder(event)">
+        $btnFile = ($type === 'file') ? '
+    <span class="action-btn text-dark" title="Lihat" onclick="lihatItemFile(event)">
       <i class="bi bi-eye"></i>
     </span>
     <label class="divider">|</label>
+    <span class="action-btn text-dark" title="Otorisasi" onclick="otorisasiFile(event)">
+            <i class="bi bi-shield-check"></i></span> 
+        <label class="divider">|</label>
+    <span class="action-btn text-dark" title="Ubah" onclick="editItemFile(event)">
+            <i class="bi bi-pencil-square"></i></span> 
+        <label class="divider">|</label>
+        
+        <span class="action-btn text-danger" title="Hapus" onclick="deleteItemFile(event)">
+            <i class="bi bi-x-circle"></i></span>
   ' : '';
 
-        $btnTambah = ($type === 'folder') ? '
-    <span class="text-dark" title="Tambah" onclick="tambahItemFile(event)" id="addFile">
+        $btnFolder = ($type === 'folder') ? '
+    <span class=" action-btn text-dark" title="Tambah" onclick="tambahItemFile(event)" id="addFile">
       <i class="bi bi-plus-circle"></i>
     </span>
     <label class="divider">|</label>
+    <span class="action-btn text-dark" title="Otorisasi" onclick="otorisasiFolder(event)">
+            <i class="bi bi-shield-check"></i></span> 
+        <label class="divider">|</label>
+    <span class="action-btn text-dark" title="Ubah" onclick="editItemFolder(event)">
+            <i class="bi bi-pencil-square"></i></span> 
+        <label class="divider">|</label>
+        <span class="action-btn text-danger" title="Hapus" onclick="deleteItemFolder(event)">
+            <i class="bi bi-x-circle"></i></span>
   ' : '';
 
         return '<div id="' . $id . '">
-        ' . $btnLihat . $btnTambah . '
-        <span class="text-dark" title="Otorisasi" onclick="editItemFolder(event)">
-            <i class="bi bi-shield-check"></i></span> 
-        <label class="divider">|</label>
-        <span class="text-dark" title="Ubah" onclick="editItemFolder(event)">
-            <i class="bi bi-pencil-square"></i></span> 
-        <label class="divider">|</label>
-        <span class="text-danger" title="Hapus" onclick="deleteItem(event)">
-            <i class="bi bi-x-circle"></i></span>
+        ' . $btnFile . $btnFolder . '
+        
     </div>';
       }
       ?>
@@ -167,9 +180,26 @@
 
         addAction();
 
+        document.querySelectorAll(".file-item").forEach(item => {
+          item.addEventListener("click", function(e) {
+            // kalau kliknya tombol aksi, keluarin aja
+            if (e.target.closest(".action-btn")) return;
+
+            const fileItem = e.target.closest(".file-item");
+            if (!fileItem) return;
+
+            const url = fileItem.dataset.url;
+            if (url) {
+              window.open(url, "_self");
+            }
+          });
+        });
+
+
+
+
         var draggedItem = null;
         var dragStartX = 0;
-
         var folderMenu = document.getElementById("folder");
         var placeholder = document.createElement("div");
         placeholder.classList.add("drag-placeholder");
@@ -184,7 +214,6 @@
                 return;
               }
             }
-
             draggedItem = item;
             dragStartX = e.clientX;
             item.style.opacity = "0.7";
@@ -216,7 +245,6 @@
                   break;
                 }
               }
-
               if (el.dataset.type === "file") continue;
             }
 
@@ -246,7 +274,6 @@
                 count = parseInt(parentFolder.dataset.count);
               }
             }
-
 
             // batasi level
             if (count > maxLevel) count = maxLevel;
@@ -279,7 +306,6 @@
                 count = newCount;
               }
             }
-
 
             // Fungsi merapikan anak folder
             function rapikanAnakFolder(folderEl) {
@@ -331,11 +357,9 @@
               } else {
                 folderMenu.insertBefore(draggedItem, placeholder);
               }
-
               // rapikan semua anak folder agar rapi
               rapikanAnakFolder(draggedItem);
             }
-
             // update indent folder yang dipindahkan
             item.dataset.count = count;
             item.style.marginLeft = (count * 30) + "px";
@@ -347,7 +371,6 @@
             saveAll();
             updateCarets();
           });
-
 
           item.addEventListener("dragover", (e) => {
             e.preventDefault();
@@ -406,10 +429,8 @@
 
         function updateKodeFolder() {
           const items = [...document.querySelectorAll(".folder-item, .file-item")];
-
           items.forEach((item, index) => {
             const level = parseInt(item.dataset.count) || 0;
-
             // Cari parent sebelumnya yang level lebih rendah **dan type folder**
             let parentId = 0;
             for (let i = index - 1; i >= 0; i--) {
@@ -421,7 +442,6 @@
                 break;
               }
             }
-
             // kalau folder normal
             if (parentId) {
               item.dataset.parent = parentId;
@@ -635,9 +655,102 @@
         //   }
         // }
 
+        function editItemFile(event) {
+          const closest = event.target.closest('div');
+          if (closest) {
+            showLoading();
+            const id = closest.getAttribute('id');
+            const url = "<?= base_url('berkas/edit') ?>/" + id;
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded'
+                },
+              })
+              .then(response => response.json())
+              .then(data => {
+                if (data) {
+                  $('.modal-title-file').text('Ubah Data');
+                  $('#modalFormFile').modal('show');
+                  Object.entries(data).forEach(([key, value]) => {
+                    const elements = document.querySelectorAll(`[name="${key}"],[name="${key}[]"]`);
+                    if (elements.length > 0) {
+                      elements.forEach(el => {
+                        if (el.type === "checkbox" || el.type === "radio") {
+                          if (el.type === "checkbox") {
+                            if (Array.isArray(value)) {
+                              el.checked = value.includes(el.value);
+                            } else el.checked = value === "true" || value === "1" || value === true || value === el.value;
+                          } else if (el.type === "radio") el.checked = el.value === value;
+                        } else if (el.tagName === "SELECT") {
+                          el.value = value || "";
+                          const wrapper = el.parentElement.querySelector('.selected');
+                          if (wrapper) {
+                            const option = Array.from(el.options).find(opt => opt.value === value);
+                            wrapper.textContent = option ? option.text : "-- pilih data --";
+                          }
+                        } else el.value = value || "";
+                      });
+                    }
+                  });
+                  $('#myFileForm').submit();
+                }
+              }).catch(error => {
+                sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
+              }).finally(() => {
+                setTimeout(() => {
+                  hideLoading();
+                }, 300);
+              });
+          }
+        }
+
+        function deleteItemFile(event, msg = "") {
+          const closest = event.target.closest('div');
+          if (msg != "") msg = '<br><strong>' + msg + '</strong>';
+          if (closest) {
+            sayAlert('confirmModal', 'Confirm!', 'Apakah yakin menghapus data ini?' + msg, 'danger', true, () => {
+              showLoading();
+              const id = closest.getAttribute('id');
+              const url = "<?= base_url('berkas/delete') ?>/" + id;
+
+              fetch(url, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRF-TOKEN': document.querySelector('[name="<?= csrf_token() ?>"]').value
+                  },
+                })
+                .then(response => response.json())
+                .then(data => {
+                  if (data.res == 'refresh') {
+                    loadContent(data.link);
+                    sayAlert('successModal', 'Success', 'Data berhasil dihapus.', 'success');
+                  } else if (data.res == true) {
+                    table.fetchData({
+                      reload: true
+                    });
+                    $('[name=' + data.xname + ']').val(data.xhash);
+                    sayAlert('successModal', 'Success', 'Data berhasil dihapus.', 'success');
+                  } else {
+                    sayAlert('errorModal', 'Error', 'Data gagal dihapus.', 'warning');
+                  }
+                })
+                .catch(error => {
+                  sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.' + error.message, 'warning');
+                })
+                .finally(() => {
+                  hideLoading();
+                });
+            });
+          }
+        }
+
+
+
+
         function tambahItemFile(event) {
           var id = event.target.closest("div").id;
-          console.log("ID item:", id);
           var form = document.getElementById('myFileForm');
           var errorDivs = form.querySelectorAll('.error');
           errorDivs.forEach(errorDiv => {
@@ -655,7 +768,6 @@
           });
           document.querySelector('input[name="idFile"]').value = '';
           document.querySelector('input[name="id_folder"]').value = id;
-          console.log("id_folder hidden:", document.querySelector('[name="id_folder"]').value);
 
           $('.modal-title-file').text('Tambah File');
           $('#modalFormFile').modal('show');
@@ -701,7 +813,7 @@
             });
         }
 
-        // ===== validasi gambar ===== //
+        // ===== validasi file ===== //
         document.querySelector('#berkas').addEventListener('change', function() {
           var file = this.files[0];
           var errorMsg = document.querySelector('#errorMsg');
