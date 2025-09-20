@@ -70,10 +70,10 @@
         </button>
       </div>
 
-      <div>
+      <!-- <div>
         <input type="text" class="form-control" id="search" placeholder="Cari folder"
           style="max-width: 300px; margin: 10px; margin-bottom: 0px;">
-      </div>
+      </div> -->
 
       <?php
       function renderTree($nodes, $level = 0, $encrypter = null)
@@ -194,9 +194,6 @@
             }
           });
         });
-
-
-
 
         var draggedItem = null;
         var dragStartX = 0;
@@ -692,8 +689,8 @@
                         } else el.value = value || "";
                       });
                     }
+                    perbaruiTombol();
                   });
-                  $('#myFileForm').submit();
                 }
               }).catch(error => {
                 sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
@@ -746,9 +743,6 @@
           }
         }
 
-
-
-
         function tambahItemFile(event) {
           var id = event.target.closest("div").id;
           var form = document.getElementById('myFileForm');
@@ -768,12 +762,16 @@
           });
           document.querySelector('input[name="idFile"]').value = '';
           document.querySelector('input[name="id_folder"]').value = id;
-
           $('.modal-title-file').text('Tambah File');
           $('#modalFormFile').modal('show');
-
-          $('#myFileForm').submit();
+          perbaruiTombol();
         }
+
+        // binding submit sekali di awal (bukan di dalam tambahItemFile)
+        $('#myFileForm').on('submit', function(e) {
+          e.preventDefault(); // cegah submit langsung
+          save(this); // panggil fungsi save() yg pake fetch
+        });
 
         function save(form) {
           showLoading();
@@ -787,6 +785,7 @@
             .then(data => {
               $('[name=' + data.xname + ']').val(data.xhash);
               if ($('#modalFormFile').hasClass('show')) $('#modalFormFile').modal('hide');
+
               if (data.res == true) {
                 if (table) table.fetchData({
                   reload: true
@@ -804,7 +803,12 @@
               } else if (data.res == 'refresh-print') {
                 loadContent(data.link);
                 window.open(data.print, "_blank");
-              } else sayAlert('errorModal', 'Error', 'Data gagal disimpan.', 'warning');
+              } else if (data.res == 'duplicate') {
+                // Pop up khusus jika file sudah ada
+                sayAlert('errorModal', 'Error', data.message, 'warning');
+              } else {
+                sayAlert('errorModal', 'Error', 'Data gagal disimpan.', 'warning');
+              }
             })
             .catch(error => {
               sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
@@ -1220,96 +1224,96 @@
           </div>
         </div>
       </div>
-    </div>
 
-
-
-
-    <!-- Modal File -->
-    <div class="modal fade" id="modalFormFile" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-      <div class="modal-dialog modal-lg" role="document" style="margin: 2% auto">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title-file">Modal title</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-            </button>
-          </div>
-          <?php echo form_open('berkas/submit', array('id' => 'myFileForm', 'novalidate' => '')) ?>
-          <div class="modal-body">
-            <input type="hidden" value="" name="idFile" />
-            <input type="hidden" class="form-control" name="id_folder">
-            <input name="slug" type="text" class="form-control bg-light" value="" hidden>
-
-            <div class="row mb-2">
-              <div class="col">
-                <label class="col-md-3 col-form-label">Judul Berkas</label>
-                <input name="titleFile" type="text" class="form-control" required placeholder="Masukkan judul file">
-              </div>
+      <!-- Modal File -->
+      <div class="modal fade" id="modalFormFile" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document" style="margin: 2% auto">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title-file">Modal title</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+              </button>
             </div>
-            <div class="row mb-2">
-              <div class="col">
-                <label class="col-md-6 col-form-label">No. Dokumen</label>
-                <input name="nomor_dokumen" type="text" class="form-control bg-light" placeholder="Masukkan nomor dokumen" required>
-              </div>
-              <div class="col">
-                <label class="col-md-3 col-form-label">Revisi</label>
-                <input name="revisi" type="number" class="form-control bg-light" placeholder="Masukkan revisi" required>
-              </div>
-            </div>
-            <div class="row mb-2">
-              <div class="col">
-                <label class="col-md-3 col-form-label">File</label>
-                <input id="berkas" name="berkas" type="file" class="form-control" accept=".pdf,.doc,.docx">
-                <small class="text-muted" id="ketBerkas" style="font-size: 11px;">Upload maks. 100MB</small>
-                <small class="text-danger d-none" id="errorMsg">Hanya file docs/pdf yang diperbolehkan!</small>
-              </div>
-              <div class="col">
-                <label class="col-md-3 col-form-label">Tanggal</label>
-                <input name="tanggal" id="tanggal-input" type="date" class="form-control"
-                  value="<?= esc(date('Y-m-d')) ?>" required>
-              </div>
-              <div class="col">
-                <label class="col-md-3 col-form-label">Author</label>
-                <input name="nama" type="text" value="<?= $user->nama ?>" class="form-control bg-light" required readonly>
-                <input name="user_id" type="text" value="<?= $user->id_user ?>" class="form-control" required hidden>
-              </div>
-            </div>
+            <?php echo form_open('berkas/submit', array('id' => 'myFileForm', 'novalidate' => '')) ?>
+            <div class="modal-body">
+              <input type="hidden" value="" name="idFile" />
+              <input type="hidden" class="form-control" name="id_folder">
+              <input name="slug" type="text" class="form-control bg-light" value="" hidden>
 
-            <div class="row mb-2">
-              <div class="col">
-                <label class="col-md col-form-label">Kategori</label>
-                <div class="d-flex gap-2 align-items-start">
-                  <select id="kategori_id" name="kategori_id" class="form-select" required style="max-width: 150px;">
-                    <option value="">-- pilih data --</option>
-                    <?php foreach ($categories as $kategori): ?>
-                      <option value="<?= $kategori->id_categories ?>">
-                        <?= esc($kategori->nama) ?>
-                      </option>
-                    <?php endforeach; ?>
-                  </select>
-                  <button type="button" class="btn btn-outline-secondary" id="btn-kategori-aksi">Tambah</button>
+              <div class="row mb-2">
+                <div class="col">
+                  <label class="col-md-3 col-form-label">Judul Berkas</label>
+                  <input name="titleFile" type="text" class="form-control" required placeholder="Masukkan judul file">
                 </div>
-                <!-- Form tambah kategori akan muncul di sini -->
-                <div id="form-kategori-baru" class="mt-2 d-none">
-                  <div class="input-group" style="max-width: 400px;">
-                    <input type="text" class="form-control" id="input-kategori-baru" placeholder="Nama kategori baru">
-                    <button class="btn btn-success ms-2" type="button" id="btn-simpan-kategori">Simpan</button>
-                    <button class="btn btn-danger ms-2" type="button" id="btn-batal-kategori">Batal</button>
+              </div>
+              <div class="row mb-2">
+                <div class="col">
+                  <label class="col-md-7 col-form-label">No. Dokumen</label>
+                  <input name="nomor_dokumen" type="text" class="form-control bg-light" placeholder="Masukkan nomor dokumen" required>
+                </div>
+                <div class="col">
+                  <label class="col-md-3 col-form-label">Revisi</label>
+                  <input name="revisi" type="number" class="form-control bg-light" placeholder="Masukkan revisi" required>
+                </div>
+              </div>
+              <div class="row mb-2">
+                <div class="col">
+                  <label class="col-md-6 col-form-label">File</label>
+                  <input id="berkas" name="berkas" type="file" class="form-control" accept=".pdf,.doc,.docx">
+                  <small class="text-muted" id="ketBerkas" style="font-size: 11px;">Upload maks. 100MB</small>
+                  <small class="text-danger d-none" id="errorMsg">Hanya file docs/pdf yang diperbolehkan!</small>
+                </div>
+                <div class="col">
+                  <label class="col-md-3 col-form-label">Tanggal</label>
+                  <input name="tanggal" id="tanggal-input" type="date" class="form-control"
+                    value="<?= esc(date('Y-m-d')) ?>" required>
+                </div>
+
+              </div>
+
+              <div class="row mb-2">
+                <div class="col">
+                  <label class="col-md-5 col-form-label">Kategori</label>
+                  <div class="d-flex gap-2 align-items-start">
+                    <select id="kategori_id" name="kategori_id" class="form-select" required style="max-width: 150px;">
+                      <option value="">-- pilih data --</option>
+                      <?php foreach ($categories as $kategori): ?>
+                        <option value="<?= $kategori->id_categories ?>">
+                          <?= esc($kategori->nama) ?>
+                        </option>
+                      <?php endforeach; ?>
+                    </select>
+                    <button type="button" class="btn btn-outline-secondary" id="btn-kategori-aksi">Tambah</button>
+                  </div>
+                  <!-- Form tambah kategori akan muncul di sini -->
+                  <div id="form-kategori-baru" class="mt-2 d-none">
+                    <div class="input-group" style="max-width: 400px;">
+                      <input type="text" class="form-control" id="input-kategori-baru" placeholder="Nama kategori baru">
+                      <button class="btn btn-success ms-2" type="button" id="btn-simpan-kategori">Simpan</button>
+                      <button class="btn btn-danger ms-2" type="button" id="btn-batal-kategori">Batal</button>
+                    </div>
+                  </div>
+                  <div class="d-flex gap-2 align-items-start mt-2" id="form-edit-kategori" style="display: none;">
+                    <input type="text" class="form-control" id="input-edit-kategori" style="max-width: 200px;" placeholder="Edit nama kategori">
+                    <button type="button" class="btn btn-success" id="btn-update-kategori">Update</button>
+                    <button type="button" class="btn btn-danger" id="btn-delete-kategori">Hapus</button>
                   </div>
                 </div>
-                <div class="d-flex gap-2 align-items-start mt-2" id="form-edit-kategori" style="display: none;">
-                  <input type="text" class="form-control" id="input-edit-kategori" style="max-width: 200px;" placeholder="Edit nama kategori">
-                  <button type="button" class="btn btn-success" id="btn-update-kategori">Update</button>
-                  <button type="button" class="btn btn-danger" id="btn-delete-kategori">Hapus</button>
+                <div class="col">
+                  <label class="col-md-3 col-form-label">Author</label>
+                  <input name="nama" type="text" value="<?= $user->nama ?>" class="form-control bg-light" required readonly>
+                  <input name="user_id" type="text" value="<?= $user->id_user ?>" class="form-control" required hidden>
                 </div>
               </div>
             </div>
+            <div class="modal-footer">
+              <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Batal</button>
+              <button class="btn btn-success" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
+            </div>
+            </form>
           </div>
-          <div class="modal-footer">
-            <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Batal</button>
-            <button class="btn btn-success" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
-          </div>
-          </form>
         </div>
       </div>
     </div>
+  </div>
+</div>

@@ -47,7 +47,7 @@ class Berkas extends BaseController
     $data['revisi'] = $get->revisi;
     $data['user_id'] = $get->user_id;
     $data['nama'] = $user->nama;
-    $data['tanggal'] = $get->updated_at != null ? date('Y-m-d', strtotime($get->updated_at)) : date('Y-m-d', strtotime($get->created_at));
+    $data['tanggal'] = $get->created_at != null ? date('Y-m-d', strtotime($get->created_at)) : date('Y-m-d', strtotime($get->updated_at));
 
     // 'userId' => session()->get('idUser'),
     return $this->response->setJSON($data);
@@ -117,15 +117,30 @@ class Berkas extends BaseController
 
     $model = new MyModel($this->table);
 
+    // Cek duplicate
+    $cek = $model->groupStart()
+      ->where('title', $this->request->getPost('titleFile'))
+      ->orWhere('nomor_dokumen', $this->request->getPost('nomor_dokumen'))
+      ->groupEnd()
+      ->first();
+
+    if ($cek && (empty($idenc) || $cek[$this->id] != $this->encrypter->decrypt(hex2bin($idenc)))) {
+      return $this->response->setJSON([
+        'res' => 'duplicate',
+        'message' => 'File dengan judul atau nomor dokumen ini sudah ada!',
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash()
+      ]);
+    }
+
     if (!empty($idenc) && ctype_xdigit($idenc) && strlen($idenc) % 2 === 0) {
       $data['updated_at'] = $now; // waktu sekarang saat diupdate
-
+      $data['created_at'] = $tanggalUp;
       $id = $this->encrypter->decrypt(hex2bin($idenc));
       $res = $model->updateData($data, $this->id, $id);
     } else {
       // kalau ga valid → anggap insert aja, atau return error
       $data['created_at'] = $tanggalUp; // waktu sekarang saat dibuat
-
       $res = $model->insertData($data);
     }
 
