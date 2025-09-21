@@ -65,9 +65,14 @@
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
         <label class="card-title mb-0"><?= $title ?></label>
-        <button id="add" class="btn btn-primary">
-          <i class="bi bi-plus-circle-dotted"></i> Tambah Folder
-        </button>
+        <div>
+          <button id="refresh" class="btn btn-success">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+          </button>
+          <button id="add" class="btn btn-primary">
+            <i class="bi bi-plus-circle-dotted"></i> Tambah Folder
+          </button>
+        </div>
       </div>
 
       <!-- <div>
@@ -177,12 +182,16 @@
       <!-- JavaScript di bawah ini tidak perlu diubah, biarkan seperti aslinya -->
       <script>
         folderState = {}; // Menyimpan state collapsed/expanded folder
+        var refreshButton = document.getElementById("refresh");
 
         addAction();
 
+        refreshButton.addEventListener("click", function() {
+          loadContent('folder');
+        });
+
         document.querySelectorAll(".file-item").forEach(item => {
           item.addEventListener("click", function(e) {
-            // kalau kliknya tombol aksi, keluarin aja
             if (e.target.closest(".action-btn")) return;
 
             const fileItem = e.target.closest(".file-item");
@@ -304,23 +313,6 @@
               }
             }
 
-            // Fungsi merapikan anak folder
-            function rapikanAnakFolder(folderEl) {
-              const folderLevel = parseInt(folderEl.dataset.count) || 0;
-              let nextEl = folderEl.nextSibling;
-
-              while (nextEl) {
-                const lvl = parseInt(nextEl.dataset.count) || 0;
-                if (lvl <= folderLevel) break; // keluar kalau sudah bukan anak folder
-
-                // update count dan margin
-                nextEl.dataset.count = folderLevel + 1;
-                nextEl.style.marginLeft = (folderLevel + 1) * 30 + "px";
-
-                nextEl = nextEl.nextSibling;
-              }
-            }
-
             // Folder
             if (draggedItem.dataset.type === "folder") {
 
@@ -378,7 +370,6 @@
         }
 
         function getDragAfterElement(container, y) {
-          // 🔑 file + folder sekarang sama-sama ikut
           var elements = [
             ...container.querySelectorAll(
               ".folder-item:not([style*='display: none']), .file-item:not([style*='display: none'])"),
@@ -398,6 +389,25 @@
             }
           ).element;
         }
+
+
+        // Fungsi merapikan anak folder
+        function rapikanAnakFolder(folderEl) {
+          const folderLevel = parseInt(folderEl.dataset.count) || 0;
+          let nextEl = folderEl.nextSibling;
+
+          while (nextEl) {
+            const lvl = parseInt(nextEl.dataset.count) || 0;
+            if (lvl <= folderLevel) break; // keluar kalau sudah bukan anak folder
+
+            // update count dan margin
+            nextEl.dataset.count = folderLevel + 1;
+            nextEl.style.marginLeft = (folderLevel + 1) * 30 + "px";
+
+            nextEl = nextEl.nextSibling;
+          }
+        }
+
 
         function updateCarets() {
           document.querySelectorAll(".folder-item i.bi-caret-down").forEach(el => el.remove());
@@ -510,6 +520,7 @@
           var tokenName = "<?= csrf_token() ?>";
           var elName = document.querySelector(`[name="${tokenName}"]`);
           var tokenValue = elName.value;
+
 
           var formData = new FormData();
           var items = document.querySelectorAll(".folder-item, .file-item");

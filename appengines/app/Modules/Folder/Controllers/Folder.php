@@ -181,6 +181,12 @@ class Folder extends BaseController
       'res'   => true,
       'xhash' => csrf_hash()
     ]);
+
+    // return $this->response->setJSON([
+    //   'res'   => 'refresh',
+    //   'link'  => 'folder',
+    //   'xhash' => csrf_hash()
+    // ]);
   }
 
 
