@@ -169,7 +169,9 @@ class Folder extends BaseController
 
     if (!empty($folderData)) {
       $linkModel = new MyModel('folder_links');
-      $linkModel->updateDataBatch($folderData, 'child_id');
+      $db = \Config\Database::connect();
+      $db->table('folder_links')->truncate(); // hapus semua dulu
+      $linkModel->insertDataBatch($folderData); // insert ulang
     }
 
     if (!empty($fileData)) {
@@ -181,12 +183,6 @@ class Folder extends BaseController
       'res'   => true,
       'xhash' => csrf_hash()
     ]);
-
-    // return $this->response->setJSON([
-    //   'res'   => 'refresh',
-    //   'link'  => 'folder',
-    //   'xhash' => csrf_hash()
-    // ]);
   }
 
 

@@ -244,7 +244,7 @@
 
               if (el.dataset.type === "folder") {
                 const caret = el.querySelector(".bi-caret-down");
-                if (!caret || !caret.classList.contains("collapsed")) {
+                if (!caret || !caret.classList.contains("collapsed") || el.style.display !== "none") {
                   // hanya ambil folder kalau tidak collapsed
                   parentFolder = el;
                   previousItem = el;
@@ -293,15 +293,24 @@
               let targetPosition = placeholder;
 
               if (previousItem) {
-                // previousItem pasti folder → masuk ke dalam folder
-                targetPosition = placeholder;
-                newCount = Math.min(count, parseInt(previousItem.dataset.count) + 1);
+                if (
+                  previousItem.dataset.type === "folder" &&
+                  previousItem.querySelector(".bi-caret-down") &&
+                  previousItem.querySelector(".bi-caret-down").classList.contains("collapsed")
+                ) {
+                  // folder collapsed → kembalikan ke posisi awal
+                  targetPosition = draggedItem;
+                  newCount = originalCount;
+                } else {
+                  // folder terbuka ATAU folder tanpa caret → boleh jadi anak
+                  targetPosition = placeholder;
+                  newCount = Math.min(count, parseInt(previousItem.dataset.count) + 1);
+                }
               } else {
                 // tidak ada previousItem → kembalikan ke posisi awal
                 targetPosition = draggedItem;
                 newCount = originalCount;
               }
-
               // cek apakah posisi atau level berubah
               const newIndex = childrenArray.indexOf(targetPosition);
               if (originalIndex === newIndex && originalCount === newCount) {
@@ -438,7 +447,6 @@
           const items = [...document.querySelectorAll(".folder-item, .file-item")];
           items.forEach((item, index) => {
             const level = parseInt(item.dataset.count) || 0;
-            // Cari parent sebelumnya yang level lebih rendah **dan type folder**
             let parentId = 0;
             for (let i = index - 1; i >= 0; i--) {
               const prev = items[i];
@@ -451,13 +459,26 @@
             }
             // kalau folder normal
             if (parentId) {
-              item.dataset.parent = parentId;
+              const parentFolder = document.getElementById(parentId);
+              const caret = parentFolder.querySelector(".bi-caret-down");
+
+              // kalau folder collapse → skip, jangan dipakai
+              if (caret && caret.classList.contains("collapsed")) {
+                // biarin parent sebelumnya (jangan ubah)
+                return;
+              } else {
+                item.dataset.parent = parentId;
+              }
             } else {
-              // kalau dia FILE tapi ga punya parent → kasih parent folder sebelumnya
               if (item.dataset.type === "file") {
                 for (let j = index - 1; j >= 0; j--) {
                   const prev = items[j];
                   if (prev.dataset.type === "folder") {
+                    const caret = prev.querySelector(".bi-caret-down");
+                    if (caret && caret.classList.contains("collapsed")) {
+                      // skip folder collapsed
+                      continue;
+                    }
                     item.dataset.parent = prev.id;
                     item.dataset.count = (parseInt(prev.dataset.count) || 0) + 1;
                     item.style.marginLeft = (parseInt(item.dataset.count) * 30) + "px";
@@ -465,7 +486,6 @@
                   }
                 }
               } else {
-                // folder root
                 item.dataset.parent = 0;
               }
             }
