@@ -92,7 +92,7 @@
           $encId = bin2hex($encrypter->encrypt($rawId));
       ?>
           <div id="<?= $encId ?>" class="<?= $node->type ?>-item flex" style="margin-left: <?= $level * 30; ?>px"
-            draggable="true" data-type="<?= $node->type ?>" data-count="<?= $level ?>"
+            draggable="true" data-type="<?= $node->type ?>" data-count="<?= $level ?>" data-id="<?= $rawId ?>"
             <?php if ($node->type === 'file'): ?>
             data-url="<?= base_url('uploads/' . $node->berkas) ?>"
             <?php endif; ?>>
@@ -275,11 +275,19 @@
 
             if (parentFolder) {
               const caret = parentFolder.querySelector(".bi-caret-down");
-              if (caret && caret.classList.contains("collapsed")) {
+              const parentId = parentFolder.dataset.id;
+              const draggedId = draggedItem.dataset.id;
+
+              // 🛑 Proteksi khusus kalau yg didrag folder
+              if (draggedItem.dataset.type === "folder" && parentId === draggedId) {
+                // jangan jadikan child → tetap sejajar
+                count = parseInt(parentFolder.dataset.count);
+              } else if (caret && caret.classList.contains("collapsed")) {
                 // taruh sejajar dengan parent, bukan dibatalkan
                 count = parseInt(parentFolder.dataset.count);
               }
             }
+
 
             // batasi level
             if (count > maxLevel) count = maxLevel;
