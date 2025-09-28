@@ -423,6 +423,33 @@ class MyModel extends Model
 		}
 	}
 
+  function updateArrayData($data, $where = "", $id = "")
+  {
+    $this->db->transBegin();
+
+    if (!empty($where)) {
+        if (is_array($where)) {
+            // kalau array → apply multiple where
+            foreach ($where as $key => $val) {
+                $this->builder->where($key, $val);
+            }
+        } else {
+            // kalau bukan array → gunakan cara lama
+            $this->builder->where($where, $id);
+        }
+    }
+
+    $this->builder->update($data);
+
+    if ($this->db->transStatus() === FALSE) {
+        $this->db->transRollback();
+        return false;
+    } else {
+        $this->db->transCommit();
+        return true;
+    }
+}
+
 	public function updateDataBatch($data, $key)
 	{
 		$this->db->transBegin();

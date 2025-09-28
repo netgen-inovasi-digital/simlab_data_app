@@ -7,8 +7,8 @@ use App\Models\MyModel;
 
 class Otoritas extends BaseController
 {
-  private $table = 'otoritas';
-  private $id = 'id_role';
+  // private $table = 'otoritas';
+  // private $id = 'id_role';
 
   public function index()
   {
@@ -103,5 +103,60 @@ class Otoritas extends BaseController
       }
     }
     return $this->response->setJSON(array('res' => $res, 'xname' => csrf_token(), 'xhash' => csrf_hash()));
+  }
+
+  public function submitAuthorizationDocs()
+  {
+    $role   = $this->request->getPost('role');
+    $id     = $this->request->getPost('id');
+    $type   = $this->request->getPost('type'); // file / folder
+    $perm   = $this->request->getPost('perm'); // view / crud
+    $status = $this->request->getPost('status'); // 0 / 1
+
+    if (!$role || !$id || !$perm) {
+      return $this->response->setJSON([
+        'res'   => false,
+        'msg'   => 'Data tidak lengkap',
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash()
+      ]);
+    }
+
+    // tentukan tabelnya sesuai type
+    $table = $type === 'file' ? 'otoritas_file' : 'otoritas_folder';
+    $field = $type === 'file' ? 'id_file' : 'id_folder';
+
+    $model = new MyModel($table);
+
+    // cek apakah sudah ada record
+    $where = [
+      'id_role' => $role,
+      $field    => $id
+    ];
+    $get = $model->getDataByArray($where);
+
+    if ($get) {
+      // update kolom sesuai perm (view/crud)
+      $data = [
+        $perm === 'view' ? 'can_view' : 'can_crud' => $status
+      ];
+      $res = $model->updateArrayData($data,  ['id_role' => $role, $field => $id]);
+    } else {
+      // insert baru
+      $data = [
+        'id_role'  => $role,
+        $field     => $id,
+        'can_view' => $perm === 'view' ? $status : 0,
+        'can_crud' => $perm === 'crud' ? $status : 0
+      ];
+      $res = $model->insertData($data);
+    }
+
+    return $this->response->setJSON([
+      'res'   => $res,
+      'msg'   => 'Otorisasi berhasil disimpan',
+      'xname' => csrf_token(),
+      'xhash' => csrf_hash()
+    ]);
   }
 }

@@ -129,7 +129,8 @@
       </div>
 
 
-
+      <?php echo form_open('', ['id' => 'myAuthorizationForm', 'novalidate' => '']); ?>
+      <?php echo form_close(); ?>
 
       <?php
       function renderTree($nodes, $level = 0, $encrypter = null)
@@ -707,7 +708,7 @@
             filterTipe.style.display = "block";
 
 
-            fetch(`otoritas/akses?s=${role}`)
+            fetch(`otoritas/show?s=${role}`)
               .then(res => res.json())
               .then(data => {
                 data.forEach(item => {
@@ -733,61 +734,106 @@
         })
 
 
-        var checkboxes = document.querySelectorAll('.form-check-otorisasi');
-        checkboxes.forEach(checkbox => {
-          checkbox.addEventListener('change', (event) => {
-            const value = event.target.value;
-            const role = $('#role').val();
-            const parent = event.target.getAttribute('parent');
-            let checked = "";
-            const isChecked = event.target.checked;
-            if (isChecked) {
-              checked = true;
-              if (parent !== undefined) {
-                document.querySelectorAll('.form-check input[value="' + parent + '"]').forEach(input => {
-                  input.checked = true;
-                });
-              } else {
-                document.querySelectorAll('.form-check input[parent="' + value + '"]').forEach(input => {
-                  input.checked = true;
-                });
-              }
-            } else {
-              if (parent !== undefined) {
-                const total = document.querySelectorAll('.form-check input[parent="' + parent + '"]:checked').length;
-                if (total === 0) {
-                  const parentInput = document.querySelector('.form-check input[value="' + parent + '"]');
-                  if (parentInput) parentInput.checked = false;
-                }
-              } else {
-                const childInputs = document.querySelectorAll('.form-check input[parent="' + value + '"]');
-                childInputs.forEach(input => {
-                  input.checked = false;
-                });
-              }
-            }
-            const data = [];
-            document.querySelectorAll('.form-check input:checked').forEach(input => {
-              if (!data.includes(input.value)) {
-                data.push(input.value);
-              }
-            });
 
-            const form = document.querySelector('#myform');
+        document.querySelectorAll('.form-check-otorisasi').forEach(checkbox => {
+          checkbox.addEventListener('change', (event) => {
+            const role = document.getElementById('role').value;
+
+            // ambil atribut dari checkbox
+            const id = event.target.dataset.id;
+            const type = event.target.dataset.type;
+            const perm = event.target.dataset.perm;
+            const status = event.target.checked ? 1 : 0;
+
+            // kirim ke backend
+            const form = document.querySelector('#myAuthorizationForm');
             const formData = new FormData(form);
             formData.append('role', role);
-            data.forEach(value => formData.append('menu[]', value));
+            formData.append('id', id);
+            formData.append('type', type);
+            formData.append('perm', perm);
+            formData.append('status', status);
 
-            fetch('./otoritas/submit', {
+            fetch('./otoritas/akses', {
                 method: 'POST',
                 body: formData,
               })
-              .then(response => response.json())
+              .then(res => res.json())
               .then(data => {
-                $('[name=' + data.xname + ']').val(data.xhash);
-              }).catch(error => {});
+                if (data.xname && data.xhash) {
+                  $(`[name="${data.xname}"]`).val(data.xhash);
+                  console.log("Otorisasi tersimpan:", {
+                    id,
+                    type,
+                    perm,
+                    status
+                  });
+                }
+
+              })
+              .catch(err => console.error("Error submit otorisasi:", err));
           });
         });
+
+
+
+
+        // var checkboxes = document.querySelectorAll('.form-check-otorisasi');
+        // checkboxes.forEach(checkbox => {
+        //   checkbox.addEventListener('change', (event) => {
+        //     const value = event.target.value;
+        //     const role = $('#role').val();
+        //     const parent = event.target.getAttribute('parent');
+        //     let checked = "";
+        //     const isChecked = event.target.checked;
+        //     if (isChecked) {
+        //       checked = true;
+        //       if (parent !== undefined) {
+        //         document.querySelectorAll('.form-check input[value="' + parent + '"]').forEach(input => {
+        //           input.checked = true;
+        //         });
+        //       } else {
+        //         document.querySelectorAll('.form-check input[parent="' + value + '"]').forEach(input => {
+        //           input.checked = true;
+        //         });
+        //       }
+        //     } else {
+        //       if (parent !== undefined) {
+        //         const total = document.querySelectorAll('.form-check input[parent="' + parent + '"]:checked').length;
+        //         if (total === 0) {
+        //           const parentInput = document.querySelector('.form-check input[value="' + parent + '"]');
+        //           if (parentInput) parentInput.checked = false;
+        //         }
+        //       } else {
+        //         const childInputs = document.querySelectorAll('.form-check input[parent="' + value + '"]');
+        //         childInputs.forEach(input => {
+        //           input.checked = false;
+        //         });
+        //       }
+        //     }
+        //     const data = [];
+        //     document.querySelectorAll('.form-check input:checked').forEach(input => {
+        //       if (!data.includes(input.value)) {
+        //         data.push(input.value);
+        //       }
+        //     });
+
+        //     const form = document.querySelector('#myform');
+        //     const formData = new FormData(form);
+        //     formData.append('role', role);
+        //     data.forEach(value => formData.append('menu[]', value));
+
+        //     fetch('./otoritas/submit', {
+        //         method: 'POST',
+        //         body: formData,
+        //       })
+        //       .then(response => response.json())
+        //       .then(data => {
+        //         $('[name=' + data.xname + ']').val(data.xhash);
+        //       }).catch(error => {});
+        //   });
+        // });
+
 
 
         // document.querySelectorAll('.toggle-status').forEach(toggle => {
