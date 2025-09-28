@@ -15,59 +15,121 @@ class Folder extends BaseController
     $session = session();
     $user_id = $session->get('id_user');
 
-    $modelCategories = new MyModel('categories');
-    $modelUser       = new MyModel('users');
-    $modelFolder     = new MyModel('folder');
-    $modelFolderLink = new MyModel('folder_links');
-    $modelFiles      = new MyModel('files');
-    $modalRoles      = new MyModel('roles');
+    $modelCategories  = new MyModel('categories');
+    $modelUser        = new MyModel('users');
+    $modelFolder      = new MyModel('folder');
+    $modelFolderLink  = new MyModel('folder_links');
+    $modelFiles       = new MyModel('files');
+    $modelRoles       = new MyModel('roles');
+    $modelOtorFolder  = new MyModel('otoritas_folder');
+    $modelOtorFile    = new MyModel('otoritas_file');
 
-    // ambil semua data
+    // ambil data user + role
+    $user    = $modelUser->getDataById('id_user', $user_id);
+    $role_id = $user->role_id;
+
+    // ambil semua data folder, link, file
     $folders = $modelFolder->getAllData('sort_order', 'asc');
     $links   = $modelFolderLink->getAllData('sort_order', 'asc');
     $files   = $modelFiles->getAllData('created_at', 'asc');
+
+    // ambil otoritas sesuai role
+    $otorFolder = $modelOtorFolder->getAllDataByWhere(['id_role' => $role_id]);
+    $otorFile   = $modelOtorFile->getAllDataByWhere(['id_role' => $role_id]);
+
+    // mapping otoritas folder
+    $permsFolder = [];
+
+    foreach ($otorFolder as $o) {
+      $permsFolder[$o->id_folder] = (object)[
+        'can_view' => $o->can_view,
+        'can_crud' => $o->can_crud,
+      ];
+    }
+
+    // mapping otoritas file
+    $permsFile = [];
+    foreach ($otorFile as $o) {
+      $permsFile[$o->id_file] = (object)[
+        'can_view' => $o->can_view,
+        'can_crud' => $o->can_crud,
+      ];
+    }
 
     // bikin map folder
     $map = [];
     foreach ($folders as $f) {
       $f->type     = 'folder';
       $f->children = [];
+      $f->can_view = $permsFolder[$f->id_folder]->can_view ?? 0;
+      $f->can_crud = $permsFolder[$f->id_folder]->can_crud ?? 0;
       $map['folder_' . $f->id_folder] = $f;
     }
 
-    // bangun tree antar folder
-    $tree = [];
-    // bangun tree antar folder (folder anak dulu)
+    // relasi antar folder
     foreach ($links as $link) {
       $childKey  = 'folder_' . $link->child_id;
       $parentKey = $link->parent_id ? 'folder_' . $link->parent_id : null;
 
-      if ($parentKey === null) {
-        $tree[] = $map[$childKey]; // root
-      } else {
-        // tambah folder anak dulu
-        array_push($map[$parentKey]->children, $map[$childKey]);
+      if (!isset($map[$childKey])) continue;
+      if ($parentKey && isset($map[$parentKey])) {
+        $map[$parentKey]->children[] = $map[$childKey];
       }
     }
 
-    // masukkan file ke folder setelah folder anak
+    // masukkan file ke folder
     foreach ($files as $file) {
       $file->type     = 'file';
       $file->children = [];
+      $file->can_view = $permsFile[$file->id_files]->can_view ?? 0;
+      $file->can_crud = $permsFile[$file->id_files]->can_crud ?? 0;
+
       if (isset($map['folder_' . $file->id_folder])) {
         $map['folder_' . $file->id_folder]->children[] = $file;
       }
     }
 
-    $role = $modalRoles->getAllData();
+    // cari root
+    $roots = [];
+    foreach ($map as $key => $node) {
+      $isRoot = true;
+      foreach ($links as $link) {
+        if ($link->child_id == $node->id_folder && $link->parent_id !== null) {
+          $isRoot = false;
+          break;
+        }
+      }
+      if ($isRoot) {
+        $roots[] = $node;
+      }
+    }
 
+    $filter = function ($node) use (&$filter) {
+      if (isset($node->can_view) && $node->can_view == 0) {
+        return null;
+      }
+
+      $children = [];
+      foreach ($node->children as $child) {
+        $c = $filter($child);
+        if ($c !== null) $children[] = $c;
+      }
+      $node->children = $children;
+      return $node;
+    };
+
+    $tree = [];
+    foreach ($roots as $root) {
+      $n = $filter($root);
+      if ($n !== null) $tree[] = $n;
+    }
 
     $data = [
       'title'      => 'Dokumen Akreditasi',
       'tree'       => $tree,
       'categories' => $modelCategories->getAllData(),
-      'user'       => $modelUser->getDataById('id_user', $user_id),
-      'role'       => $role,
+      'user'       => $user,
+      'role'       => $modelRoles->getAllData(),
     ];
 
     return view('Modules\Folder\Views\v_folder', $data);

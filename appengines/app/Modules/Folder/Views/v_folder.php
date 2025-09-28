@@ -128,10 +128,6 @@
         </div>
       </div>
 
-
-      <?php echo form_open('', ['id' => 'myAuthorizationForm', 'novalidate' => '']); ?>
-      <?php echo form_close(); ?>
-
       <?php
       function renderTree($nodes, $level = 0, $encrypter = null)
       {
@@ -148,7 +144,6 @@
             <?php if ($node->type === 'file'): ?>
             data-url="<?= base_url('uploads/' . $node->berkas) ?>"
             <?php endif; ?>>
-
             <div class="d-flex justify-content-between align-items-center col-12">
               <div class="d-flex align-items-center gap-3">
 
@@ -168,7 +163,7 @@
               </div>
 
               <div class="d-flex align-items-center gap-2">
-                <?= aksi($encId, $rawId, $node->type) ?>
+                <?= aksi($encId, $rawId, $node->type, $node->can_crud) ?>
               </div>
             </div>
           </div>
@@ -185,23 +180,23 @@
       <div class="card-body">
         <small id="info" style="display: none;"><em>-- Silahkan pilih role terlebih dahulu.</em></small>
         <div id="folder" class="d-flex flex-column">
-          <?php renderTree($tree); ?>
+          <?php renderTree($tree ?? []); ?>
         </div>
       </div>
 
 
       <?php
-      function aksi($encId, $id, $type)
+      function aksi($encId, $id, $type, $can_crud = 0)
       {
 
         $btnFile = ($type === 'file') ? '
-        <span class="action-btn text-dark" title="Lihat" onclick="lihatItemFile(event)">
+        <span class="action-btn text-dark" title="Lihat">
             <i class="bi bi-eye"></i>
         </span>
         <input class="form-check-otorisasi checkbox-otorisasi-folder" type="checkbox" 
-               data-type="file" data-id="' . esc($id) . '"
- data-perm="view"
+               data-type="file" data-id="' . esc($id) . '"data-perm="view"
                onClick="event.stopPropagation()" style="display:none;">
+        ' . ($can_crud ? '
         <label class="divider">|</label>
         <span class="action-btn text-dark" title="Ubah" onclick="editItemFile(event)">
             <i class="bi bi-pencil-square"></i></span>
@@ -209,9 +204,8 @@
         <span class="action-btn text-danger" title="Hapus" onclick="deleteItemFile(event)">
             <i class="bi bi-x-circle"></i></span>
             <input class="form-check-otorisasi checkbox-otorisasi-file" type="checkbox" 
-               data-type="file" data-id=' . esc($id) . '
- data-perm="crud"
-               onClick="event.stopPropagation()" style="display:none;">
+               data-type="file" data-id=' . esc($id) . ' data-perm="crud"
+               onClick="event.stopPropagation()" style="display:none;">' : '') . '
             ' : '';
 
 
@@ -224,6 +218,8 @@
  data-perm="view"
                onClick="event.stopPropagation()" style="display:none;">
         <label class="divider lihat-folder-otorisasi" style="display: none;">|</label>
+
+        ' . ($can_crud ? '
         <span class=" action-btn text-dark" title="Tambah" onclick="tambahItemFile(event)" id="addFile">
             <i class="bi bi-plus-circle"></i>
         </span>
@@ -236,12 +232,11 @@
             <i class="bi bi-x-circle"></i>
             </span>
         <input class="form-check-otorisasi checkbox-otorisasi-folder" type="checkbox" 
-               data-type="folder" data-id="' . esc($id) . '"
- data-perm="crud"
-               onClick="event.stopPropagation()" style="display:none;">
+               data-type="folder" data-id="' . esc($id) . '" data-perm="crud"
+               onClick="event.stopPropagation()" style="display:none;">' : '') . '
             ' : '';
 
-        return '<div id="' . $encId . '">
+        return '<div id=' . $encId . '>
         ' . $btnFile . $btnFolder . '        
         </div>';
       } ?>
@@ -266,7 +261,7 @@
 
             const url = fileItem.dataset.url;
             if (url) {
-              window.open(url, "_self");
+              window.open(url, "_blank");
             }
           });
         });
@@ -735,6 +730,8 @@
 
 
 
+
+
         document.querySelectorAll('.form-check-otorisasi').forEach(checkbox => {
           checkbox.addEventListener('change', (event) => {
             const role = document.getElementById('role').value;
@@ -774,185 +771,6 @@
               .catch(err => console.error("Error submit otorisasi:", err));
           });
         });
-
-
-
-
-        // var checkboxes = document.querySelectorAll('.form-check-otorisasi');
-        // checkboxes.forEach(checkbox => {
-        //   checkbox.addEventListener('change', (event) => {
-        //     const value = event.target.value;
-        //     const role = $('#role').val();
-        //     const parent = event.target.getAttribute('parent');
-        //     let checked = "";
-        //     const isChecked = event.target.checked;
-        //     if (isChecked) {
-        //       checked = true;
-        //       if (parent !== undefined) {
-        //         document.querySelectorAll('.form-check input[value="' + parent + '"]').forEach(input => {
-        //           input.checked = true;
-        //         });
-        //       } else {
-        //         document.querySelectorAll('.form-check input[parent="' + value + '"]').forEach(input => {
-        //           input.checked = true;
-        //         });
-        //       }
-        //     } else {
-        //       if (parent !== undefined) {
-        //         const total = document.querySelectorAll('.form-check input[parent="' + parent + '"]:checked').length;
-        //         if (total === 0) {
-        //           const parentInput = document.querySelector('.form-check input[value="' + parent + '"]');
-        //           if (parentInput) parentInput.checked = false;
-        //         }
-        //       } else {
-        //         const childInputs = document.querySelectorAll('.form-check input[parent="' + value + '"]');
-        //         childInputs.forEach(input => {
-        //           input.checked = false;
-        //         });
-        //       }
-        //     }
-        //     const data = [];
-        //     document.querySelectorAll('.form-check input:checked').forEach(input => {
-        //       if (!data.includes(input.value)) {
-        //         data.push(input.value);
-        //       }
-        //     });
-
-        //     const form = document.querySelector('#myform');
-        //     const formData = new FormData(form);
-        //     formData.append('role', role);
-        //     data.forEach(value => formData.append('menu[]', value));
-
-        //     fetch('./otoritas/submit', {
-        //         method: 'POST',
-        //         body: formData,
-        //       })
-        //       .then(response => response.json())
-        //       .then(data => {
-        //         $('[name=' + data.xname + ']').val(data.xhash);
-        //       }).catch(error => {});
-        //   });
-        // });
-
-
-
-        // document.querySelectorAll('.toggle-status').forEach(toggle => {
-        //   toggle.addEventListener('change', function() {
-        //     var id = this.dataset.id;
-        //     var newStatus = this.checked ? 'Y' : 'N';
-        //     var tokenName = "<?= csrf_token() ?>";
-        //     var tokenValue = document.querySelector(`[name="${tokenName}"]`).value;
-
-        //     var formData = new FormData();
-        //     formData.append('id', id);
-        //     formData.append('status', newStatus);
-        //     formData.append(tokenName, tokenValue);
-
-        //     fetch('./folder/toggle', {
-        //         method: 'POST',
-        //         body: formData
-        //       })
-        //       .then(res => res.json())
-        //       .then(data => {
-        //         document.querySelector(`[name="${tokenName}"]`).value = data.xhash;
-        //       })
-        //       .catch(error => {
-        //         console.error('Gagal toggle status:', error);
-        //         this.checked = !this.checked;
-        //       });
-        //   });
-        // });
-
-        // function resetOpsiSumber() {
-        //   opsiHalaman.classList.add('d-none');
-        //   opsiBerita.classList.add('d-none');
-        //   opsiUrlNama.classList.add('d-none');
-        //   opsiUrlInput.classList.add('d-none');
-        // }
-
-        // var opsiHalaman = document.querySelector('#opsiHalaman');
-        // var opsiBerita = document.querySelector('#opsiBerita');
-        // var opsiUrlNama = document.querySelector('#opsiUrl');
-        // var opsiUrlInput = document.querySelector('#opsiUrlInput');
-
-        // document.querySelector('#sumberMenu').addEventListener('change', function() {
-        //   var value = this.value;
-        //   resetOpsiSumber();
-        //   if (value === 'halaman') opsiHalaman.classList.remove('d-none');
-        //   else if (value === 'berita') opsiBerita.classList.remove('d-none');
-        //   else if (value === 'manual') {
-        //     opsiUrlNama.classList.remove('d-none');
-        //     opsiUrlInput.classList.remove('d-none');
-        //   }
-        // });
-
-        // document.querySelectorAll('#opsiHalaman select, #opsiBerita select').forEach(select => {
-        //   select.addEventListener('change', function() {
-        //     var selectedOption = this.options[this.selectedIndex];
-        //     var nama = selectedOption.getAttribute('data-nama') || '';
-        //     document.querySelector('#namaHidden').value = nama;
-        //   });
-        // });
-
-        // function editItemFolder(event) {
-        //   var closest = event.target.closest('div');
-        //   if (closest) {
-        //     showLoading();
-        //     var id = closest.getAttribute('id');
-        //     var baseURL = window.location.href.split('/').slice(0, -1).join('/') + '/' + currentUrl;
-        //     var url = `${baseURL}/edit/${id}`;
-
-        //     fetch(url, {
-        //         method: 'GET',
-        //         headers: {
-        //           'Content-Type': 'application/x-www-form-urlencoded'
-        //         }
-        //       })
-        //       .then(response => response.json())
-        //       .then(data => {
-        //         if (data) {
-        //           $('.modal-title').text('Ubah Data');
-        //           $('#modalForm').modal('show');
-        //           resetOpsiSumber();
-        //           const inputNama = document.querySelector('[name="nama"]');
-        //           if (inputNama) inputNama.value = data.nama || '';
-
-        //           var selectSumber = document.querySelector('[name="sumber_menu"]');
-        //           var selectHalaman = document.querySelector('[name="url_halaman"]');
-        //           var selectBerita = document.querySelector('[name="url_berita"]');
-        //           var inputUrlManual = document.querySelector('[name="url_manual"]');
-        //           var inputNamaManual = document.querySelector('[name="nama_menu_url"]');
-
-        //           if (data.url?.startsWith('hal/')) {
-        //             if (selectSumber) selectSumber.value = 'halaman';
-        //             if (selectHalaman) selectHalaman.value = data.url.replace('hal/', '');
-        //             document.querySelector('#opsiHalaman')?.classList.remove('d-none');
-        //           } else if (data.url?.startsWith('berita/')) {
-        //             if (selectSumber) selectSumber.value = 'berita';
-        //             if (selectBerita) selectBerita.value = data.url.replace('berita/', '');
-        //             document.querySelector('#opsiBerita')?.classList.remove('d-none');
-        //           } else {
-        //             if (selectSumber) selectSumber.value = 'manual';
-        //             if (inputUrlManual) inputUrlManual.value = data.url || '';
-        //             if (inputNamaManual) inputNamaManual.value = data.nama || '';
-        //             document.querySelector('#opsiUrl')?.classList.remove('d-none');
-        //             document.querySelector('#opsiUrlInput')?.classList.remove('d-none');
-        //           }
-
-        //           document.querySelector('[name="id"]').value = data.id || '';
-        //         }
-        //       })
-        //       .catch(error => {
-        //         console.error(error);
-        //         sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
-        //       })
-        //       .finally(() => {
-        //         setTimeout(() => {
-        //           hideLoading();
-        //         }, 300);
-        //       });
-        //   }
-        // }
 
         function editItemFile(event) {
           const closest = event.target.closest('div');
@@ -1011,6 +829,7 @@
             sayAlert('confirmModal', 'Confirm!', 'Apakah yakin menghapus data ini?' + msg, 'danger', true, () => {
               showLoading();
               const id = closest.getAttribute('id');
+              console.log("Deleting file with ID:", id);
               const url = "<?= base_url('berkas/delete') ?>/" + id;
 
               fetch(url, {
@@ -1057,13 +876,14 @@
           var fileInputs = document.querySelectorAll('input[type="file"]');
           fileInputs.forEach(fileInput => fileInput.value = '');
           // Kosongkan selectSearch (jika ada)
-          document.querySelectorAll('select').forEach(el => {
+          document.querySelectorAll('#kategori_id').forEach(el => {
             if (el.id != "items-per-page") el.value = "";
             var wrapper = el.parentElement.querySelector('.selected');
             if (wrapper) wrapper.textContent = "-- pilih data --";
           });
           document.querySelector('input[name="idFile"]').value = '';
           document.querySelector('input[name="id_folder"]').value = id;
+          console.log("Adding file to folder ID:", id);
           $('.modal-title-file').text('Tambah File');
           $('#modalFormFile').modal('show');
           perbaruiTombol();
@@ -1480,6 +1300,9 @@
           new bootstrap.Tooltip(tooltipTriggerEl)
         })
       </script>
+
+      <?php echo form_open('', ['id' => 'myAuthorizationForm', 'novalidate' => '']); ?>
+      <?php echo form_close(); ?>
 
       <!-- Modal Folder -->
       <div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"

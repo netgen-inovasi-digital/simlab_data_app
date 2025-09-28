@@ -66,6 +66,7 @@ class MyModel extends Model
 		return $this->builder->get()->getResult();
 	}
 
+
 	// ===== mengambil data dengan where yang banyak
 	public function getDataByWhere(array $where)
 	{
@@ -81,6 +82,21 @@ class MyModel extends Model
 
 		return $this->builder->get()->getRow();
 	}
+
+  // ===== mengambil semua data dengan where yang banyak ===== // - Rezky
+  public function getAllDataByWhere(array $where)
+{
+    foreach ($where as $key => $value) {
+        if (strpos($key, ' ') !== false) {
+            [$field, $operator] = explode(' ', $key, 2);
+            $this->builder->where($field . ' ' . $operator, $value);
+        } else {
+            $this->builder->where($key, $value);
+        }
+    }
+
+    return $this->builder->get()->getResult(); // semua
+}
 
 	// ===== mengambil semua data sesuai filter where dan juga urutan ===== //
 	public function getAllDataById($where, $orders = [])
