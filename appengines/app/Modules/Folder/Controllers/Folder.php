@@ -20,6 +20,7 @@ class Folder extends BaseController
     $modelFolder     = new MyModel('folder');
     $modelFolderLink = new MyModel('folder_links');
     $modelFiles      = new MyModel('files');
+    $modalRoles      = new MyModel('roles');
 
     // ambil semua data
     $folders = $modelFolder->getAllData('sort_order', 'asc');
@@ -58,11 +59,15 @@ class Folder extends BaseController
       }
     }
 
+    $role = $modalRoles->getAllData();
+
+
     $data = [
       'title'      => 'Dokumen Akreditasi',
       'tree'       => $tree,
       'categories' => $modelCategories->getAllData(),
       'user'       => $modelUser->getDataById('id_user', $user_id),
+      'role'       => $role,
     ];
 
     return view('Modules\Folder\Views\v_folder', $data);

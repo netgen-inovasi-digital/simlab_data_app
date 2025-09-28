@@ -52,7 +52,10 @@
   }
 
   .toggle-status {
-    cursor: pointer;
+    width: 2em;
+    /* default bootstrap: 2em */
+    height: 1.1em;
+    /* default bootstrap: 1em */
   }
 
   .bi-caret-down.collapsed {
@@ -75,10 +78,58 @@
         </div>
       </div>
 
-      <!-- <div>
-        <input type="text" class="form-control" id="search" placeholder="Cari folder"
-          style="max-width: 300px; margin: 10px; margin-bottom: 0px;">
-      </div> -->
+      <div class="card-body border-bottom">
+        <div class="row g-3 d-flex justify-content-between align-items-center">
+          <div class="d-flex gap-3 col-md-8 col-lg-10">
+            <div class="col-lg-3 gap-2 col-md-4 align-items-center" id="otorisasiRole" style="display: none;">
+              <label class="m-0 fw-medium">Role</label>
+              <select id="role" name="role" class="form-select" required>
+                <option value="">-- pilih role --</option>
+                <?php foreach ($role as $i => $row) { ?>
+                  <option value="<?= $row->id_role ?>">
+                    <?= $row->nama_role ?>
+                  </option>
+                <?php } ?>
+              </select>
+            </div>
+
+
+            <div class="col-lg-3 col-md-4" id="searching-folder-file">
+              <input type="text" class="form-control" id="search" placeholder="Cari nama folder/file...">
+            </div>
+            <div class="col-lg-2 col-md-4" id="filter-tipe">
+              <select id="filterTipe" class="form-select">
+                <option value="semua" selected>Semua Tipe</option>
+                <option value="folder">Hanya Folder</option>
+                <option value="file">Hanya File</option>
+              </select>
+            </div>
+            <div class="col-lg-2 col-md-4" id="filter-jenis">
+              <select id="filterJenisFile" class="form-select" style="display: none;">
+                <option value="semua">Jenis File</option>
+                <option value="pdf">PDF</option>
+                <option value="doc">DOC/DOCX</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="col-lg-2 col-md-4 d-flex gap-2 justify-content-center align-items-center">
+            <label class="m-0 fw-medium">Mode Otorisasi</label>
+            <div class="form-check form-switch m-0">
+              <input
+                class="form-check-input toggle-status"
+                type="checkbox"
+                role="switch"
+                id="toggleOtorisasi"
+                data-bs-toggle="tooltip"
+                title="Aktif / Nonaktif">
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
 
       <?php
       function renderTree($nodes, $level = 0, $encrypter = null)
@@ -92,7 +143,7 @@
           $encId = bin2hex($encrypter->encrypt($rawId));
       ?>
           <div id="<?= $encId ?>" class="<?= $node->type ?>-item flex" style="margin-left: <?= $level * 30; ?>px"
-            draggable="true" data-type="<?= $node->type ?>" data-count="<?= $level ?>" data-id="<?= $rawId ?>"
+            draggable="true" data-type="<?= $node->type ?>" data-count="<?= $level ?>" data-id="<?= esc($rawId) ?>"
             <?php if ($node->type === 'file'): ?>
             data-url="<?= base_url('uploads/' . $node->berkas) ?>"
             <?php endif; ?>>
@@ -116,7 +167,7 @@
               </div>
 
               <div class="d-flex align-items-center gap-2">
-                <?= aksi($encId, $node->type) ?>
+                <?= aksi($encId, $rawId, $node->type) ?>
               </div>
             </div>
           </div>
@@ -131,6 +182,7 @@
       ?>
 
       <div class="card-body">
+        <small id="info" style="display: none;"><em>-- Silahkan pilih role terlebih dahulu.</em></small>
         <div id="folder" class="d-flex flex-column">
           <?php renderTree($tree); ?>
         </div>
@@ -138,46 +190,60 @@
 
 
       <?php
-      function aksi($id, $type)
+      function aksi($encId, $id, $type)
       {
 
         $btnFile = ($type === 'file') ? '
-    <span class="action-btn text-dark" title="Lihat" onclick="lihatItemFile(event)">
-      <i class="bi bi-eye"></i>
-    </span>
-    <label class="divider">|</label>
-    <span class="action-btn text-dark" title="Otorisasi" onclick="otorisasiFile(event)">
-            <i class="bi bi-shield-check"></i></span> 
+        <span class="action-btn text-dark" title="Lihat" onclick="lihatItemFile(event)">
+            <i class="bi bi-eye"></i>
+        </span>
+        <input class="form-check-otorisasi checkbox-otorisasi-folder" type="checkbox" 
+               data-type="file" data-id="' . esc($id) . '"
+ data-perm="view"
+               onClick="event.stopPropagation()" style="display:none;">
         <label class="divider">|</label>
-    <span class="action-btn text-dark" title="Ubah" onclick="editItemFile(event)">
-            <i class="bi bi-pencil-square"></i></span> 
+        <span class="action-btn text-dark" title="Ubah" onclick="editItemFile(event)">
+            <i class="bi bi-pencil-square"></i></span>
         <label class="divider">|</label>
-        
         <span class="action-btn text-danger" title="Hapus" onclick="deleteItemFile(event)">
             <i class="bi bi-x-circle"></i></span>
-  ' : '';
+            <input class="form-check-otorisasi checkbox-otorisasi-file" type="checkbox" 
+               data-type="file" data-id=' . esc($id) . '
+ data-perm="crud"
+               onClick="event.stopPropagation()" style="display:none;">
+            ' : '';
+
 
         $btnFolder = ($type === 'folder') ? '
-    <span class=" action-btn text-dark" title="Tambah" onclick="tambahItemFile(event)" id="addFile">
-      <i class="bi bi-plus-circle"></i>
-    </span>
-    <label class="divider">|</label>
-    <span class="action-btn text-dark" title="Otorisasi" onclick="otorisasiFolder(event)">
-            <i class="bi bi-shield-check"></i></span> 
+        <span class="action-btn text-dark lihat-folder-otorisasi" title="Lihat" style="display: none;">
+            <i class="bi bi-eye lihat-folder-otorisasi"></i>
+        </span>
+        <input class="form-check-otorisasi checkbox-otorisasi-folder" type="checkbox" 
+               data-type="folder" data-id="' . esc($id) . '"
+ data-perm="view"
+               onClick="event.stopPropagation()" style="display:none;">
+        <label class="divider lihat-folder-otorisasi" style="display: none;">|</label>
+        <span class=" action-btn text-dark" title="Tambah" onclick="tambahItemFile(event)" id="addFile">
+            <i class="bi bi-plus-circle"></i>
+        </span>
         <label class="divider">|</label>
-    <span class="action-btn text-dark" title="Ubah" onclick="editItemFolder(event)">
-            <i class="bi bi-pencil-square"></i></span> 
+        <span class="action-btn text-dark" title="Ubah" onclick="editItemFolder(event)">
+            <i class="bi bi-pencil-square"></i>
+        </span>
         <label class="divider">|</label>
         <span class="action-btn text-danger" title="Hapus" onclick="deleteItemFolder(event)">
-            <i class="bi bi-x-circle"></i></span>
-  ' : '';
+            <i class="bi bi-x-circle"></i>
+            </span>
+        <input class="form-check-otorisasi checkbox-otorisasi-folder" type="checkbox" 
+               data-type="folder" data-id="' . esc($id) . '"
+ data-perm="crud"
+               onClick="event.stopPropagation()" style="display:none;">
+            ' : '';
 
-        return '<div id="' . $id . '">
-        ' . $btnFile . $btnFolder . '
-        
-    </div>';
-      }
-      ?>
+        return '<div id="' . $encId . '">
+        ' . $btnFile . $btnFolder . '        
+        </div>';
+      } ?>
 
       <!-- JavaScript di bawah ini tidak perlu diubah, biarkan seperti aslinya -->
       <script>
@@ -572,7 +638,158 @@
             .catch(error => {});
         }
 
-        // Event listener untuk toggle status
+
+
+
+        infoText = document.getElementById("info");
+        manageDocument = document.getElementById("folder");
+        filterJenis = document.getElementById("filter-jenis");
+        searchInput = document.getElementById("searching-folder-file");
+        filterTipe = document.getElementById("filter-tipe");
+
+
+        // Event listener untuk toggle otorisasi
+        document.getElementById('toggleOtorisasi').addEventListener('change', function() {
+          var addFolderBtn = document.getElementById("add");
+          var otorisasiRole = document.getElementById("otorisasiRole");
+          var checkboxes = document.querySelectorAll(".checkbox-otorisasi-folder, .checkbox-otorisasi-file");
+          var lihatFolderOtorisasi = document.querySelectorAll(".lihat-folder-otorisasi");
+
+          if (this.checked) {
+            addFolderBtn.style.display = "none";
+            otorisasiRole.style.display = "flex";
+            checkboxes.forEach(cb => cb.style.display = "inline-block");
+            lihatFolderOtorisasi.forEach(el => el.style.display = "inline-block");
+            infoText.style.display = "block";
+
+            manageDocument.classList.add("d-none");
+            filterJenis.style.display = "none";
+            searchInput.style.display = "none";
+            filterTipe.style.display = "none";
+          } else {
+            // sebelum load ulang → dispose tooltip lama
+            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+              bootstrap.Tooltip.getInstance(el)?.dispose();
+            });
+            loadContent('folder');
+            initTooltips();
+          }
+        });
+
+
+        function initTooltips() {
+          document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+            new bootstrap.Tooltip(el);
+          });
+        }
+
+
+        document.getElementById('role').addEventListener('change', (event) => {
+          document.querySelectorAll('.form-check-otorisasi').forEach(input => {
+            input.checked = false;
+          });
+
+          const role = event.target.value;
+          if (role == "") {
+            infoText.classList.remove('d-none');
+            infoText.classList.add('d-block');
+            manageDocument.classList.add("d-none");
+            filterJenis.style.display = "none";
+            searchInput.style.display = "none";
+            filterTipe.style.display = "none";
+
+
+          } else if (role != "") {
+            document.querySelector('#info').classList.add('d-none');
+            document.querySelector('#folder').classList.remove('d-none');
+            filterJenis.style.display = "block";
+            searchInput.style.display = "block";
+            filterTipe.style.display = "block";
+
+
+            fetch(`otoritas/akses?s=${role}`)
+              .then(res => res.json())
+              .then(data => {
+                data.forEach(item => {
+                  // checkbox view
+                  const cbView = document.querySelector(
+                    `.form-check-otorisasi[data-id="${item.id}"][data-perm="view"]`
+                  );
+                  if (cbView) {
+                    cbView.checked = item.can_view;
+                  }
+
+                  // checkbox crud
+                  const cbCrud = document.querySelector(
+                    `.form-check-otorisasi[data-id="${item.id}"][data-perm="crud"]`
+                  );
+                  if (cbCrud) {
+                    cbCrud.checked = item.can_crud;
+                  }
+                });
+              })
+              .catch({});
+          }
+        })
+
+
+        var checkboxes = document.querySelectorAll('.form-check-otorisasi');
+        checkboxes.forEach(checkbox => {
+          checkbox.addEventListener('change', (event) => {
+            const value = event.target.value;
+            const role = $('#role').val();
+            const parent = event.target.getAttribute('parent');
+            let checked = "";
+            const isChecked = event.target.checked;
+            if (isChecked) {
+              checked = true;
+              if (parent !== undefined) {
+                document.querySelectorAll('.form-check input[value="' + parent + '"]').forEach(input => {
+                  input.checked = true;
+                });
+              } else {
+                document.querySelectorAll('.form-check input[parent="' + value + '"]').forEach(input => {
+                  input.checked = true;
+                });
+              }
+            } else {
+              if (parent !== undefined) {
+                const total = document.querySelectorAll('.form-check input[parent="' + parent + '"]:checked').length;
+                if (total === 0) {
+                  const parentInput = document.querySelector('.form-check input[value="' + parent + '"]');
+                  if (parentInput) parentInput.checked = false;
+                }
+              } else {
+                const childInputs = document.querySelectorAll('.form-check input[parent="' + value + '"]');
+                childInputs.forEach(input => {
+                  input.checked = false;
+                });
+              }
+            }
+            const data = [];
+            document.querySelectorAll('.form-check input:checked').forEach(input => {
+              if (!data.includes(input.value)) {
+                data.push(input.value);
+              }
+            });
+
+            const form = document.querySelector('#myform');
+            const formData = new FormData(form);
+            formData.append('role', role);
+            data.forEach(value => formData.append('menu[]', value));
+
+            fetch('./otoritas/submit', {
+                method: 'POST',
+                body: formData,
+              })
+              .then(response => response.json())
+              .then(data => {
+                $('[name=' + data.xname + ']').val(data.xhash);
+              }).catch(error => {});
+          });
+        });
+
+
         // document.querySelectorAll('.toggle-status').forEach(toggle => {
         //   toggle.addEventListener('change', function() {
         //     var id = this.dataset.id;
@@ -1353,6 +1570,7 @@
           </div>
         </div>
       </div>
+
     </div>
   </div>
 </div>
