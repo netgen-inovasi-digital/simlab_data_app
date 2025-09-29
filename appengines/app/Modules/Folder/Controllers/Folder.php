@@ -26,7 +26,6 @@ class Folder extends BaseController
 
     // ambil data user + role
     $user    = $modelUser->getDataById('id_user', $user_id);
-    $role_id = $user->role_id;
 
     // ambil semua data folder, link, file
     $folders = $modelFolder->getAllData('sort_order', 'asc');
@@ -34,8 +33,8 @@ class Folder extends BaseController
     $files   = $modelFiles->getAllData('created_at', 'asc');
 
     // ambil otoritas sesuai role
-    $otorFolder = $modelOtorFolder->getAllDataByWhere(['id_role' => $role_id]);
-    $otorFile   = $modelOtorFile->getAllDataByWhere(['id_role' => $role_id]);
+    $otorFolder = $modelOtorFolder->getAllDataByWhere(['id_role' => $user->role_id]);
+    $otorFile   = $modelOtorFile->getAllDataByWhere(['id_role' => $user->role_id]);
 
     // mapping otoritas folder
     $permsFolder = [];

@@ -113,7 +113,7 @@
             </div>
           </div>
 
-          <div class="col-lg-2 col-md-4 d-flex gap-2 justify-content-center align-items-center">
+          <?= $user->role_id == 8 ? '<div class="col-lg-2 col-md-4 d-flex gap-2 justify-content-center align-items-center">
             <label class="m-0 fw-medium">Mode Otorisasi</label>
             <div class="form-check form-switch m-0">
               <input
@@ -124,7 +124,7 @@
                 data-bs-toggle="tooltip"
                 title="Aktif / Nonaktif">
             </div>
-          </div>
+          </div>' : '' ?>
         </div>
       </div>
 
@@ -217,9 +217,10 @@
                data-type="folder" data-id="' . esc($id) . '"
  data-perm="view"
                onClick="event.stopPropagation()" style="display:none;">
-        <label class="divider lihat-folder-otorisasi" style="display: none;">|</label>
+        
 
         ' . ($can_crud ? '
+        <label class="divider lihat-folder-otorisasi" style="display: none;">|</label>
         <span class=" action-btn text-dark" title="Tambah" onclick="tambahItemFile(event)" id="addFile">
             <i class="bi bi-plus-circle"></i>
         </span>
@@ -236,7 +237,7 @@
                onClick="event.stopPropagation()" style="display:none;">' : '') . '
             ' : '';
 
-        return '<div id=' . $encId . '>
+        return '<div id="' . $encId . '">
         ' . $btnFile . $btnFolder . '        
         </div>';
       } ?>
@@ -866,6 +867,7 @@
 
         function tambahItemFile(event) {
           var id = event.target.closest("div").id;
+          // var role_id = event.target.closest("div").getAttribute('data-role');
           var form = document.getElementById('myFileForm');
           var errorDivs = form.querySelectorAll('.error');
           errorDivs.forEach(errorDiv => {
@@ -883,17 +885,19 @@
           });
           document.querySelector('input[name="idFile"]').value = '';
           document.querySelector('input[name="id_folder"]').value = id;
-          console.log("Adding file to folder ID:", id);
           $('.modal-title-file').text('Tambah File');
           $('#modalFormFile').modal('show');
           perbaruiTombol();
         }
 
-        // binding submit sekali di awal (bukan di dalam tambahItemFile)
-        $('#myFileForm').on('submit', function(e) {
-          e.preventDefault(); // cegah submit langsung
-          save(this); // panggil fungsi save() yg pake fetch
-        });
+        // // binding submit sekali di awal (bukan di dalam tambahItemFile)
+        $('#myFileForm').submit();
+
+        // $('#myFileForm').on('submit', function(e) {
+        //   e.preventDefault(); // cegah submit langsung
+        //   save(this); // panggil fungsi save() yg pake fetch
+        // });
+
 
         function save(form) {
           showLoading();
@@ -1364,6 +1368,7 @@
               <input type="hidden" value="" name="idFile" />
               <input type="hidden" class="form-control" name="id_folder">
               <input name="slug" type="text" class="form-control bg-light" value="" hidden>
+              <!-- <input name="role_id" type="text" class="form-control bg-light" value="" hidden> -->
 
               <div class="row mb-2">
                 <div class="col">

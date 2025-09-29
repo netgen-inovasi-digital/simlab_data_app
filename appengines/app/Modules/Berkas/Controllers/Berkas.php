@@ -30,12 +30,21 @@ class Berkas extends BaseController
 
   function edit($id)
   {
+
+    // $session = session(); // aktifkan session
+    // $user_now = $session->get('id_user');
+
     $idenc = $this->encrypter->decrypt(hex2bin($id));
     $model = new MyModel($this->table);
     $get = $model->getDataById($this->id, $idenc);
 
-    $modelUser = new MyModel('users');
-    $user = $modelUser->getDataById('id_user', $get->user_id);
+    // $modelUser = new MyModel('users');
+    // $user = $modelUser->getDataById('id_user', $get->user_id);
+
+
+    // $user_now = $modelUser->getDataById('id_user', $user_now);
+    // $modelOtorisasiFile = new MyModel('otoritas_file');
+    // $getOtorisasi = $modelOtorisasiFile->getDataById('id_role', $user->role_id);
 
     $data[csrf_token()] = csrf_hash();
     $data['idFile'] = $id;
@@ -45,8 +54,8 @@ class Berkas extends BaseController
     $data['nomor_dokumen'] = $get->nomor_dokumen;
     $data['slug'] = $get->slug;
     $data['revisi'] = $get->revisi;
-    $data['user_id'] = $get->user_id;
-    $data['nama'] = $user->nama;
+    // $data['user_id'] = $user_now->id_user;
+    // $data['nama'] = $user_now->nama;
     $data['tanggal'] = $get->created_at != null ? date('Y-m-d', strtotime($get->created_at)) : date('Y-m-d', strtotime($get->updated_at));
 
     // 'userId' => session()->get('idUser'),
@@ -77,6 +86,13 @@ class Berkas extends BaseController
   public function submit()
   {
     $idenc = $this->request->getPost('idFile');
+    $modelOtorisasiFile = new MyModel('otoritas_file');
+    $modelUser = new MyModel('users');
+
+    // $role_id = $this->request->getPost('role_id') ?? 8; // default role_id jika tidak ada input
+
+    $role_id = $modelUser->getDataById('id_user', $this->request->getPost('user_id'));
+
     $tanggalUp = $this->request->getPost('tanggal') ?? date('Y-m-d');
     $now = date('Y-m-d H:i:s');
     $idFolderRaw = $this->request->getPost('id_folder');
@@ -142,6 +158,27 @@ class Berkas extends BaseController
       // kalau ga valid → anggap insert aja, atau return error
       $data['created_at'] = $tanggalUp; // waktu sekarang saat dibuat
       $res = $model->insertData($data);
+
+      // insert ke otoritas_file
+      if ($res) {
+        $files = $model->getDataByWhere([
+          'title' => $this->request->getPost('titleFile'),
+          'nomor_dokumen' => $this->request->getPost('nomor_dokumen'),
+        ]);
+        $id_file = $files->id_files;
+        $roles = array_unique([(int)$role_id->role_id, 8]); // gunakan role_id dari input atau default 8
+
+        foreach ($roles as $r) {
+          $otor = [
+            'id_file' => (int)$id_file,
+            'id_role' => (int)$r,
+            'can_view' => 1,
+            'can_crud' => 1,
+          ];
+          // insert default otorisasi
+          $modelOtorisasiFile->insertData($otor);
+        }
+      }
     }
 
     if ($res) {
@@ -156,14 +193,6 @@ class Berkas extends BaseController
       'xhash' => csrf_hash()
     ]);
   }
-
-
-  // fungsi untuk memotong konten
-  // function generateExcerpt($content, $limit = 55)
-  // {
-  //   $content = strip_tags($content);
-  //   return strlen($content) > $limit ? substr($content, 0, $limit) . '...' : $content;
-  // }
 
   function doUpload($file)
   {
