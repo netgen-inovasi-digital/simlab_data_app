@@ -65,6 +65,7 @@ class Folder extends BaseController
       $map['folder_' . $f->id_folder] = $f;
     }
 
+
     // relasi antar folder
     foreach ($links as $link) {
       $childKey  = 'folder_' . $link->child_id;
@@ -77,6 +78,7 @@ class Folder extends BaseController
       }
     }
 
+    $tree = [];
     // [PERBAIKAN] Buat salinan struktur pohon folder sebelum file ditambahkan.
     $folder_tree = $tree;
 
@@ -121,7 +123,7 @@ class Folder extends BaseController
       return $node;
     };
 
-    $tree = [];
+
     foreach ($roots as $root) {
       $n = $filter($root);
       if ($n !== null) $tree[] = $n;

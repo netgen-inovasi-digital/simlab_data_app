@@ -62,6 +62,26 @@
   .bi-caret-down.collapsed {
     transform: rotate(-90deg);
   }
+
+  .biodata-table {
+    width: 100%;
+    font-size: 0.95rem;
+  }
+
+  .biodata-table td {
+    padding: 8px 0;
+    vertical-align: top;
+  }
+
+  .biodata-table td:first-child {
+    font-weight: 600;
+    width: 140px;
+    color: #555;
+  }
+
+  .biodata-table td:nth-child(2) {
+    width: 20px;
+  }
 </style>
 
 
@@ -1451,11 +1471,6 @@
     });
   }
 
-  /**
-   * Memformat string tanggal menjadi format lokal Indonesia (misal: 1 Januari 2024).
-   * @param {string} tanggal - String tanggal (format YYYY-MM-DD HH:mm:ss).
-   * @returns {string} - Tanggal yang sudah diformat atau '-'.
-   */
   function formatTanggal(tanggal) {
     if (!tanggal || tanggal === '0000-00-00 00:00:00' || tanggal.trim() === '') return '-';
     try {
@@ -1467,6 +1482,90 @@
     } catch (e) {
       return tanggal;
     }
+  }
+
+  /**
+   * Mengambil data file untuk diedit dan menampilkannya di modal form file.
+   * @param {string} id - ID terenkripsi dari file yang akan diedit.
+   */
+  function editBerkas(id) {
+    var detailModal = bootstrap.Modal.getInstance(document.getElementById('detailFileModal'));
+    if (detailModal) detailModal.hide();
+    showLoading();
+    const url = `<?= site_url('folder/edit-file/') ?>${id}`;
+    fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+    }).then(response => response.json()).then(data => {
+      if (data) {
+        const modal = new bootstrap.Modal(document.getElementById('modalFormFile'));
+        const form = document.getElementById('myFileForm');
+        form.reset();
+        $('.modal-title-file').text('Ubah Data File');
+        Object.entries(data).forEach(([key, value]) => {
+          const el = form.querySelector(`[name="${key}"]`);
+          if (el) {
+            if (el.type === "radio") {
+              el.checked = (el.value == value);
+            } else {
+              el.value = value || "";
+            }
+          }
+        });
+        form.querySelector('[name="idFile"]').value = data.idFile || '';
+        form.querySelector('[name="titleFile"]').value = data.titleFile || '';
+        modal.show();
+      }
+    }).catch(error => {
+      console.error(error);
+      sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat mengambil data file.', 'warning');
+    }).finally(() => {
+      hideLoading();
+    });
+  }
+
+  /**
+   * Menghapus item (folder atau file) setelah konfirmasi dari pengguna.
+   * @param {Event} event - Event object dari elemen yang diklik.
+   * @param {string} type - Tipe item ('folder' atau 'file').
+   */
+  function deleteItem(event, type) {
+    const itemDiv = event.currentTarget.closest('[id]');
+    if (!itemDiv) return;
+    const id = itemDiv.id;
+    const controller = 'folder'; // Selalu gunakan controller folder
+    const message = type === 'folder' ?
+      'Menghapus folder juga akan menghapus semua file di dalamnya. Yakin ingin melanjutkan?' :
+      'Yakin ingin menghapus file ini?';
+    sayAlert('confirmModal', 'Hapus Data', message, 'danger', true, () => {
+      const tokenName = "<?= csrf_token() ?>";
+      const elName = document.querySelector(`[name="${tokenName}"]`);
+      const formData = new FormData();
+      formData.append(tokenName, elName.value);
+      formData.append('type', type); // Kirim tipe item yang akan dihapus
+
+      fetch(`./${controller}/delete/${id}`, {
+        method: 'POST',
+        body: formData
+      }).then(res => res.json()).then(data => {
+        if (data.xhash) elName.value = data.xhash;
+
+        if (data.res == "refresh") {
+          // Tutup modal detail jika sedang terbuka
+          var detailModalEl = document.getElementById('detailFileModal');
+          var detailModal = bootstrap.Modal.getInstance(detailModalEl);
+          if (detailModal && detailModalEl.classList.contains('show')) detailModal.hide();
+          sayAlert('successModal', 'Berhasil', data.message || 'Data berhasil dihapus.',
+            'success');
+          loadContent(data.link);
+        } else {
+          sayAlert('errorModal', 'Gagal', 'Gagal menghapus data.', 'warning');
+        }
+      })
+    });
   }
 </script>
 

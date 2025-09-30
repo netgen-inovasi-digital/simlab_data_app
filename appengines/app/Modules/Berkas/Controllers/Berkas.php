@@ -89,8 +89,6 @@ class Berkas extends BaseController
     $modelOtorisasiFile = new MyModel('otoritas_file');
     $modelUser = new MyModel('users');
 
-    // $role_id = $this->request->getPost('role_id') ?? 8; // default role_id jika tidak ada input
-
     $role_id = $modelUser->getDataById('id_user', $this->request->getPost('user_id'));
 
     $tanggalUp = $this->request->getPost('tanggal') ?? date('Y-m-d');
@@ -101,7 +99,6 @@ class Berkas extends BaseController
       // string hex valid → decrypt
       $id_folder = $this->encrypter->decrypt(hex2bin($idFolderRaw));
     } else {
-
       $id_folder = $idFolderRaw;
     }
 
