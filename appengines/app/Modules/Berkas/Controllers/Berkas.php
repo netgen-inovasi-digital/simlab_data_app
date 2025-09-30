@@ -31,34 +31,23 @@ class Berkas extends BaseController
   function edit($id)
   {
 
-    // $session = session(); // aktifkan session
-    // $user_now = $session->get('id_user');
-
     $idenc = $this->encrypter->decrypt(hex2bin($id));
     $model = new MyModel($this->table);
     $get = $model->getDataById($this->id, $idenc);
 
-    // $modelUser = new MyModel('users');
-    // $user = $modelUser->getDataById('id_user', $get->user_id);
-
-
-    // $user_now = $modelUser->getDataById('id_user', $user_now);
-    // $modelOtorisasiFile = new MyModel('otoritas_file');
-    // $getOtorisasi = $modelOtorisasiFile->getDataById('id_role', $user->role_id);
+    $idencFolder = bin2hex($this->encrypter->encrypt($get->id_folder));
 
     $data[csrf_token()] = csrf_hash();
     $data['idFile'] = $id;
     $data['titleFile'] = $get->title;
     $data['kategori_id'] = $get->categories_id;
-    $data['id_folder'] = $get->id_folder;
+    $data['id_folder'] = $idencFolder;
     $data['nomor_dokumen'] = $get->nomor_dokumen;
     $data['slug'] = $get->slug;
     $data['revisi'] = $get->revisi;
-    // $data['user_id'] = $user_now->id_user;
-    // $data['nama'] = $user_now->nama;
+
     $data['tanggal'] = $get->created_at != null ? date('Y-m-d', strtotime($get->created_at)) : date('Y-m-d', strtotime($get->updated_at));
 
-    // 'userId' => session()->get('idUser'),
     return $this->response->setJSON($data);
   }
 
@@ -93,14 +82,9 @@ class Berkas extends BaseController
 
     $tanggalUp = $this->request->getPost('tanggal') ?? date('Y-m-d');
     $now = date('Y-m-d H:i:s');
-    $idFolderRaw = $this->request->getPost('id_folder');
 
-    if (ctype_xdigit($idFolderRaw) && strlen($idFolderRaw) % 2 === 0) {
-      // string hex valid → decrypt
-      $id_folder = $this->encrypter->decrypt(hex2bin($idFolderRaw));
-    } else {
-      $id_folder = $idFolderRaw;
-    }
+    $idFolderRaw = $this->request->getPost('id_folder');
+    $id_folder = $this->encrypter->decrypt(hex2bin($idFolderRaw));
 
     $data = [
       'title' => $this->request->getPost('titleFile'),
@@ -109,7 +93,7 @@ class Berkas extends BaseController
       'slug' => $this->request->getPost('slug'),
       'categories_id' => $this->request->getPost('kategori_id'),
       'user_id' => $this->request->getPost('user_id'),
-      'id_folder' => (int)$id_folder,
+      'id_folder' => $id_folder,
       'updated_at' => $now, // waktu sekarang
     ];
     $berkas = $this->request->getFile('berkas');
