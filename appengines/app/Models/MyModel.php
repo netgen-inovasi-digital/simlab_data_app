@@ -223,36 +223,36 @@ class MyModel extends Model
 
 	// ===== mengambil semua data dengan join tabel dan urutan dan juga like ===== //
 	public function getAllDataByJoinWithOrder($joins = [], $where = [], $orderBy = [], $select = '*', $joinType = 'inner', $like = [])
-{
-    $this->builder->select($select);
+	{
+		$this->builder->select($select);
 
-    if (!empty($joins)) {
-        foreach ($joins as $table => $condition) {
-            $this->builder->join($table, $condition, $joinType);
-        }
-    }
+		if (!empty($joins)) {
+			foreach ($joins as $table => $condition) {
+				$this->builder->join($table, $condition, $joinType);
+			}
+		}
 
-    if (!empty($where)) {
-        foreach ($where as $key => $value) {
-            $this->builder->where($key, $value);
-        }
-    }
+		if (!empty($where)) {
+			foreach ($where as $key => $value) {
+				$this->builder->where($key, $value);
+			}
+		}
 
-    if (!empty($like)) {
-        foreach ($like as $key => $value) {
-            // LIKE AFTER: cocokkan nilai yang diawali dengan $value
-            $this->builder->like($key, $value, 'after');
-        }
-    }
+		if (!empty($like)) {
+			foreach ($like as $key => $value) {
+				// LIKE AFTER: cocokkan nilai yang diawali dengan $value
+				$this->builder->like($key, $value, 'after');
+			}
+		}
 
-    if (!empty($orderBy)) {
-        foreach ($orderBy as $column => $direction) {
-            $this->builder->orderBy($column, $direction);
-        }
-    }
+		if (!empty($orderBy)) {
+			foreach ($orderBy as $column => $direction) {
+				$this->builder->orderBy($column, $direction);
+			}
+		}
 
-    return $this->builder->get()->getResult();
-}
+		return $this->builder->get()->getResult();
+	}
 
 
 	// ===== mengambil semua data dengan join tabel, urutan, dan limit ===== //
@@ -289,20 +289,16 @@ class MyModel extends Model
 	}
 
 	// ===== mengambil satu data dengan join ===== //
-	public function getOneByJoin($joins = [], $where = [], $select = '*', $joinType = 'inner')
+	public function getOneByJoin($joins = [], $where = [], $select = '*', $joinType = 'INNER')
 	{
 		$this->builder->select($select);
 
-		if (!empty($joins)) {
-			foreach ($joins as $table => $condition) {
-				$this->builder->join($table, $condition, $joinType);
-			}
+		foreach ($joins as $table => $condition) {
+			$this->builder->join($table, $condition, $joinType); // Menambahkan tipe join
 		}
 
-		if (!empty($where)) {
-			foreach ($where as $key => $value) {
-				$this->builder->where($key, $value);
-			}
+		foreach ($where as $key => $value) {
+			$this->builder->where($key, $value);
 		}
 
 		return $this->builder->get()->getRow();
