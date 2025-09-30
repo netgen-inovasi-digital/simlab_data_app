@@ -48,6 +48,9 @@ class Folder extends BaseController
       }
     }
 
+    // [PERBAIKAN] Buat salinan struktur pohon folder sebelum file ditambahkan.
+    $folder_tree = $tree;
+
     // masukkan file ke folder setelah folder anak
     foreach ($files as $file) {
       $file->type     = 'file';
@@ -60,6 +63,7 @@ class Folder extends BaseController
     $data = [
       'title'      => 'Dokumen Akreditasi',
       'tree'       => $tree,
+      'folder_tree' => $folder_tree, // Kirim data pohon folder ke view
       'all_folders' => $folders,
       'categories' => $modelCategories->getAllData(),
       'user'       => $modelUser->getDataById('id_user', $user_id),
@@ -147,24 +151,45 @@ class Folder extends BaseController
 
   function delete($id)
   {
-    // Karena method ini bisa dipanggil dari 'folder' atau 'berkas', kita tidak bisa
-    // menentukan tipe hanya dari URL. Tipe harus dikirim dari frontend.
-    // Namun, karena rute delete file ada di controller Berkas, kita bisa asumsikan ini untuk folder.
     $db = \Config\Database::connect();
     $db->transStart();
 
     try {
-      $folderId = $this->encrypter->decrypt(hex2bin($id));
-      $this->_deleteFolderRecursive($folderId);
+      $decryptedId = $this->encrypter->decrypt(hex2bin($id));
+      $type = $this->request->getPost('type'); // 'folder' atau 'file'
+
+      if ($type === 'folder') {
+        $this->_deleteFolderRecursive($decryptedId);
+        $message = "Folder dan semua isinya berhasil dihapus.";
+      } elseif ($type === 'file') {
+        $fileModel = new MyModel('files');
+        $file = $fileModel->getDataById('id_files', $decryptedId);
+
+        if ($file) {
+          // Hapus file fisik dari server
+          if (!empty($file->berkas) && file_exists(FCPATH . 'uploads/' . $file->berkas)) {
+            unlink(FCPATH . 'uploads/' . $file->berkas);
+          }
+          // Hapus record dari database
+          $fileModel->deleteData('id_files', $decryptedId);
+          $message = "File berhasil dihapus.";
+        } else {
+          throw new \Exception("File tidak ditemukan untuk dihapus.");
+        }
+      } else {
+        throw new \Exception("Tipe item untuk dihapus tidak valid.");
+      }
 
       $db->transComplete();
 
       if ($db->transStatus() === false) {
-        throw new \Exception("Gagal menghapus folder dari database.");
+        throw new \Exception("Gagal menghapus item dari database.");
       }
 
       $res = 'refresh';
       $link = 'folder';
+      // Menyertakan pesan sukses dalam respons
+      $response_data['message'] = $message;
     } catch (\Exception $e) {
       $db->transRollback();
       return $this->response->setStatusCode(500)->setJSON([
@@ -175,12 +200,14 @@ class Folder extends BaseController
       ]);
     }
 
-    return $this->response->setJSON([
+    $response_data = [
       'res' => $res,
       'link' => $link ?? '',
       'xname' => csrf_token(),
-      'xhash' => csrf_hash()
-    ]);
+      'xhash' => csrf_hash(),
+      'message' => $message ?? 'Operasi berhasil.'
+    ];
+    return $this->response->setJSON($response_data);
   }
 
   private function _deleteFolderRecursive($folderId)
@@ -216,6 +243,7 @@ class Folder extends BaseController
   {
     $opsi = $this->request->getPost('opsi_pembuatan');
     $parentId = $this->request->getPost('parent_id') ?: null;
+    $db = \Config\Database::connect(); // Panggil koneksi database
 
     if ($opsi === 'buat_baru') {
       $namaFolderUtama = $this->request->getPost('nama_folder_utama');
@@ -228,6 +256,7 @@ class Folder extends BaseController
       $modelFolder = new MyModel('folder');
       $modelLinks = new MyModel('folder_links');
 
+      $db->transStart();
       // 1. Buat folder utama
       $folderUtamaId = $modelFolder->insertData(['nama' => $namaFolderUtama], true);
       $modelLinks->insertData(['child_id' => $folderUtamaId, 'parent_id' => $parentId]);
@@ -241,12 +270,36 @@ class Folder extends BaseController
           $currentParentId = $subfolderId; // Subfolder berikutnya akan menjadi anak dari yang ini
         }
       }
+      $db->transComplete();
     } elseif ($opsi === 'gunakan_template') {
       $templateId = $this->request->getPost('template_id');
       if (empty($templateId)) {
         return $this->response->setJSON(['res' => false, 'message' => 'Silakan pilih template folder.']);
       }
-      $this->_cloneFolderStructure($templateId, $parentId);
+
+      // [PERBAIKAN] Memulai transaksi
+      $db->transStart();
+      try {
+        $this->_cloneFolderStructure($templateId, $parentId);
+
+        // [PERBAIKAN] Menyelesaikan transaksi jika semua berhasil
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+          // Jika ada masalah selama transaksi, lempar exception
+          throw new \Exception('Gagal menyelesaikan transaksi database.');
+        }
+      } catch (\Exception $e) {
+        // [PERBAIKAN] Jika terjadi error, batalkan semua perubahan
+        $db->transRollback();
+        log_message('error', '[FolderController] Gagal cloning folder: ' . $e->getMessage());
+        return $this->response->setStatusCode(500)->setJSON([
+          'res'     => 'error',
+          'message' => 'Terjadi kesalahan saat membuat folder dari template. Error: ' . $e->getMessage(),
+          'xname'   => csrf_token(),
+          'xhash'   => csrf_hash()
+        ]);
+      }
     }
 
     return $this->response->setJSON(['res' => 'refresh', 'link' => 'folder', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
@@ -260,42 +313,61 @@ class Folder extends BaseController
 
     // 1. Ambil data folder template
     $templateFolder = $modelFolder->getDataById('id_folder', $templateFolderId);
-    if (!$templateFolder) return;
-
-    // 2. Buat klon dari folder template
-    $newFolderData = [
-      'nama' => $templateFolder->nama,
-    ];
-    $newFolderId = $modelFolder->insertData($newFolderData, true);
-
-    // 3. Hubungkan folder baru ke parent-nya
-    $modelLinks->insertData(['child_id' => $newFolderId, 'parent_id' => $newParentId]);
-
-    // 5. Cari semua file dari template dan klon informasinya
-    $files = $modelFiles->getAllDataById(['id_folder' => $templateFolderId]);
-    foreach ($files as $file) {
-      // Siapkan data file baru dengan nama kolom yang benar dari tabel 'files'
-      $newFileData = [
-        'id_folder'     => $newFolderId, // Asosiasikan dengan folder baru
-        'user_id'       => property_exists($file, 'user_id') ? $file->user_id : null,
-        'categories_id' => property_exists($file, 'categories_id') ? $file->categories_id : null,
-        'title'         => property_exists($file, 'title') ? $file->title : null,
-        'slug'          => property_exists($file, 'slug') ? $file->slug : null,
-        'nomor_dokumen' => property_exists($file, 'nomor_dokumen') ? $file->nomor_dokumen : null,
-        'revisi'        => property_exists($file, 'revisi') ? $file->revisi : null,
-        'status'        => property_exists($file, 'status') ? $file->status : null,
-        'created_at'    => date('Y-m-d H:i:s'), // Set waktu pembuatan baru
-        'updated_at'    => date('Y-m-d H:i:s'),
-      ];
-
-      // Masukkan data file baru ke database
-      $modelFiles->insertData($newFileData, false);
+    if (!$templateFolder) {
+      throw new \Exception("Folder template dengan ID {$templateFolderId} tidak ditemukan.");
     }
 
-    // 4. (Sekarang di akhir) Cari semua anak (subfolder) dari template dan ulangi proses
+    $newFolderId = $modelFolder->insertData(['nama' => $templateFolder->nama], true);
+    if (!$newFolderId) {
+      throw new \Exception("Gagal memasukkan folder baru ke database.");
+    }
+
+    // 3. Hubungkan folder baru ke parent yang ditentukan
+    $modelLinks->insertData(['child_id' => $newFolderId, 'parent_id' => $newParentId]);
+
+    // 4. Ambil semua file dari folder template yang sedang diproses
+    $filesToClone = $modelFiles->getAllDataById(['id_folder' => $templateFolderId]);
+
+    // Periksa jika ada file yang perlu dikloning
+    if (!empty($filesToClone)) {
+      foreach ($filesToClone as $file) {
+        $newFileName = null;
+
+        // Salin file fisik jika ada
+        if (!empty($file->berkas) && file_exists(FCPATH . 'uploads/' . $file->berkas)) {
+          $path_info = pathinfo($file->berkas);
+          $newFileName = $path_info['filename'] . '_' . uniqid() . '.' . $path_info['extension'];
+
+          if (!copy(FCPATH . 'uploads/' . $file->berkas, FCPATH . 'uploads/' . $newFileName)) {
+            throw new \Exception("Gagal menyalin file fisik: {$file->berkas}. Periksa izin folder 'uploads'.");
+          }
+        }
+
+        // 5. Siapkan data file baru dengan kolom yang relevan
+        $newFileData = [
+          'title'         => $file->title ?? 'Salinan File',
+          'slug'          => ($file->slug ?? 'salinan-file') . '-' . uniqid(),
+          'nomor_dokumen' => $file->nomor_dokumen ?? null,
+          'revisi'        => $file->revisi ?? 0,
+          'categories_id' => $file->categories_id ?? null,
+          'id_folder'     => $newFolderId,
+          'user_id'       => session()->get('id_user'), // Set user saat ini sebagai pemilik
+          'created_at'    => date('Y-m-d H:i:s'),
+          'updated_at'    => date('Y-m-d H:i:s'),
+          'berkas'        => $newFileName, // Gunakan nama file fisik yang baru disalin (atau null)
+        ];
+
+        // 6. Masukkan data file baru ke database
+        $insertFile = $modelFiles->insertData($newFileData);
+        if (!$insertFile) {
+          throw new \Exception("Gagal memasukkan data file '{$newFileData['title']}' ke database. Periksa struktur tabel 'files'.");
+        }
+      }
+    }
+    // 7. [PERBAIKAN] Proses rekursif untuk setiap subfolder dari template
     $subfolders = $modelLinks->getAllDataById(['parent_id' => $templateFolderId]);
     foreach ($subfolders as $subfolderLink) {
-      $this->_cloneFolderStructure($subfolderLink->child_id, $newFolderId); // Rekursif
+      $this->_cloneFolderStructure($subfolderLink->child_id, $newFolderId);
     }
   }
 
