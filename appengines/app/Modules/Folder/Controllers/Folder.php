@@ -15,28 +15,57 @@ class Folder extends BaseController
     $session = session();
     $user_id = $session->get('id_user');
 
-    $modelCategories = new MyModel('categories');
-    $modelUser       = new MyModel('users');
-    $modelFolder     = new MyModel('folder');
-    $modelFolderLink = new MyModel('folder_links');
-    $modelFiles      = new MyModel('files');
+    $modelCategories  = new MyModel('categories');
+    $modelUser        = new MyModel('users');
+    $modelFolder      = new MyModel('folder');
+    $modelFolderLink  = new MyModel('folder_links');
+    $modelFiles       = new MyModel('files');
+    $modelRoles       = new MyModel('roles');
+    $modelOtorFolder  = new MyModel('otoritas_folder');
+    $modelOtorFile    = new MyModel('otoritas_file');
 
-    // ambil semua data
+    // ambil data user + role
+    $user    = $modelUser->getDataById('id_user', $user_id);
+
+    // ambil semua data folder, link, file
     $folders = $modelFolder->getAllData('sort_order', 'asc');
     $links   = $modelFolderLink->getAllData('sort_order', 'asc');
     $files   = $modelFiles->getAllData('created_at', 'asc');
+
+    // ambil otoritas sesuai role
+    $otorFolder = $modelOtorFolder->getAllDataByWhere(['id_role' => $user->role_id]);
+    $otorFile   = $modelOtorFile->getAllDataByWhere(['id_role' => $user->role_id]);
+
+    // mapping otoritas folder
+    $permsFolder = [];
+
+    foreach ($otorFolder as $o) {
+      $permsFolder[$o->id_folder] = (object)[
+        'can_view' => $o->can_view,
+        'can_crud' => $o->can_crud,
+      ];
+    }
+
+    // mapping otoritas file
+    $permsFile = [];
+    foreach ($otorFile as $o) {
+      $permsFile[$o->id_file] = (object)[
+        'can_view' => $o->can_view,
+        'can_crud' => $o->can_crud,
+      ];
+    }
 
     // bikin map folder
     $map = [];
     foreach ($folders as $f) {
       $f->type     = 'folder';
       $f->children = [];
+      $f->can_view = $permsFolder[$f->id_folder]->can_view ?? 0;
+      $f->can_crud = $permsFolder[$f->id_folder]->can_crud ?? 0;
       $map['folder_' . $f->id_folder] = $f;
     }
 
-    // bangun tree antar folder
-    $tree = [];
-    // bangun tree antar folder (folder anak dulu)
+    // relasi antar folder
     foreach ($links as $link) {
       $childKey  = 'folder_' . $link->child_id;
       $parentKey = $link->parent_id ? 'folder_' . $link->parent_id : null;
@@ -55,9 +84,47 @@ class Folder extends BaseController
     foreach ($files as $file) {
       $file->type     = 'file';
       $file->children = [];
+      $file->can_view = $permsFile[$file->id_files]->can_view ?? 0;
+      $file->can_crud = $permsFile[$file->id_files]->can_crud ?? 0;
+
       if (isset($map['folder_' . $file->id_folder])) {
         $map['folder_' . $file->id_folder]->children[] = $file;
       }
+    }
+
+    // cari root
+    $roots = [];
+    foreach ($map as $key => $node) {
+      $isRoot = true;
+      foreach ($links as $link) {
+        if ($link->child_id == $node->id_folder && $link->parent_id !== null) {
+          $isRoot = false;
+          break;
+        }
+      }
+      if ($isRoot) {
+        $roots[] = $node;
+      }
+    }
+
+    $filter = function ($node) use (&$filter) {
+      if (isset($node->can_view) && $node->can_view == 0) {
+        return null;
+      }
+
+      $children = [];
+      foreach ($node->children as $child) {
+        $c = $filter($child);
+        if ($c !== null) $children[] = $c;
+      }
+      $node->children = $children;
+      return $node;
+    };
+
+    $tree = [];
+    foreach ($roots as $root) {
+      $n = $filter($root);
+      if ($n !== null) $tree[] = $n;
     }
 
     $data = [
@@ -66,7 +133,8 @@ class Folder extends BaseController
       'folder_tree' => $folder_tree, // Kirim data pohon folder ke view
       'all_folders' => $folders,
       'categories' => $modelCategories->getAllData(),
-      'user'       => $modelUser->getDataById('id_user', $user_id),
+      'user'       => $user,
+      'role'       => $modelRoles->getAllData(),
     ];
 
     return view('Modules\Folder\Views\v_folder', $data);
@@ -412,7 +480,7 @@ class Folder extends BaseController
     return $this->response->setJSON(array('res' => $res, 'link' => $link ?? '', 'xname' => csrf_token(), 'xhash' => csrf_hash()));
   }
 
-  function updated()
+  public function updated()
   {
     $items = $this->request->getPost('items');
 
@@ -422,13 +490,15 @@ class Folder extends BaseController
     foreach ($items as $item) {
       $type = $item['type'];
       $id   = $this->encrypter->decrypt(hex2bin($item['id']));
-      $parentId = !empty($item['parent_id']) ? $this->encrypter->decrypt(hex2bin($item['parent_id'])) : null;
+      $parentId = !empty($item['parent_id'])
+        ? $this->encrypter->decrypt(hex2bin($item['parent_id']))
+        : null;
       $sortOrder = $item['sort_order'];
 
       if ($type === 'folder') {
         $folderData[] = [
-          'child_id'   => $id,
           'parent_id'  => $parentId,
+          'child_id'   => $id,
           'sort_order' => $sortOrder,
         ];
       } elseif ($type === 'file') {
@@ -439,9 +509,87 @@ class Folder extends BaseController
       }
     }
 
+    $db = \Config\Database::connect();
+
     if (!empty($folderData)) {
-      $linkModel = new MyModel('folder_links');
-      $linkModel->updateDataBatch($folderData, 'child_id');
+      // ambil semua child yang terlibat
+      $childIds = array_unique(array_column($folderData, 'child_id'));
+
+      $existing = $db->table('folder_links')
+        ->whereIn('child_id', $childIds)
+        ->get()->getResultArray();
+
+      $existingMap = [];
+      foreach ($existing as $row) {
+        $key = ($row['parent_id'] ?? 0) . ':' . $row['child_id'];
+        $existingMap[$key] = $row;
+      }
+
+      $incomingMap = [];
+      foreach ($folderData as $row) {
+        $key = ($row['parent_id'] ?? 0) . ':' . $row['child_id'];
+        $incomingMap[$key] = $row;
+      }
+
+      $toInsert = [];
+      $toUpdate = [];
+      $toDelete = [];
+
+      foreach ($incomingMap as $key => $row) {
+        if (!isset($existingMap[$key])) {
+          $toInsert[] = $row;
+        } else {
+          if ($existingMap[$key]['sort_order'] != $row['sort_order']) {
+            $toUpdate[] = [
+              'id' => $existingMap[$key]['id'],
+              'sort_order' => $row['sort_order']
+            ];
+          }
+        }
+      }
+
+      foreach ($existingMap as $key => $row) {
+        if (!isset($incomingMap[$key])) {
+          $toDelete[] = $row['id'];
+        }
+      }
+
+      // 1. Update existing dulu
+      if (!empty($toUpdate)) {
+        $db->table('folder_links')->updateBatch($toUpdate, 'id');
+      }
+
+      // 2. Insert parent baru (tanpa hapus parent lama)
+      if (!empty($toInsert)) {
+        foreach ($toInsert as $row) {
+          $exists = $db->table('folder_links')
+            ->where('child_id', $row['child_id'])
+            ->where('parent_id', $row['parent_id'])
+            ->countAllResults();
+
+          if ($exists == 0) {
+            $db->table('folder_links')->insert($row);
+          }
+        }
+      }
+
+      // 3. Cascade move untuk setiap child unik
+      $childIds = array_unique(array_column($folderData, 'child_id'));
+      foreach ($childIds as $childId) {
+        $parents = $db->table('folder_links')
+          ->where('child_id', $childId)
+          ->get()->getResultArray();
+
+        foreach ($parents as $p) {
+          // kirim parent yang bener
+          $this->cascadeMove($childId, $p['parent_id']);
+        }
+      }
+
+      // 4. Terakhir: hapus relasi yg udah ga ada
+      if (!empty($toDelete)) {
+        $db->table('folder_links')->whereIn('id', $toDelete)->delete();
+      }
     }
 
     if (!empty($fileData)) {
@@ -455,6 +603,42 @@ class Folder extends BaseController
     ]);
   }
 
+  private $visited = [];
+
+  private function cascadeMove($folderId, $parentId)
+  {
+    // base case: kalau sudah pernah dikunjungi → stop
+    if (isset($this->visited[$folderId])) {
+      return;
+    }
+    $this->visited[$folderId] = true;
+
+    $db = \Config\Database::connect();
+
+    // File tetap di folderId
+    $db->table('files')
+      ->where('id_folder', $folderId)
+      ->update(['id_folder' => $folderId]);
+
+    // Ambil semua anak folder
+    $children = $db->table('folder_links')
+      ->where('parent_id', $folderId)
+      ->get()->getResultArray();
+
+    foreach ($children as $child) {
+      // kalau parent_id sudah benar, skip
+      if ($child['parent_id'] != $folderId) {
+        $db->table('folder_links')
+          ->where('id', $child['id'])
+          ->update([
+            'parent_id' => $folderId
+          ]);
+      }
+
+      // rekursif ke cucu
+      $this->cascadeMove($child['child_id'], $child['parent_id']);
+    }
+  }
 
   function toggle()
   {

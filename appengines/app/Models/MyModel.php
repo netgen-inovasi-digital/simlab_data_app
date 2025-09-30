@@ -66,6 +66,7 @@ class MyModel extends Model
 		return $this->builder->get()->getResult();
 	}
 
+
 	// ===== mengambil data dengan where yang banyak
 	public function getDataByWhere(array $where)
 	{
@@ -81,6 +82,21 @@ class MyModel extends Model
 
 		return $this->builder->get()->getRow();
 	}
+
+  // ===== mengambil semua data dengan where yang banyak ===== // - Rezky
+  public function getAllDataByWhere(array $where)
+{
+    foreach ($where as $key => $value) {
+        if (strpos($key, ' ') !== false) {
+            [$field, $operator] = explode(' ', $key, 2);
+            $this->builder->where($field . ' ' . $operator, $value);
+        } else {
+            $this->builder->where($key, $value);
+        }
+    }
+
+    return $this->builder->get()->getResult(); // semua
+}
 
 	// ===== mengambil semua data sesuai filter where dan juga urutan ===== //
 	public function getAllDataById($where, $orders = [])
@@ -418,6 +434,33 @@ class MyModel extends Model
 			return true;
 		}
 	}
+
+  function updateArrayData($data, $where = "", $id = "")
+  {
+    $this->db->transBegin();
+
+    if (!empty($where)) {
+        if (is_array($where)) {
+            // kalau array → apply multiple where
+            foreach ($where as $key => $val) {
+                $this->builder->where($key, $val);
+            }
+        } else {
+            // kalau bukan array → gunakan cara lama
+            $this->builder->where($where, $id);
+        }
+    }
+
+    $this->builder->update($data);
+
+    if ($this->db->transStatus() === FALSE) {
+        $this->db->transRollback();
+        return false;
+    } else {
+        $this->db->transCommit();
+        return true;
+    }
+}
 
 	public function updateDataBatch($data, $key)
 	{
