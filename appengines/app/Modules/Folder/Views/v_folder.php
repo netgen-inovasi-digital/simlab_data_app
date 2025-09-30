@@ -781,12 +781,14 @@
   // Event listener untuk toggle otorisasi
   document.getElementById('toggleOtorisasi').addEventListener('change', function() {
     var addFolderBtn = document.getElementById("addFolderButton");
+    var refreshBtn = document.getElementById("refresh");
     var otorisasiRole = document.getElementById("otorisasiRole");
     var checkboxes = document.querySelectorAll(".checkbox-otorisasi-folder, .checkbox-otorisasi-file");
     var lihatFolderOtorisasi = document.querySelectorAll(".lihat-folder-otorisasi");
 
     if (this.checked) {
       addFolderBtn.style.display = "none";
+      refreshBtn.style.display = "none";
       otorisasiRole.style.display = "flex";
       checkboxes.forEach(cb => cb.style.display = "inline-block");
       lihatFolderOtorisasi.forEach(el => el.style.display = "inline-block");
