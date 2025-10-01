@@ -641,18 +641,4 @@ class Folder extends BaseController
       $this->cascadeMove($child['child_id'], $child['parent_id']);
     }
   }
-
-  function toggle()
-  {
-    $idenc = $this->request->getPost('id');
-    $id = $this->encrypter->decrypt(hex2bin($idenc));
-    $status = $this->request->getPost('status');
-    $data = [
-      'status' => $status,
-    ];
-
-    $model = new MyModel('folder');
-    $res = $model->updateData($data, $this->id, $id);
-    return $this->response->setJSON(array('res' => $res, 'xhash' => csrf_hash()));
-  }
 }

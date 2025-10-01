@@ -766,7 +766,10 @@
       method: 'POST',
       body: formData
     }).then(response => response.json()).then(data => {
-      elName.value = data.xhash;
+
+      document.querySelectorAll(`input[name="${tokenName}"]`).forEach(el => {
+        el.value = data.xhash;
+      });
     }).catch(error => {});
   }
 
@@ -917,6 +920,9 @@
         .then(response => response.json())
         .then(data => {
           if (data) {
+            var detailModalEl = document.getElementById('detailFileModal');
+            var detailModal = bootstrap.Modal.getInstance(detailModalEl);
+            if (detailModal && detailModalEl.classList.contains('show')) detailModal.hide();
             $('.modal-title-file').text('Ubah Data');
             $('#modalFormFile').modal('show');
             Object.entries(data).forEach(([key, value]) => {
@@ -972,6 +978,9 @@
           .then(response => response.json())
           .then(data => {
             if (data.res == 'refresh') {
+              var detailModalEl = document.getElementById('detailFileModal');
+              var detailModal = bootstrap.Modal.getInstance(detailModalEl);
+              if (detailModal && detailModalEl.classList.contains('show')) detailModal.hide();
               loadContent(data.link);
               sayAlert('successModal', 'Success', 'Data berhasil dihapus.', 'success');
             } else if (data.res == true) {
@@ -996,7 +1005,6 @@
 
   function tambahItemFile(event) {
     var id = event.target.closest("div").id;
-    // var role_id = event.target.closest("div").getAttribute('data-role');
     var form = document.getElementById('myFileForm');
     var errorDivs = form.querySelectorAll('.error');
     errorDivs.forEach(errorDiv => {
@@ -1445,7 +1453,7 @@
       }
     }).then(response => {
       if (!response.ok) {
-        throw new Error('Network response was not ok.');
+        throw new Error('Data tidak ditemukan');
       }
       return response.json();
     }).then(data => {
@@ -1465,7 +1473,7 @@
       contentArea.innerHTML =
         `<div class="row g-4"><div class="col-md-4 d-flex flex-column align-items-center">${filePreviewHtml}<div class="d-flex mt-3"><a href="${fileUrl}" target="_blank" class="btn btn-secondary">View</a></div></div><div class="col-md-8"><table class="biodata-table"><tr><td>Nama File</td><td>:</td><td>${data.title || '-'}</td></tr><tr><td>No. Dokumen</td><td>:</td><td>${data.nomor_dokumen || '-'}</td></tr><tr><td>Revisi</td><td>:</td><td>${data.revisi || '-'}</td></tr><tr><td>Tanggal Upload</td><td>:</td><td>${formatTanggal(data.created_at)}</td></tr><tr><td>Author</td><td>:</td><td>${data.author || '-'}</td></tr><tr><td>Kategori</td><td>:</td><td>${data.kategori || '-'}</td></tr></table></div></div>`;
       modalAksiContainer.innerHTML =
-        `<div id="${id}" class="d-flex gap-2"><button class="btn btn-warning" onclick="editBerkas('${id}')">Edit</button><button class="btn btn-danger" onclick="deleteItem(event, 'file')"><i class="bi bi-trash"></i> Hapus</button></div>`;
+        `<div id="${id}" class="d-flex gap-2"><button class="btn btn-warning" onclick="editItemFile(event)">Edit</button><button class="btn btn-danger" onclick="deleteItemFile(event)"><i class="bi bi-trash"></i> Hapus</button></div>`;
     }).catch(error => {
       console.error('Error fetching file details:', error);
       contentArea.innerHTML = '<p class="text-center text-danger">Gagal memuat data. ' + error.message +
@@ -1486,54 +1494,7 @@
     }
   }
 
-  /**
-   * Mengambil data file untuk diedit dan menampilkannya di modal form file.
-   * @param {string} id - ID terenkripsi dari file yang akan diedit.
-   */
-  function editBerkas(id) {
-    var detailModal = bootstrap.Modal.getInstance(document.getElementById('detailFileModal'));
-    if (detailModal) detailModal.hide();
-    showLoading();
-    const url = `<?= site_url('folder/edit-file/') ?>${id}`;
-    fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-    }).then(response => response.json()).then(data => {
-      if (data) {
-        const modal = new bootstrap.Modal(document.getElementById('modalFormFile'));
-        const form = document.getElementById('myFileForm');
-        form.reset();
-        $('.modal-title-file').text('Ubah Data File');
-        Object.entries(data).forEach(([key, value]) => {
-          const el = form.querySelector(`[name="${key}"]`);
-          if (el) {
-            if (el.type === "radio") {
-              el.checked = (el.value == value);
-            } else {
-              el.value = value || "";
-            }
-          }
-        });
-        form.querySelector('[name="idFile"]').value = data.idFile || '';
-        form.querySelector('[name="titleFile"]').value = data.titleFile || '';
-        modal.show();
-      }
-    }).catch(error => {
-      console.error(error);
-      sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat mengambil data file.', 'warning');
-    }).finally(() => {
-      hideLoading();
-    });
-  }
 
-  /**
-   * Menghapus item (folder atau file) setelah konfirmasi dari pengguna.
-   * @param {Event} event - Event object dari elemen yang diklik.
-   * @param {string} type - Tipe item ('folder' atau 'file').
-   */
   function deleteItem(event, type) {
     const itemDiv = event.currentTarget.closest('[id]');
     if (!itemDiv) return;
