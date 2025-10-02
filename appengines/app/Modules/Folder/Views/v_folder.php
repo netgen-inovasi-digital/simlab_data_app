@@ -782,34 +782,37 @@
   filterTipe = document.getElementById("filter-tipe");
 
   // Event listener untuk toggle otorisasi
-  document.getElementById('toggleOtorisasi').addEventListener('change', function() {
-    var addFolderBtn = document.getElementById("addFolderButton");
-    var refreshBtn = document.getElementById("refresh");
-    var otorisasiRole = document.getElementById("otorisasiRole");
-    var checkboxes = document.querySelectorAll(".checkbox-otorisasi-folder, .checkbox-otorisasi-file");
-    var lihatFolderOtorisasi = document.querySelectorAll(".lihat-folder-otorisasi");
+  toggleOtorisasi = document.getElementById('toggleOtorisasi');
 
-    if (this.checked) {
-      addFolderBtn.style.display = "none";
-      refreshBtn.style.display = "none";
-      otorisasiRole.style.display = "flex";
-      checkboxes.forEach(cb => cb.style.display = "inline-block");
-      lihatFolderOtorisasi.forEach(el => el.style.display = "inline-block");
-      infoText.style.display = "block";
+  if (toggleOtorisasi) {
+    toggleOtorisasi.addEventListener('change', function() {
+      var addFolderBtn = document.getElementById("addFolderButton");
+      var refreshBtn = document.getElementById("refresh");
+      var otorisasiRole = document.getElementById("otorisasiRole");
+      var checkboxes = document.querySelectorAll(".checkbox-otorisasi-folder, .checkbox-otorisasi-file");
+      var lihatFolderOtorisasi = document.querySelectorAll(".lihat-folder-otorisasi");
 
-      manageDocument.classList.add("d-none");
-      filterJenis.style.display = "none";
-      searchInput.style.display = "none";
-      filterTipe.style.display = "none";
-    } else {
-      // sebelum load ulang → dispose tooltip lama
-      document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-        bootstrap.Tooltip.getInstance(el)?.dispose();
-      });
-      loadContent('folder');
-      initTooltips();
-    }
-  });
+      if (this.checked) {
+        addFolderBtn.style.display = "none";
+        refreshBtn.style.display = "none";
+        otorisasiRole.style.display = "flex";
+        checkboxes.forEach(cb => cb.style.display = "inline-block");
+        lihatFolderOtorisasi.forEach(el => el.style.display = "inline-block");
+        infoText.style.display = "block";
+
+        manageDocument.classList.add("d-none");
+        filterJenis.style.display = "none";
+        searchInput.style.display = "none";
+        filterTipe.style.display = "none";
+      } else {
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+          bootstrap.Tooltip.getInstance(el)?.dispose();
+        });
+        loadContent('folder');
+        initTooltips();
+      }
+    });
+  }
 
   function initTooltips() {
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
@@ -965,7 +968,6 @@
       sayAlert('confirmModal', 'Confirm!', 'Apakah yakin menghapus data ini?' + msg, 'danger', true, () => {
         showLoading();
         const id = closest.getAttribute('id');
-        console.log("Deleting file with ID:", id);
         const url = "<?= base_url('berkas/delete') ?>/" + id;
 
         fetch(url, {
@@ -1102,6 +1104,7 @@
       }
     }
   });
+
 
   // ===== nama dan slug ===== //
   var namaInput = document.querySelector('input[name="titleFile"]');
