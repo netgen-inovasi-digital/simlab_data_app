@@ -66,6 +66,7 @@ class MyModel extends Model
 		return $this->builder->get()->getResult();
 	}
 
+
 	// ===== mengambil data dengan where yang banyak
 	public function getDataByWhere(array $where)
 	{
@@ -81,6 +82,21 @@ class MyModel extends Model
 
 		return $this->builder->get()->getRow();
 	}
+
+  // ===== mengambil semua data dengan where yang banyak ===== // - Rezky
+  public function getAllDataByWhere(array $where)
+{
+    foreach ($where as $key => $value) {
+        if (strpos($key, ' ') !== false) {
+            [$field, $operator] = explode(' ', $key, 2);
+            $this->builder->where($field . ' ' . $operator, $value);
+        } else {
+            $this->builder->where($key, $value);
+        }
+    }
+
+    return $this->builder->get()->getResult(); // semua
+}
 
 	// ===== mengambil semua data sesuai filter where dan juga urutan ===== //
 	public function getAllDataById($where, $orders = [])
@@ -207,36 +223,36 @@ class MyModel extends Model
 
 	// ===== mengambil semua data dengan join tabel dan urutan dan juga like ===== //
 	public function getAllDataByJoinWithOrder($joins = [], $where = [], $orderBy = [], $select = '*', $joinType = 'inner', $like = [])
-{
-    $this->builder->select($select);
+	{
+		$this->builder->select($select);
 
-    if (!empty($joins)) {
-        foreach ($joins as $table => $condition) {
-            $this->builder->join($table, $condition, $joinType);
-        }
-    }
+		if (!empty($joins)) {
+			foreach ($joins as $table => $condition) {
+				$this->builder->join($table, $condition, $joinType);
+			}
+		}
 
-    if (!empty($where)) {
-        foreach ($where as $key => $value) {
-            $this->builder->where($key, $value);
-        }
-    }
+		if (!empty($where)) {
+			foreach ($where as $key => $value) {
+				$this->builder->where($key, $value);
+			}
+		}
 
-    if (!empty($like)) {
-        foreach ($like as $key => $value) {
-            // LIKE AFTER: cocokkan nilai yang diawali dengan $value
-            $this->builder->like($key, $value, 'after');
-        }
-    }
+		if (!empty($like)) {
+			foreach ($like as $key => $value) {
+				// LIKE AFTER: cocokkan nilai yang diawali dengan $value
+				$this->builder->like($key, $value, 'after');
+			}
+		}
 
-    if (!empty($orderBy)) {
-        foreach ($orderBy as $column => $direction) {
-            $this->builder->orderBy($column, $direction);
-        }
-    }
+		if (!empty($orderBy)) {
+			foreach ($orderBy as $column => $direction) {
+				$this->builder->orderBy($column, $direction);
+			}
+		}
 
-    return $this->builder->get()->getResult();
-}
+		return $this->builder->get()->getResult();
+	}
 
 
 	// ===== mengambil semua data dengan join tabel, urutan, dan limit ===== //
@@ -273,20 +289,16 @@ class MyModel extends Model
 	}
 
 	// ===== mengambil satu data dengan join ===== //
-	public function getOneByJoin($joins = [], $where = [], $select = '*', $joinType = 'inner')
+	public function getOneByJoin($joins = [], $where = [], $select = '*', $joinType = 'INNER')
 	{
 		$this->builder->select($select);
 
-		if (!empty($joins)) {
-			foreach ($joins as $table => $condition) {
-				$this->builder->join($table, $condition, $joinType);
-			}
+		foreach ($joins as $table => $condition) {
+			$this->builder->join($table, $condition, $joinType); // Menambahkan tipe join
 		}
 
-		if (!empty($where)) {
-			foreach ($where as $key => $value) {
-				$this->builder->where($key, $value);
-			}
+		foreach ($where as $key => $value) {
+			$this->builder->where($key, $value);
 		}
 
 		return $this->builder->get()->getRow();
@@ -422,6 +434,33 @@ class MyModel extends Model
 			return true;
 		}
 	}
+
+  function updateArrayData($data, $where = "", $id = "")
+  {
+    $this->db->transBegin();
+
+    if (!empty($where)) {
+        if (is_array($where)) {
+            // kalau array → apply multiple where
+            foreach ($where as $key => $val) {
+                $this->builder->where($key, $val);
+            }
+        } else {
+            // kalau bukan array → gunakan cara lama
+            $this->builder->where($where, $id);
+        }
+    }
+
+    $this->builder->update($data);
+
+    if ($this->db->transStatus() === FALSE) {
+        $this->db->transRollback();
+        return false;
+    } else {
+        $this->db->transCommit();
+        return true;
+    }
+}
 
 	public function updateDataBatch($data, $key)
 	{

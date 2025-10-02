@@ -12,7 +12,7 @@
           <thead>
             <tr>
               <th show width="8%">No.</th>
-              <!-- <th>Gambar</th> -->
+              <th>No. Dokumen</th>
               <th show>Judul</th>
               <th>Status</th>
               <th show class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
@@ -234,21 +234,6 @@
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       ];
       var maxSizeMB = 10;
-      // if (!allowedTypes.includes(file.type)) {
-      //   errorMsg.textContent = 'Hanya file gambar JPG, JPEG, atau PNG yang diperbolehkan.';
-      //   errorMsg.classList.remove('d-none');
-      //   ketBerkas.classList.add('d-none');
-      //   this.value = '';
-      // } else if (file.size > maxSizeMB * 1024 * 1024) {
-      //   errorMsg.textContent = 'Ukuran file maksimal 2MB.';
-      //   errorMsg.classList.remove('d-none');
-      //   errorMsg.style.removeProperty('font-size');
-      //   ketBerkas.classList.add('d-none');
-      //   this.value = '';
-      // } else {
-      //   errorMsg.classList.add('d-none');
-      //   ketBerkas.classList.remove('d-none');
-      // }
       if (!allowedTypes.includes(file.type)) {
         errorMsg.textContent = 'Hanya file PDF, DOC, atau DOCX yang diperbolehkan.';
         errorMsg.classList.remove('d-none');
@@ -639,10 +624,21 @@
       <div class="modal-body">
         <input type="hidden" value="" name="id" />
         <input name="slug" type="text" class="form-control bg-light" value="" hidden>
+
         <div class="row mb-2">
           <div class="col">
             <label class="col-md-3 col-form-label">Judul Berkas</label>
             <input name="title" type="text" class="form-control" required placeholder="Masukkan judul berita">
+          </div>
+        </div>
+        <div class="row mb-2">
+          <div class="col">
+            <label class="col-md-6 col-form-label">No. Dokumen</label>
+            <input name="nomor_dokumen" type="text" class="form-control bg-light" placeholder="Masukkan nomor dokumen" required>
+          </div>
+          <div class="col">
+            <label class="col-md-3 col-form-label">Revisi</label>
+            <input name="revisi" type="number" class="form-control bg-light" placeholder="Masukkan revisi" required>
           </div>
         </div>
         <div class="row mb-2">
@@ -663,15 +659,7 @@
             <input name="user_id" type="text" value="<?= $user->id_user ?>" class="form-control" required hidden>
           </div>
         </div>
-        <!-- <div class="row mb-2">
-                    <div class="col">
-                        <label for="konten" class="col-md-3 col-form-label">Konten Post</label>
-                        <div id="toolbar"></div>
-                        <div id="quill-editor" spellcheck="false" autocorrect="off" autocomplete="off" autocapitalize="off" style="height: 250px;"></div>
-                        <textarea name="konten" id="konten" hidden></textarea>
-                        <small>Upload gambar maks. 2MB. Hanya file JPG, JPEG, atau PNG.</small>
-                    </div>
-                </div> -->
+
         <div class="row mb-2">
           <div class="col">
             <label class="col-md col-form-label">Kategori</label>

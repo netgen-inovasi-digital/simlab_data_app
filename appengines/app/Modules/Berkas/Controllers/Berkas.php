@@ -4,6 +4,7 @@ namespace Modules\Berkas\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\MyModel;
+use BcMath\Number;
 
 class Berkas extends BaseController
 {
@@ -18,7 +19,6 @@ class Berkas extends BaseController
     $modelCategories = new MyModel('categories');
     $modelUser = new MyModel('users');
 
-
     $data = [
       'title' => 'Data Berkas',
       'categories' => $modelCategories->getAllData(),
@@ -30,26 +30,24 @@ class Berkas extends BaseController
 
   function edit($id)
   {
-    $idenc = $id;
-    $id = $this->encrypter->decrypt(hex2bin($id));
-    $model = new MyModel($this->table);
-    $get = $model->getDataById($this->id, $id);
 
-    $modelUser = new MyModel('users');
-    $user = $modelUser->getDataById('id_user', $get->user_id);
+    $idenc = $this->encrypter->decrypt(hex2bin($id));
+    $model = new MyModel($this->table);
+    $get = $model->getDataById($this->id, $idenc);
+
+    $idencFolder = bin2hex($this->encrypter->encrypt($get->id_folder));
 
     $data[csrf_token()] = csrf_hash();
-    $data['id'] = $idenc;
-    $data['title'] = $get->title;
+    $data['idFile'] = $id;
+    $data['titleFile'] = $get->title;
     $data['kategori_id'] = $get->categories_id;
+    $data['id_folder'] = $idencFolder;
+    $data['nomor_dokumen'] = $get->nomor_dokumen;
     $data['slug'] = $get->slug;
-    // $data['konten'] = $get->konten;
-    $data['status'] = $get->status;
-    $data['user_id'] = $get->user_id;
-    $data['nama'] = $user->nama;
-    $data['tanggal'] = $get->published_at != null ? date('Y-m-d', strtotime($get->published_at)) : date('Y-m-d', strtotime($get->created_at));
+    $data['revisi'] = $get->revisi;
 
-    // 'userId' => session()->get('idUser'),
+    $data['tanggal'] = $get->created_at != null ? date('Y-m-d', strtotime($get->created_at)) : date('Y-m-d', strtotime($get->updated_at));
+
     return $this->response->setJSON($data);
   }
 
@@ -60,24 +58,42 @@ class Berkas extends BaseController
     $file = $model->getDataById($this->id, $idenc);
     unlink('uploads/' . $file->berkas); // hapus file berkas
     $res = $model->deleteData($this->id, $idenc);
-    return $this->response->setJSON(array('res' => $res, 'xname' => csrf_token(), 'xhash' => csrf_hash()));
+    // return $this->response->setJSON(array('res' => $res, 'xname' => csrf_token(), 'xhash' => csrf_hash()));
+
+    if ($res) {
+      $res = 'refresh';
+      $link = 'folder';
+    }
+    return $this->response->setJSON(array(
+      'res' => $res,
+      'link' => $link ?? '',
+      'xname' => csrf_token(),
+      'xhash' => csrf_hash()
+    ));
   }
 
   public function submit()
   {
-    // $konten = $this->request->getPost('konten');
-    // $excerpt = $this->generateExcerpt($konten);
-    $idenc = $this->request->getPost('id');
-    $tanggalPublish = $this->request->getPost('tanggal') ?? date('Y-m-d');
+    $idenc = $this->request->getPost('idFile');
+    $modelOtorisasiFile = new MyModel('otoritas_file');
+    $modelUser = new MyModel('users');
+
+    $role_id = $modelUser->getDataById('id_user', $this->request->getPost('user_id'));
+
+    $tanggalUp = $this->request->getPost('tanggal') ?? date('Y-m-d');
     $now = date('Y-m-d H:i:s');
 
+    $idFolderRaw = $this->request->getPost('id_folder');
+    $id_folder = $this->encrypter->decrypt(hex2bin($idFolderRaw));
+
     $data = [
-      'title' => $this->request->getPost('title'),
-      // 'konten' => $konten,
-      // 'excerpt' => $excerpt,
-      'status' => $this->request->getPost('status'),
+      'title' => $this->request->getPost('titleFile'),
+      'nomor_dokumen' => $this->request->getPost('nomor_dokumen'),
+      'revisi' => (int)$this->request->getPost('revisi'),
+      'slug' => $this->request->getPost('slug'),
       'categories_id' => $this->request->getPost('kategori_id'),
       'user_id' => $this->request->getPost('user_id'),
+      'id_folder' => $id_folder,
       'updated_at' => $now, // waktu sekarang
     ];
     $berkas = $this->request->getFile('berkas');
@@ -98,38 +114,66 @@ class Berkas extends BaseController
 
     $model = new MyModel($this->table);
 
-    if (empty($idenc)) {
-      $data['created_at'] = $now; // waktu sekarang saat dibuat
+    // Cek duplicate
+    $cek = $model->groupStart()
+      ->where('title', $this->request->getPost('titleFile'))
+      ->orWhere('nomor_dokumen', $this->request->getPost('nomor_dokumen'))
+      ->groupEnd()
+      ->first();
 
-      if ($data['status'] === 'publish') {
-        $data['published_at'] = $tanggalPublish; // dari input form
-      }
+    if ($cek && (empty($idenc) || $cek[$this->id] != $this->encrypter->decrypt(hex2bin($idenc)))) {
+      return $this->response->setJSON([
+        'res' => 'duplicate',
+        'message' => 'File dengan judul atau nomor dokumen ini sudah ada!',
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash()
+      ]);
+    }
 
-      $data['slug'] = $this->request->getPost('slug');
-      $res = $model->insertData($data);
-    } else {
-      if ($data['status'] === 'publish') {
-        $data['published_at'] = $tanggalPublish;
-      }
-
+    if (!empty($idenc) && ctype_xdigit($idenc) && strlen($idenc) % 2 === 0) {
+      $data['updated_at'] = $now; // waktu sekarang saat diupdate
+      $data['created_at'] = $tanggalUp;
       $id = $this->encrypter->decrypt(hex2bin($idenc));
       $res = $model->updateData($data, $this->id, $id);
+    } else {
+      // kalau ga valid → anggap insert aja, atau return error
+      $data['created_at'] = $tanggalUp; // waktu sekarang saat dibuat
+      $res = $model->insertData($data);
+
+      // insert ke otoritas_file
+      if ($res) {
+        $files = $model->getDataByWhere([
+          'title' => $this->request->getPost('titleFile'),
+          'nomor_dokumen' => $this->request->getPost('nomor_dokumen'),
+        ]);
+        $id_file = $files->id_files;
+        $roles = array_unique([(int)$role_id->role_id, 8]); // gunakan role_id dari input atau default 8
+
+        foreach ($roles as $r) {
+          $otor = [
+            'id_file' => (int)$id_file,
+            'id_role' => (int)$r,
+            'can_view' => 1,
+            'can_crud' => 1,
+          ];
+          // insert default otorisasi
+          $modelOtorisasiFile->insertData($otor);
+        }
+      }
+    }
+
+    if ($res) {
+      $res = 'refresh';
+      $link = 'folder';
     }
 
     return $this->response->setJSON([
       'res' => $res,
+      'link' => $link ?? '',
       'xname' => csrf_token(),
       'xhash' => csrf_hash()
     ]);
   }
-
-
-  // fungsi untuk memotong konten
-  // function generateExcerpt($content, $limit = 55)
-  // {
-  //   $content = strip_tags($content);
-  //   return strlen($content) > $limit ? substr($content, 0, $limit) . '...' : $content;
-  // }
 
   function doUpload($file)
   {
@@ -149,11 +193,6 @@ class Berkas extends BaseController
       return ['status' => false, 'msg' => 'Format file tidak diperbolehkan (hanya PDF/DOC/DOCX)'];
     }
 
-    // // Validasi apakah benar file gambar
-    // if (@getimagesize($file->getTempName()) === false) {
-    //   return ['status' => false, 'msg' => 'File bukan gambar asli'];
-    // }
-
     // Validasi ukuran file (contoh: max 10MB)
     if ($file->getSize() > 10 * 1024 * 1024) {
       return ['status' => false, 'msg' => 'Ukuran file maksimal 10MB'];
@@ -166,7 +205,6 @@ class Berkas extends BaseController
 
     return ['status' => true, 'filename' => $filename];
   }
-
 
 
   public function upload()
@@ -233,6 +271,8 @@ class Berkas extends BaseController
         $status = '<div class="d-block text-center badge bg-light text-dark">Draft</div>';
       else if ($row->status == 'publish')
         $status = '<div class="d-block text-center badge bg-light text-success">Publish</div>';
+
+      $response[] = '<div>' . esc($row->nomor_dokumen) . '</div>';
       $response[] = $titleBlock;
       $response[] = $status;
       $response[] = $this->aksi($id, $fileUrl);
