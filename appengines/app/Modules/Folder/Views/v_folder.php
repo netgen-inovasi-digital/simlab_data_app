@@ -228,7 +228,13 @@
       <div class="card-body">
         <small id="info" style="display: none;"><em>-- Silahkan pilih role terlebih dahulu.</em></small>
         <div id="folder" class="d-flex flex-column">
-          <?php renderTree($tree); ?>
+          <?php
+          if ($tree !== []) {
+            renderTree($tree);
+          } else {
+            echo 'Apabila data kosong & filter masih di apply malah jadi muncul 2 pesan, ubah agar konsisten yaitu klo data kosong tanpa filter muncul pesan "Tidak Ditemukan" lalu klo ada filter muncul pesan "Tidak ada folder atau file yang cocok dengan kriteria filter Anda."';
+          }
+          ?>
         </div>
         <div id="noResultsMessage" class="col-12 text-center p-5" style="display: none;">
           <h4 class="text-muted">Tidak Ditemukan</h4>
@@ -281,7 +287,7 @@
                       <i class="bi bi-pencil-square"></i>
                   </span>
         <label class="divider">|</label>
-        <span class="text-danger action-btn" role="button" title="Hapus" onclick="deleteItem(event, \'folder\')">
+        <span class="text-danger action-btn" role="button" title="Hapus" onclick="deleteItemFolder(event, \'folder\')">
                       <i class="bi bi-x-circle"></i>
                   </span>
         <input class="form-check-otorisasi checkbox-otorisasi-folder" type="checkbox" 
@@ -1498,14 +1504,12 @@
   }
 
 
-  function deleteItem(event, type) {
+  function deleteItemFolder(event, type = 'folder') {
     const itemDiv = event.currentTarget.closest('[id]');
     if (!itemDiv) return;
     const id = itemDiv.id;
     const controller = 'folder'; // Selalu gunakan controller folder
-    const message = type === 'folder' ?
-      'Menghapus folder juga akan menghapus semua file di dalamnya. Yakin ingin melanjutkan?' :
-      'Yakin ingin menghapus file ini?';
+    const message = 'Menghapus folder juga akan menghapus semua file di dalamnya. Yakin ingin melanjutkan?'
     sayAlert('confirmModal', 'Hapus Data', message, 'danger', true, () => {
       const tokenName = "<?= csrf_token() ?>";
       const elName = document.querySelector(`[name="${tokenName}"]`);
@@ -1520,7 +1524,6 @@
         if (data.xhash) elName.value = data.xhash;
 
         if (data.res == "refresh") {
-          // Tutup modal detail jika sedang terbuka
           var detailModalEl = document.getElementById('detailFileModal');
           var detailModal = bootstrap.Modal.getInstance(detailModalEl);
           if (detailModal && detailModalEl.classList.contains('show')) detailModal.hide();
