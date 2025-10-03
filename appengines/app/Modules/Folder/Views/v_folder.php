@@ -95,9 +95,10 @@
           <button id="refresh" class="btn btn-success">
             <i class="bi bi-arrow-clockwise"></i> Refresh
           </button>
-          <button id="addFolderButton" class="btn btn-primary">
-            <i class="bi bi-plus-circle-dotted"></i> Tambah Folder
-          </button>
+          <?= $user->role_id != 2 ? '<button id="addFolderButton" class="btn btn-primary">
+    <i class="bi bi-plus-circle-dotted"></i> Tambah Folder
+</button>' : '' ?>
+
         </div>
       </div>
 
@@ -119,7 +120,7 @@
             </div>
 
             <!-- [BARU] Tombol Dropdown untuk Sorting -->
-            <div class="col-auto">
+            <div class="col-auto" id="sorting">
               <div class="dropdown">
                 <button class="btn btn-outline-secondary" type="button" id="sortDropdown"
                   data-bs-toggle="dropdown" aria-expanded="false" title="Urutkan">
@@ -185,7 +186,7 @@
       </div>
 
       <?php
-      function renderTree($nodes, $level = 0, $encrypter = null)
+      function renderTree($nodes, $level = 0, $encrypter = null, $user)
       {
         if ($encrypter === null) {
           $encrypter = \Config\Services::encrypter();
@@ -209,8 +210,12 @@
           }
 
       ?>
-          <div id="<?= $encId ?>" class="<?= $node->type ?>-item flex" style="margin-left: <?= $level * 30; ?>px"
-            draggable="true" <?= $dataAttrs ?>>
+          <div id="<?= $encId ?>" class="<?= $node->type ?>-item flex"
+            style="<?= $user->role_id == 2
+                      ? 'cursor: pointer; margin-left: ' . ($level * 30) . 'px;'
+                      : 'cursor: grab; margin-left: ' . ($level * 30) . 'px;' ?>"
+            draggable="<?= $user->role_id == 2 ? 'false' : 'true' ?>"
+            <?= $dataAttrs ?>>
 
             <div class="d-flex justify-content-between align-items-center col-12">
               <div class="d-flex align-items-center gap-3">
@@ -239,7 +244,7 @@
       <?php
           // render recursive jika ada children
           if (!empty($node->children)) {
-            renderTree($node->children, $level + 1, $encrypter);
+            renderTree($node->children, $level + 1, $encrypter, $user);
           }
         }
       }
@@ -250,7 +255,7 @@
         <div id="folder" class="d-flex flex-column">
           <?php
           if ($tree !== []) {
-            renderTree($tree);
+            renderTree($tree, 0, null, $user);
           } else {
             echo 'Apabila data kosong & filter masih di apply malah jadi muncul 2 pesan, ubah agar konsisten yaitu klo data kosong tanpa filter muncul pesan "Tidak Ditemukan" lalu klo ada filter muncul pesan "Tidak ada folder atau file yang cocok dengan kriteria filter Anda."';
           }
@@ -917,6 +922,7 @@
       var otorisasiRole = document.getElementById("otorisasiRole");
       var checkboxes = document.querySelectorAll(".checkbox-otorisasi-folder, .checkbox-otorisasi-file");
       var lihatFolderOtorisasi = document.querySelectorAll(".lihat-folder-otorisasi");
+      var sortButton = document.getElementById("sorting");
 
       if (this.checked) {
         addFolderBtn.style.display = "none";
@@ -927,6 +933,7 @@
         infoText.style.display = "block";
 
         manageDocument.classList.add("d-none");
+        sortButton.style.display = "none";
         filterJenis.style.display = "none";
         searchInput.style.display = "none";
         filterTipe.style.display = "none";

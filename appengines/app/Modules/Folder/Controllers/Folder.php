@@ -101,10 +101,10 @@ class Folder extends BaseController
     }
 
     // [PERBAIKAN] Buat salinan struktur pohon folder sebelum file ditambahkan.
-    $folder_tree = $tree;
+    // Pindahkan reset $tree ke sini
 
+    $tree = [];
     // masukkan file ke folder setelah folder anak
-    $tree = []; // Pindahkan reset $tree ke sini
     foreach ($files as $file) {
       $file->type     = 'file';
       $file->children = [];
@@ -150,6 +150,8 @@ class Folder extends BaseController
       $n = $filter($root);
       if ($n !== null) $tree[] = $n;
     }
+
+    $folder_tree = $tree;
 
     $data = [
       'title'      => 'Dokumen Akreditasi',
