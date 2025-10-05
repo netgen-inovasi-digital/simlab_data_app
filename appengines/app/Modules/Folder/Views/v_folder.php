@@ -665,6 +665,11 @@
     item.addEventListener("dragstart", (e) => {
       draggedItem = item;
       dragStartX = e.clientX;
+
+      // ✅ Simpan parent lama atau level lama (buat referensi saat drop gagal)
+      item.dataset.oldCount = item.dataset.count;
+      item.dataset.prevId = item.previousElementSibling ? item.previousElementSibling.id : 'none';
+
       childrenOfDraggedItem = []; // [PENTING] Reset setiap kali drag dimulai
       if (item.dataset.type === 'folder') {
         childrenOfDraggedItem = findChildrenRecursive(draggedItem);
@@ -719,8 +724,27 @@
       item.dataset.count = count;
       item.style.marginLeft = (count * 30) + "px";
 
-      // [PERBAIKAN] 1. Pindahkan induk ke posisi baru
-      folderMenu.insertBefore(draggedItem, placeholder);
+      // [PERBAIKAN] 1. Pindahkan ke posisi sebelumnya apabila tidak ada induk
+      if (!parentFolder && draggedItem.dataset.type === "file") {
+        // 🧩 Kembalikan ke posisi DOM semula
+        item.dataset.count = item.dataset.oldCount || 0;
+        item.style.marginLeft = (item.dataset.count * 30) + "px";
+
+        const prevId = item.dataset.prevId;
+        if (prevId && prevId !== 'none') {
+          const prevEl = document.getElementById(prevId);
+          if (prevEl && prevEl.nextSibling) {
+            folderMenu.insertBefore(draggedItem, prevEl.nextSibling);
+          } else {
+            folderMenu.appendChild(draggedItem);
+          }
+        } else {
+          folderMenu.insertBefore(draggedItem, folderMenu.firstChild);
+        }
+      } else {
+        // Normal behavior
+        folderMenu.insertBefore(draggedItem, placeholder);
+      }
 
       // Kembalikan tampilan item dan hapus placeholder
       item.style.display = "flex";
@@ -732,7 +756,12 @@
       updateKodeFolder();
       saveAll();
       updateCarets();
+
+      delete item.dataset.prevId;
+      delete item.dataset.oldCount;
     });
+
+
 
     item.addEventListener("dragover", (e) => {
       e.preventDefault();
