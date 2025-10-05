@@ -409,14 +409,23 @@
      * Event listener untuk menambah input field sub-folder secara dinamis.
      */
     tambahSubfolderBtn.addEventListener('click', () => {
-      const newSubfolder = document.createElement('div');
-      newSubfolder.classList.add('input-group', 'mb-2');
-      newSubfolder.innerHTML = `
-                    <span class="input-group-text"><i class="bi bi-arrow-return-right"></i></span>
-                    <input type="text" name="subfolder_nama[]" class="form-control" placeholder="Nama Sub-folder">
-                    <button class="btn btn-outline-danger btn-remove-subfolder" type="button"><i class="bi bi-x"></i></button>
+      // Hitung level indentasi berdasarkan jumlah wrapper subfolder yang sudah ada
+      const currentLevel = subfolderContainer.querySelectorAll('.subfolder-wrapper').length;
+      const indentSize = 25; // Ukuran indentasi dalam pixel
+      const marginLeft = currentLevel * indentSize;
+
+      // [FIX] Buat div wrapper untuk menerapkan margin, bukan ke input-group langsung
+      const wrapper = document.createElement('div');
+      wrapper.classList.add('subfolder-wrapper', 'mb-2');
+      wrapper.style.marginLeft = `${marginLeft}px`;
+      wrapper.innerHTML = `
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-arrow-return-right"></i></span>
+                        <input type="text" name="subfolder_nama[]" class="form-control" placeholder="Nama Sub-folder">
+                        <button class="btn btn-outline-danger btn-remove-subfolder" type="button"><i class="bi bi-x"></i></button>
+                    </div>
                 `;
-      subfolderContainer.appendChild(newSubfolder);
+      subfolderContainer.appendChild(wrapper);
     });
 
     /**
@@ -424,7 +433,8 @@
      */
     subfolderContainer.addEventListener('click', (e) => {
       if (e.target.closest('.btn-remove-subfolder')) {
-        e.target.closest('.input-group').remove();
+        // [FIX] Hapus elemen wrapper, bukan hanya input-group
+        e.target.closest('.subfolder-wrapper').remove();
       }
     });
 
@@ -643,13 +653,24 @@
   placeholder.classList.add("drag-placeholder");
 
   // Inisialisasi
+
   document.querySelectorAll(".folder-item, .file-item").forEach(addDragEvents);
   updateKodeFolder();
 
   function addDragEvents(item) {
+    // [PERBAIKAN] Deklarasikan variabel di sini agar menjadi lokal untuk setiap event drag
+    let childrenOfDraggedItem = [];
+    let originalLevel = 0;
+
     item.addEventListener("dragstart", (e) => {
       draggedItem = item;
       dragStartX = e.clientX;
+      childrenOfDraggedItem = []; // [PENTING] Reset setiap kali drag dimulai
+      if (item.dataset.type === 'folder') {
+        childrenOfDraggedItem = findChildrenRecursive(draggedItem);
+        // [BARU] Simpan level asli dari item yang di-drag
+        originalLevel = parseInt(item.dataset.count, 10);
+      }
       item.style.opacity = "0.7";
       setTimeout(() => {
         folderMenu.insertBefore(placeholder, item.nextSibling);
@@ -676,9 +697,6 @@
         if (el.dataset.type === "file") continue;
       }
 
-      // [PERBAIKAN] Pindahkan folder dan semua anaknya ke posisi baru
-      folderMenu.insertBefore(draggedItem, placeholder);
-      moveChildren(draggedItem);
 
       // Hitung level indentasi baru
       let count = parseInt(item.dataset.count) || 0;
@@ -697,15 +715,20 @@
       }
       if (count > maxLevel) count = maxLevel;
 
-      // Terapkan indentasi baru dan rapikan anak-anaknya
+      // [PERBAIKAN] Terapkan indentasi baru ke induk SEBELUM memindahkan anak
       item.dataset.count = count;
       item.style.marginLeft = (count * 30) + "px";
-      rapikanAnakFolder(draggedItem);
+
+      // [PERBAIKAN] 1. Pindahkan induk ke posisi baru
+      folderMenu.insertBefore(draggedItem, placeholder);
 
       // Kembalikan tampilan item dan hapus placeholder
       item.style.display = "flex";
       item.style.opacity = "1";
       if (placeholder.parentNode) placeholder.remove();
+
+      // [PERBAIKAN] 2. Pindahkan anak-anak yang sudah disimpan sebelumnya
+      moveChildren(draggedItem, childrenOfDraggedItem, originalLevel);
       updateKodeFolder();
       saveAll();
       updateCarets();
@@ -723,45 +746,45 @@
      * @param {HTMLElement} folderEl - Elemen folder induk.
      * @returns {HTMLElement} - Elemen anak terakhir yang dipindahkan.
      */
-    function moveChildren(folderEl) {
-      const children = findChildrenRecursive(folderEl);
+    function moveChildren(folderEl, childrenToMove, originalParentLevel) {
+      const newParentLevel = parseInt(folderEl.dataset.count, 10);
+      const levelDifference = newParentLevel - originalParentLevel;
       let lastChild = folderEl;
 
-      children.forEach(child => {
+      childrenToMove.forEach((child, index) => {
+        // [PERBAIKAN] Pindahkan elemen anak ke posisi yang benar
         folderMenu.insertBefore(child, lastChild.nextSibling);
+
+        // [PERBAIKAN] Hitung level baru dengan menerapkan selisih, bukan meratakannya.
+        const childOriginalLevel = parseInt(child.dataset.count, 10);
+        const newLevel = childOriginalLevel + levelDifference;
+        child.dataset.count = newLevel;
+        child.style.marginLeft = (newLevel * 30) + 'px';
+
         lastChild = child;
       });
       return lastChild;
     }
 
-    function rapikanAnakFolder(folderEl) {
-      const folderLevel = parseInt(folderEl.dataset.count) || 0;
-      let nextEl = folderEl.nextSibling;
-      while (nextEl) {
-        const lvl = parseInt(nextEl.dataset.count) || 0;
-        // [PERBAIKAN] Berhenti jika menemukan item di level yang sama atau lebih tinggi
-        if (lvl <= folderLevel) break;
-
-        // [PERBAIKAN] Set level anak langsung menjadi level induk + 1
-        const newLevel = folderLevel + 1;
-        nextEl.dataset.count = newLevel;
-        nextEl.style.marginLeft = (newLevel * 30) + "px";
-
-        // Jika item ini adalah folder, panggil rekursif untuk merapikan anak-anaknya
-        if (nextEl.classList.contains('folder-item')) {
-          rapikanAnakFolder(nextEl);
-        }
-
-        nextEl = nextEl.nextSibling;
-      }
-    }
-
+    /**
+     * [PERBAIKAN] Mencari semua anak dari sebuah elemen folder secara rekursif di dalam DOM.
+     * Fungsi ini sekarang bekerja dengan menganalisis level indentasi (`data-count`)
+     * dari elemen-elemen berikutnya, bukan bergantung pada `data-parent` yang belum tentu up-to-date.
+     * @param {HTMLElement} parentEl - Elemen folder induk.
+     * @returns {HTMLElement[]} - Array dari elemen-elemen anak.
+     */
     function findChildrenRecursive(parentEl) {
-      const parentId = parentEl.id;
-      const directChildren = Array.from(folderMenu.children).filter(el => el.dataset.parent === parentId);
-      let allChildren = [...directChildren];
-      directChildren.forEach(child => allChildren.push(...findChildrenRecursive(child)));
-      return allChildren;
+      const children = [];
+      const parentLevel = parseInt(parentEl.dataset.count, 10);
+      let nextEl = parentEl.nextElementSibling;
+
+      while (nextEl) {
+        const nextLevel = parseInt(nextEl.dataset.count, 10);
+        if (nextLevel > parentLevel) children.push(nextEl);
+        else break; // Berhenti jika menemukan item di level yang sama atau lebih tinggi
+        nextEl = nextEl.nextElementSibling;
+      }
+      return children;
     }
   }
 
