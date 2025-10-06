@@ -5,7 +5,9 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        max-width: 280px;
+        /* Tetap diperlukan untuk konten di dalam card */
+        max-width: 240px;
+        /* [UBAH] Kartu diperkecil */
         margin: 0 auto;
     }
 
@@ -37,11 +39,15 @@
     .biodata-table {
         width: 100%;
         font-size: 0.95rem;
+        table-layout: fixed;
+        /* [BARU] Memaksa tabel mematuhi lebar yang ditentukan */
     }
 
     .biodata-table td {
         padding: 8px 0;
         vertical-align: top;
+        word-wrap: break-word;
+        /* [BARU] Memastikan teks panjang akan dipecah */
     }
 
     .biodata-table td:first-child {
@@ -161,6 +167,36 @@
     .btn-remove-file:hover {
         color: #a71d2a;
     }
+
+    /* [BARU] CSS untuk mengatasi nama file panjang di modal detail */
+    #biodataModal .list-group-item {
+        overflow-wrap: break-word;
+        /* Standar */
+        word-wrap: break-word;
+        /* Fallback untuk browser lama */
+
+        /* [PERBAIKAN] Aturan baru untuk menangani flex item yang meluap */
+        flex-grow: 1;
+        /* Izinkan elemen untuk tumbuh */
+        flex-shrink: 1;
+        /* Izinkan elemen untuk menyusut */
+        min-width: 0;
+        /* Kunci utama: Izinkan penyusutan di bawah ukuran konten */
+        word-break: break-all;
+        /* Paksa pemotongan kata jika diperlukan */
+    }
+
+    /* [BARU] CSS untuk modal loading */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.7);
+        z-index: 1060;
+        /* Di atas modal */
+    }
 </style>
 
 <div class="row">
@@ -168,8 +204,7 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0"><?php echo $title ?></h5>
-                <button id="addPersonelButton" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Tambah
-                    Personel</button>
+                <button id="addPersonelButton" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Tambah</button>
             </div>
             <div class="card-body">
 
@@ -209,8 +244,9 @@
                                 <div class="card-body">
                                     <h6 class="card-title fw-bold"><?= esc($row->nama) ?></h6>
                                     <p class="card-text text-muted"><?= esc($row->jabatan) ?></p>
+                                    <hr class="my-2">
+                                    <?= aksi($id) ?>
                                 </div>
-                                <div class="card-footer bg-white border-0 pb-3"><?= aksi($id) ?></div>
                             </div>
                         </div>
                     <?php } ?>
@@ -236,10 +272,9 @@
      */
     function aksi($id)
     {
-        return '<div id="' . $id . '">
-        <span class="text-secondary" role="button" title="Ubah" onclick="event.stopPropagation(); editPersonel(event)"><i class="bi bi-pencil-square"></i> Edit</span> 
-        <span class="text-danger ms-3" role="button" title="Hapus" onclick="event.stopPropagation(); deleteItem(event)"><i class="bi bi-trash"></i> Hapus</span>
-    </div>';
+        return '<div id="' . $id . '" class="d-flex justify-content-center gap-3">
+        <span class="text-secondary" role="button" title="Ubah" onclick="event.stopPropagation(); editPersonel(event)"><i class="bi bi-pencil-square"></i> Edit</span><span class="text-info" role="button" title="Dokumen" onclick="event.stopPropagation(); manageDokumen(event)"><i class="bi bi-file-earmark-text"></i> Dokumen</span><span class="text-danger" role="button" title="Hapus" onclick="event.stopPropagation(); deleteItem(event)"><i class="bi bi-trash"></i> Hapus</span>
+        </div>';
     }
     ?>
 
@@ -351,15 +386,43 @@
                             <div id="foto_link" class="mt-1"></div>
                             <div id="previewWrapper" class="mt-2 preview-wrapper">
                                 <img id="fotoPreview" src="#" alt="Preview Foto" class="img-thumbnail" />
-                                <span id="removePreview" class="btn-remove-preview" title="Hapus Foto">&times;</span>
+                                <span id="removePreview" class="btn-remove-preview" title="Hapus Foto">×</span>
                             </div>
                             <div class="invalid-feedback">Foto wajib diunggah.</div>
                             <small class="form-text text-muted">Kosongkan jika tidak ingin mengubah. Ukuran disarankan
                                 2x3
                                 (Portrait), (JPG, JPEG, PNG).</small>
                         </div>
-                        <hr>
-                        <p class="text-muted small">Unggah Dokumen Pendukung (Opsional)</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i
+                                class="bi bi-x-circle"></i>
+                            Batal</button>
+                        <button id="btn-save-personel" class="btn btn-success" type="button"><i
+                                class="bi bi-check2-circle"></i>
+                            Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- [BARU] Modal Form untuk Dokumen Pendukung -->
+    <div class="modal fade" id="dokumenModalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dokumenModalFormLabel">Kelola Dokumen Pendukung</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="dokumenForm" action="<?= site_url('personel/submit') ?>" method="post"
+                    enctype="multipart/form-data">
+                    <?= csrf_field() ?>
+                    <div class="modal-body">
+                        <input type="hidden" name="id" />
+                        <p class="text-muted small">Unggah atau perbarui dokumen pendukung untuk personel ini. Kosongkan
+                            jika tidak ada perubahan.</p>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Daftar Riwayat Hidup (CV)</label>
@@ -393,15 +456,18 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i
-                                class="bi bi-x-circle"></i>
-                            Batal</button>
-                        <button id="btn-save-personel" class="btn btn-success" type="button"><i
-                                class="bi bi-check2-circle"></i>
-                            Simpan</button>
+                        <button class="btn btn-light" type="button" data-bs-dismiss="modal">Batal</button>
+                        <button id="btn-save-dokumen" class="btn btn-success" type="button">Simpan Dokumen</button>
                     </div>
                 </form>
             </div>
+        </div>
+    </div>
+
+    <!-- [BARU] Modal Loading -->
+    <div id="loading-indicator" class="loading-overlay d-none justify-content-center align-items-center">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Loading...</span>
         </div>
     </div>
 
@@ -410,6 +476,8 @@
         // === Variabel Global ===
         var biodataModal = new bootstrap.Modal(document.getElementById('biodataModal'));
         var personelModalFormEl = document.getElementById('personelModalForm');
+        var dokumenModalFormEl = document.getElementById('dokumenModalForm');
+        var dokumenModalForm = new bootstrap.Modal(dokumenModalFormEl);
         var personelModalForm = new bootstrap.Modal(personelModalFormEl);
         var contentArea = document.getElementById('biodata-content');
         var modalAksiContainer = document.getElementById('modal-aksi-container');
@@ -418,6 +486,23 @@
         var placeholder = document.createElement("div");
         placeholder.classList.add("col-12", "col-sm-6", "col-md-4", "col-lg-3", "drag-placeholder");
 
+        // === Fungsi Utilitas ===
+        function showLoading() {
+            document.getElementById('loading-indicator').classList.replace('d-none', 'd-flex');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-indicator').classList.replace('d-flex', 'd-none');
+        }
+
+        /**
+         * [BARU] Fungsi terpusat untuk memperbarui token CSRF di semua form.
+         */
+        function updateCsrfToken(name, hash) {
+            if (name && hash) {
+                document.querySelectorAll(`[name="${name}"]`).forEach(input => input.value = hash);
+            }
+        }
         // [BARU] Hapus event listener lama sebelum menambahkan yang baru untuk mencegah duplikasi
         if (document.personelModuleClickHandler) {
             document.removeEventListener('click', document.personelModuleClickHandler);
@@ -446,6 +531,19 @@
                 saveDataPersonel(form.getAttribute('action'), formData, saveButton);
             }
 
+            // [BARU] Handler untuk Tombol "Simpan Dokumen"
+            if (e.target.closest('#btn-save-dokumen')) {
+                e.preventDefault();
+                const saveButton = e.target.closest('#btn-save-dokumen');
+                const form = document.getElementById('dokumenForm');
+                // Tidak ada validasi required di sini, jadi langsung kirim
+                const formData = new FormData(form);
+                // Kita bisa gunakan fungsi save yang sama, karena backend akan memprosesnya
+                // berdasarkan field yang ada di FormData
+                saveDataPersonel(form.getAttribute('action'), formData, saveButton, 'dokumen');
+            }
+
+
             // 3. Handler untuk Tombol "Hapus File"
             const removeBtn = e.target.closest('.btn-remove-preview, .btn-remove-file');
             if (removeBtn) {
@@ -455,19 +553,17 @@
                 const form = parentContainer.closest('form');
 
                 if (removeBtn.dataset.existingFile === 'true') {
-                    const fieldName = removeBtn.dataset.fieldName;
-                    const filename = removeBtn.dataset.filename;
+                    // [UBAH] Menggunakan id_dokumen untuk penghapusan
+                    const idDokumen = removeBtn.dataset.idDokumen;
                     const hiddenInput = document.createElement('input');
                     hiddenInput.type = 'hidden';
-                    if (fieldName === 'doc_lainnya') {
-                        hiddenInput.name = `delete_files[doc_lainnya][]`;
-                    } else {
-                        hiddenInput.name = 'delete_files[]';
-                    }
-                    hiddenInput.value = fieldName === 'doc_lainnya' ? filename : fieldName;
+                    // Backend akan mencari array 'delete_files' yang berisi ID dokumen
+                    hiddenInput.name = `delete_files[]`;
+                    hiddenInput.value = idDokumen;
                     form.appendChild(hiddenInput);
 
                     if (removeBtn.id === 'removePreview') {
+                        // Sembunyikan preview foto
                         document.getElementById('previewWrapper').style.display = 'none';
                     } else {
                         removeBtn.parentElement.remove();
@@ -504,24 +600,27 @@
          * @param {FormData} formData - Objek FormData yang berisi data dari form.
          * @param {HTMLElement} buttonElement - Tombol yang memicu penyimpanan, untuk di-disable/enable.
          */
-        function saveDataPersonel(url, formData, buttonElement) {
+        function saveDataPersonel(url, formData, buttonElement, formType = 'personel') {
             showLoading();
             buttonElement.disabled = true;
-            formData.set('<?= csrf_token() ?>', document.querySelector('[name="<?= csrf_token() ?>"]').value);
-
             fetch(url, {
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.json())
+                .then(response => response.ok ? response.json() : response.json().then(err => Promise.reject(err)))
                 .then(data => {
-                    if (data.xname && data.xhash) {
-                        document.querySelectorAll(`[name="${data.xname}"]`).forEach(input => input.value = data.xhash);
-                    }
+                    updateCsrfToken(data.xname, data.xhash);
                     if (data.res === 'validation_error') {
                         sayAlert('errorModal', 'Input Tidak Lengkap', data.message, 'warning');
                     } else if (data.res === 'refresh') {
-                        personelModalForm.hide();
+                        // [PERBAIKAN] Panggil hideLoading SEBELUM navigasi/reload
+                        if (formType === 'personel') {
+                            personelModalForm.hide();
+                        } else {
+                            dokumenModalForm.hide();
+                        }
+                        // hideLoading() akan dipanggil di dalam loadContent jika ada,
+                        // jadi tidak perlu dipanggil di sini untuk menghindari double call.
                         sayAlert('successModal', 'Berhasil', 'Data berhasil disimpan.', 'success');
                         if (typeof loadContent === 'function') {
                             loadContent(data.link);
@@ -533,11 +632,15 @@
                     }
                 })
                 .catch(error => {
-                    console.error("Save error:", error);
+                    console.error("Save error:", error.message || error);
                     sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
                 })
                 .finally(() => {
-                    hideLoading();
+                    // [PERBAIKAN] Panggil hideLoading di sini hanya jika tidak ada refresh/reload
+                    const loadingIndicator = document.getElementById('loading-indicator');
+                    if (loadingIndicator && !loadingIndicator.classList.contains('d-none')) {
+                        hideLoading();
+                    }
                     buttonElement.disabled = false;
                 });
         }
@@ -552,6 +655,10 @@
             form.reset();
             form.querySelector('[name="id"]').value = '';
             form.querySelectorAll('input[name^="delete_files"]').forEach(el => el.remove());
+
+            // Reset form dokumen juga
+            document.getElementById('dokumenForm').reset();
+
             form.classList.remove('was-validated');
 
             const fotoInput = form.querySelector('[name="foto"]');
@@ -621,16 +728,39 @@
                     previewWrapper.style.display = 'none';
                 }
             } else {
-                if (previewContainer) previewContainer.innerHTML = '';
+                // [PERBAIKAN] Logika untuk pratinjau file dokumen (tunggal & ganda)
+                if (!previewContainer) return;
+
+                // [BARU] Sembunyikan pratinjau lama HANYA untuk input file tunggal
+                if (!input.multiple) {
+                    const existingPreviews = previewContainer.querySelectorAll('.existing-file-preview');
+                    if (input.files.length > 0) {
+                        // Jika ada file baru dipilih, sembunyikan yang lama
+                        existingPreviews.forEach(p => p.style.display = 'none');
+                    } else {
+                        // Jika pilihan file baru dibatalkan, tampilkan lagi yang lama
+                        existingPreviews.forEach(p => p.style.display = 'flex');
+                    }
+                }
+
+                // Buat atau dapatkan kontainer khusus untuk file baru
+                let newFilesPreviewContainer = previewContainer.querySelector('.new-files-previews');
+                if (!newFilesPreviewContainer) {
+                    newFilesPreviewContainer = document.createElement('div');
+                    newFilesPreviewContainer.className = 'new-files-previews';
+                    previewContainer.appendChild(newFilesPreviewContainer);
+                }
+
+                // Selalu kosongkan kontainer file baru sebelum menambahkan pratinjau
+                newFilesPreviewContainer.innerHTML = '';
+
                 if (input.files.length > 0) {
                     Array.from(input.files).forEach(file => {
-                        if (previewContainer) {
-                            previewContainer.innerHTML += `
-                        <div class="file-preview-item">
-                            <span class="file-preview-name" title="${file.name}">${file.name}</span>
-                            <button type="button" class="btn-remove-file" data-filename="${file.name}" title="Hapus file">&times;</button>
-                        </div>`;
-                        }
+                        newFilesPreviewContainer.innerHTML += `
+                    <div class="file-preview-item">
+                        <span class="file-preview-name" title="${file.name}">${file.name}</span>
+                        <button type="button" class="btn-remove-file" data-filename="${file.name}" title="Hapus file">×</button>
+                    </div>`;
                     });
                 }
             }
@@ -690,33 +820,29 @@
                     .then(data => {
                         if (data.error) throw new Error(data.error);
 
-                        const csrfTokenName = '<?= csrf_token() ?>';
-                        if (data[csrfTokenName]) {
-                            document.querySelectorAll(`[name="${csrfTokenName}"]`).forEach(input => input.value = data[
-                                csrfTokenName]);
-                        }
+                        updateCsrfToken(data.xname, data.xhash);
 
+                        // [PERBAIKAN] Tambahkan blok ini untuk mengisi form dengan data yang ada
                         document.querySelector('#personelModalForm .modal-title').textContent = 'Ubah Data Personel';
                         Object.entries(data).forEach(([key, value]) => {
-                            const el = document.querySelector(`#personelForm [name="${key}"]`);
+                            if (key.startsWith('doc_')) return; // Lewati field dokumen
+                            const el = form.querySelector(`[name="${key}"]`);
+                            // Pastikan elemen ada dan bukan untuk multi-file upload
                             if (el && !el.matches('[name="doc_lainnya[]"]')) {
+                                // Jangan isi input file, hanya input teks, select, dll.
                                 if (el.type !== 'file') el.value = value || "";
                             }
                         });
 
                         const fileFields = {
-                            'foto': 'Foto Profil',
-                            'doc_cv': 'CV',
-                            'doc_coc': 'Code of Conduct',
-                            'doc_surat_tugas': 'Surat Tugas',
-                            'doc_lainnya': 'Dokumen Lainnya'
+                            'foto': 'Foto Profil'
                         };
                         Object.entries(fileFields).forEach(([fieldName, label]) => {
-                            const previewContainer = document.querySelector(`#${fieldName}_link`);
                             const fileData = data[fieldName];
-                            if (previewContainer) previewContainer.innerHTML = '';
-                            if (fileData && fileData.trim() !== '') {
-                                if (fieldName === 'foto') {
+
+                            // [PERBAIKAN] Pisahkan logika untuk FOTO dan DOKUMEN
+                            if (fieldName === 'foto') {
+                                if (fileData && fileData.trim() !== '') {
                                     const previewWrapper = document.getElementById('previewWrapper');
                                     document.getElementById('fotoPreview').src =
                                         `<?= base_url('uploads/') ?>${fileData}`;
@@ -724,16 +850,6 @@
                                     const removeBtn = previewWrapper.querySelector('.btn-remove-preview');
                                     removeBtn.dataset.existingFile = 'true';
                                     removeBtn.dataset.fieldName = 'foto';
-                                } else {
-                                    const files = (fieldName === 'doc_lainnya' && fileData.startsWith('[')) ?
-                                        JSON
-                                        .parse(fileData) : [fileData];
-                                    if (Array.isArray(files)) {
-                                        files.forEach(file => {
-                                            previewContainer.innerHTML +=
-                                                `<div class="file-preview-item"><a href="<?= base_url('uploads/') ?>${file}" target="_blank" class="file-preview-name" title="${file}">${file}</a><button type="button" class="btn-remove-file" data-existing-file="true" data-field-name="${fieldName}" data-filename="${file}" title="Hapus file">&times;</button></div>`;
-                                        });
-                                    }
                                 }
                             }
                         });
@@ -748,6 +864,79 @@
                     .finally(() => {
                         hideLoading();
                     });
+            }
+        }
+
+        /**
+         * [BARU] Mengambil data dokumen personel dan menampilkannya di modal dokumen.
+         */
+        function manageDokumen(event) {
+            // [PERBAIKAN] Menggunakan `closest('[id]')` untuk mencari elemen induk terdekat yang memiliki atribut 'id'.
+            // Ini lebih andal daripada `closest('div')` karena memastikan kita mendapatkan div dengan ID personel.
+            const closest = event.target.closest('[id]');
+            if (closest) {
+                showLoading();
+                const id = closest.getAttribute('id');
+                const url = `<?= site_url('personel/edit/') ?>${id}`;
+                const form = document.getElementById('dokumenForm');
+                form.reset();
+                form.querySelector('[name="id"]').value = id;
+                form.querySelectorAll('input[name^="delete_files"]').forEach(el => el.remove());
+                document.querySelectorAll('#dokumenModalForm .file-preview-container').forEach(p => p.innerHTML = '');
+
+                fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.ok ? response.json() : response.json().then(err => Promise.reject(err)))
+                    .then(data => {
+                        if (data.error) throw new Error(data.error);
+                        updateCsrfToken(data.xname, data.xhash);
+                        const fileFields = {
+                            'foto': 'Foto Profil',
+                            'doc_cv': 'CV',
+                            'doc_coc': 'Code of Conduct',
+                            'doc_surat_tugas': 'Surat Tugas',
+                            'doc_lainnya': 'Dokumen Lainnya'
+                        };
+                        Object.entries(fileFields).forEach(([fieldName, label]) => {
+                            const fileData = data[fieldName];
+                            if (fieldName !== 'foto') {
+                                // Logika untuk semua dokumen (CV, COC, Surat Tugas, Lainnya)
+                                const previewContainer = form.querySelector(`#${fieldName}_link`);
+                                if (previewContainer) previewContainer.innerHTML = ''; // Reset container
+
+                                if (fileData && fileData.trim() !== '' && previewContainer) {
+                                    // [PERBAIKAN] Pastikan JSON.parse hanya dijalankan pada string JSON yang valid
+                                    // [UBAH] Data file sekarang selalu dalam format array of objects dari backend
+                                    let files = [];
+                                    try {
+                                        files = JSON.parse(fileData);
+                                    } catch (e) {
+                                        console.error("Gagal parse JSON untuk file:", fileData, e);
+                                    }
+
+                                    if (Array.isArray(files) && files.length > 0) {
+                                        files.forEach(file => {
+                                            const displayName = file.nama_asli_file;
+                                            // [UBAH] Menggunakan data-id-dokumen untuk referensi penghapusan
+                                            previewContainer.innerHTML +=
+                                                `<div class="file-preview-item existing-file-preview"><a href="<?= base_url() ?>${file.path_file}" target="_blank" class="file-preview-name" title="${escapeHtml(displayName)}">${displayName}</a><button type="button" class="btn-remove-file" data-existing-file="true" data-id-dokumen="${file.id_dokumen}" title="Hapus file">×</button></div>`;
+                                        });
+                                    }
+                                }
+                            }
+                        });
+                        dokumenModalForm.show();
+                    })
+                    .catch(error => {
+                        console.error('Fetch error:', error);
+                        sayAlert('errorModal', 'Error',
+                            `Terjadi kesalahan: ${error.message || 'Gagal mengambil data.'}`, 'warning');
+                    }).finally(() => hideLoading());
             }
         }
 
@@ -769,49 +958,95 @@
                 })
                 .then(response => response.ok ? response.json() : response.json().then(err => Promise.reject(err)))
                 .then(data => {
+                    updateCsrfToken(data.xname, data.xhash);
                     if (data.error) throw new Error(data.error);
                     const imageUrl = data.foto && data.foto.trim() !== '' ? `<?= base_url('uploads/') ?>${data.foto}` :
                         'https://placehold.co/200x250?text=Foto';
                     let mainDocList = '',
-                        otherDocList = '';
-                    const mainDocs = [{
-                        key: 'doc_cv',
-                        label: 'Daftar Riwayat Hidup'
-                    }, {
-                        key: 'doc_coc',
-                        label: 'Code of Conduct'
-                    }, {
-                        key: 'doc_surat_tugas',
-                        label: 'Surat Tugas'
-                    }];
-                    mainDocs.forEach(doc => {
-                        if (data[doc.key] && data[doc.key].trim() !== '') mainDocList +=
-                            `<a href="<?= base_url('uploads/') ?>${data[doc.key]}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">${doc.label} <i class="bi bi-download"></i></a>`;
-                    });
-                    if (data['doc_lainnya'] && data['doc_lainnya'].trim() !== '' && data['doc_lainnya'].startsWith(
-                            '[')) {
+                        otherDocList = '',
+                        docHtmlColumns = '';
+
+                    // [UBAH] Fungsi untuk memproses array dokumen dari JSON
+                    const processDocs = (jsonString, label) => {
+                        let html = '';
                         try {
-                            const files = JSON.parse(data['doc_lainnya']);
-                            if (Array.isArray(files) && files.length > 0) files.forEach(file => otherDocList +=
-                                `<a href="<?= base_url('uploads/') ?>${file}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">${file} <i class="bi bi-download"></i></a>`
-                            );
+                            const files = JSON.parse(jsonString);
+                            if (Array.isArray(files) && files.length > 0) {
+                                files.forEach(file => {
+                                    const displayName = file.nama_asli_file;
+                                    const path = `<?= base_url() ?>${file.path_file}`;
+                                    const itemLabel = label || displayName;
+                                    html +=
+                                        `<div class="list-group-item d-flex justify-content-between align-items-center"><a href="${path}" target="_blank" class="file-name-display text-decoration-none text-dark" title="Lihat: ${escapeHtml(displayName)}">${itemLabel}</a><a href="${path}" download="${escapeHtml(displayName)}" class="text-secondary" title="Unduh: ${escapeHtml(displayName)}"><i class="bi bi-download"></i></a></div>`;
+                                });
+                            }
                         } catch (e) {
-                            console.error('Gagal parse JSON doc_lainnya', e);
+                            console.error(`Gagal parse JSON untuk dokumen:`, jsonString, e);
                         }
+                        return html;
+                    };
+
+                    mainDocList += processDocs(data.doc_cv, 'Daftar Riwayat Hidup');
+                    mainDocList += processDocs(data.doc_coc, 'Code of Conduct');
+                    mainDocList += processDocs(data.doc_surat_tugas, 'Surat Tugas');
+                    otherDocList = processDocs(data.doc_lainnya, null); // Untuk doc_lainnya, label adalah nama file
+
+                    if (mainDocList || otherDocList) {
+                        docHtmlColumns =
+                            `<div class="col-12"><hr class="my-1"></div><div class="col-md-6"><strong class="d-block mb-2">Dokumen Pendukung:</strong><div class="list-group list-group-flush">${mainDocList || '<div class="list-group-item text-muted small">Tidak ada</div>'}</div></div><div class="col-md-6"><strong class="d-block mb-2">Dokumen Lainnya:</strong><div class="list-group list-group-flush">${otherDocList || '<div class="list-group-item text-muted small">Tidak ada</div>'}</div></div>`;
                     }
-                    let docHtmlColumns = (mainDocList || otherDocList) ?
-                        `<div class="col-12"><hr class="my-1"></div><div class="col-md-6"><strong class="d-block mb-2">Dokumen Pendukung:</strong><div class="list-group list-group-flush">${mainDocList || '<div class="list-group-item text-muted small">Tidak ada</div>'}</div></div><div class="col-md-6"><strong class="d-block mb-2">Dokumen Lainnya:</strong><div class="list-group list-group-flush">${otherDocList || '<div class="list-group-item text-muted small">Tidak ada</div>'}</div></div>` :
-                        '';
+
+                    // [PERBAIKAN] Mengganti col-md-* menjadi col-lg-* untuk layout yang lebih responsif
                     contentArea.innerHTML =
-                        `<div class="row g-4 px-4"><div class="col-md-4 text-center"><img src="${imageUrl}" alt="${data.nama || 'Personel'}" /></div><div class="col-md-8 px-5"><table class="biodata-table"><tr><td>Nama Lengkap & Gelar</td><td>:</td><td>${data.nama || '-'}</td></tr><tr><td>Jabatan</td><td>:</td><td>${data.jabatan || '-'}</td></tr><tr><td>Penempatan</td><td>:</td><td>${data.penempatan || '-'}</td></tr><tr><td>NIP/NIPK</td><td>:</td><td>${data.nip || '-'}</td></tr><tr><td>Tempat, Tanggal Lahir</td><td>:</td><td>${(data.tempat_lahir || '') + (data.tempat_lahir && data.tanggal_lahir ? ', ' : '') + formatTanggal(data.tanggal_lahir)}</td></tr><tr><td>Jenis Kelamin</td><td>:</td><td>${data.jenis_kelamin || '-'}</td></tr><tr><td>Kebangsaan</td><td>:</td><td>${data.kebangsaan || '-'}</td></tr><tr><td>Alamat</td><td>:</td><td>${data.alamat || '-'}</td></tr><tr><td>No. Handphone</td><td>:</td><td>${data.no_handphone || '-'}</td></tr><tr><td>Email</td><td>:</td><td>${data.email || '-'}</td></tr></table></div>${docHtmlColumns}</div>`;
-                    modalAksiContainer.innerHTML =
-                        `<div id="${id}" class="d-flex gap-2"><button class="btn btn-warning" onclick="editFromModal(event)"><i class="bi bi-pencil-square"></i> Edit</button><button class="btn btn-danger" onclick="deleteFromModal(event)"><i class="bi bi-trash"></i> Hapus</button></div>`;
+                        `<div class="row g-4 px-4"><div class="col-lg-4 text-center mb-3 mb-lg-0"><img src="${imageUrl}" alt="${data.nama || 'Personel'}" /></div><div class="col-lg-8"><table class="biodata-table"><tr><td>Nama Lengkap & Gelar</td><td>:</td><td>${data.nama || '-'}</td></tr><tr><td>Jabatan</td><td>:</td><td>${data.jabatan || '-'}</td></tr><tr><td>Penempatan</td><td>:</td><td>${data.penempatan || '-'}</td></tr><tr><td>NIP/NIPK</td><td>:</td><td>${data.nip || '-'}</td></tr><tr><td>Tempat, Tanggal Lahir</td><td>:</td><td>${(data.tempat_lahir || '') + (data.tempat_lahir && data.tanggal_lahir ? ', ' : '') + formatTanggal(data.tanggal_lahir)}</td></tr><tr><td>Jenis Kelamin</td><td>:</td><td>${data.jenis_kelamin || '-'}</td></tr><tr><td>Kebangsaan</td><td>:</td><td>${data.kebangsaan || '-'}</td></tr><tr><td>Alamat</td><td>:</td><td>${data.alamat || '-'}</td></tr><tr><td>No. Handphone</td><td>:</td><td>${data.no_handphone || '-'}</td></tr><tr><td>Email</td><td>:</td><td>${data.email || '-'}</td></tr></table></div>${docHtmlColumns}</div>`;
                 })
                 .catch(error => {
                     console.error('Error fetching biodata:', error);
                     contentArea.innerHTML =
                         `<p class="text-center text-danger">Gagal memuat data: ${error.message}</p>`;
                 });
+        }
+
+        /**
+         * [BARU] Menangani permintaan penghapusan item.
+         * @param {Event} event - Event object dari elemen yang diklik.
+         */
+        function deleteItem(event) {
+            const closest = event.target.closest('[id]');
+            if (closest) {
+                sayAlert('confirmModal', 'Konfirmasi Hapus', 'Apakah Anda yakin ingin menghapus data personel ini?',
+                    'danger', true, () => {
+                        showLoading();
+                        const id = closest.getAttribute('id');
+                        const url = `<?= site_url('personel/delete') ?>`; // Endpoint untuk hapus
+                        const csrfTokenName = '<?= csrf_token() ?>';
+                        const csrfTokenValue = document.querySelector('#personelForm [name="' + csrfTokenName + '"]')
+                            .value; // [FIX] Ambil token terbaru dari form
+
+                        const formData = new FormData();
+                        formData.append('id', id);
+                        formData.append(csrfTokenName, csrfTokenValue);
+
+                        fetch(url, {
+                                method: 'POST',
+                                body: formData,
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }, // Header untuk AJAX
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                updateCsrfToken(data.xname, data.xhash);
+                                if (data.res === 'refresh') {
+                                    sayAlert('successModal', 'Berhasil', 'Data berhasil dihapus.', 'success');
+                                    loadContent(data.link);
+                                } else {
+                                    sayAlert('errorModal', 'Gagal', data.error || 'Data gagal dihapus.', 'warning');
+                                }
+                            }).catch(error => sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.',
+                                'warning')).finally(() => hideLoading());
+                    });
+            }
         }
 
         /**
@@ -829,10 +1064,7 @@
          * @param {Event} event - Event object dari tombol 'Hapus' di modal.
          */
         function deleteFromModal(event) {
-            biodataModal.hide();
-            deleteItem({
-                target: event.target.closest('div')
-            });
+            // Fungsi ini tidak lagi digunakan karena tombol hapus sudah dipindahkan
         }
         /**
          * Memformat string tanggal (YYYY-MM-DD) menjadi format lokal Indonesia (e.g., "1 Januari 2024").
@@ -852,6 +1084,17 @@
             }
         }
 
+        /**
+         * [BARU] Fungsi untuk escape HTML dari string
+         */
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
         // Inisialisasi event drag-and-drop untuk semua item personel.
         document.querySelectorAll(".personel-item").forEach(addDragEvents);
         /**
@@ -928,18 +1171,17 @@
          * Menyimpan urutan baru dari semua item personel ke server melalui AJAX.
          */
         function saveAll() {
-            const tokenName = "<?= csrf_token() ?>";
-            const elName = document.querySelector(`[name="${tokenName}"]`);
-            const tokenValue = elName.value;
             const formData = new FormData();
             document.querySelectorAll(".personel-item:not(.drag-placeholder)").forEach((el, i) => {
                 formData.append(`items[${i}][id]`, el.id);
                 formData.append(`items[${i}][code]`, el.dataset.code);
             });
-            formData.append(tokenName, tokenValue);
+
             fetch('./personel/updated', {
                 method: 'POST',
                 body: formData
-            }).then(res => res.json()).then(data => elName.value = data.xhash).catch(err => console.error(err));
+            }).then(res => res.json()).then(data => updateCsrfToken(data.xname, data.xhash)).catch(err =>
+                console.error(
+                    err));
         }
     </script>
