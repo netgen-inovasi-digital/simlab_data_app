@@ -1061,23 +1061,19 @@
         .then(data => {
           data.forEach(item => {
             // checkbox view
-            const cbView = document.querySelectorAll(
-              `.form-check-otorisasi[data-id="${item.id}"][data-perm="view"]`
+            const cbView = document.querySelector(
+              `.form-check-otorisasi[data-type="${item.type}"][data-id="${item.id}"][data-perm="view"]`
             );
             if (cbView) {
-              cbView.forEach(cb => {
-                cb.checked = item.can_view;
-              });
+              cbView.checked = item.can_view;
             }
 
             // checkbox crud
-            const cbCrud = document.querySelectorAll(
-              `.form-check-otorisasi[data-id="${item.id}"][data-perm="crud"]`
+            const cbCrud = document.querySelector(
+              `.form-check-otorisasi[data-type="${item.type}"][data-id="${item.id}"][data-perm="crud"]`
             );
             if (cbCrud) {
-              cbCrud.forEach(cb => {
-                cb.checked = item.can_crud;
-              });
+              cbCrud.checked = item.can_crud;
             }
           });
         })
