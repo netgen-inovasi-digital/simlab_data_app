@@ -91,11 +91,12 @@
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
         <label class="card-title mb-0"><?= $title ?></label>
-        <div>
+        <div class="d-flex align-items-end gap-1">
+          <?= $user->role_id != 2 ? '
           <button id="refresh" class="btn btn-success">
             <i class="bi bi-arrow-clockwise"></i> Refresh
           </button>
-          <?= $user->role_id != 2 ? '<button id="addFolderButton" class="btn btn-primary">
+          <button id="addFolderButton" class="btn btn-primary">
     <i class="bi bi-plus-circle-dotted"></i> Tambah Folder
 </button>' : '' ?>
 
@@ -103,73 +104,44 @@
       </div>
 
       <div class="card-body border-bottom">
-        <div class="row g-3 d-flex justify-content-between align-items-center">
-          <div class="d-flex gap-3 col-md-8 col-lg-10">
+        <div class="row g-3 d-flex flex-row justify-content-between align-items-center">
+          <div class="d-flex flex-column gap-3 col-8 col-md-8 col-lg-10">
+            <div class="col-10 d-flex gap-3">
+              <div class=" gap-2 col-lg-4 col-md-6 align-items-center" id="otorisasiRole"
+                style="display: none;">
+                <label class="m-0 fw-medium">Role</label>
+                <select id="role" name="role" class="form-select" required>
+                  <option value="">-- pilih role --</option>
+                  <?php foreach ($role as $i => $row) { ?>
+                    <option value="<?= $row->id_role ?>">
+                      <?= $row->nama_role ?>
+                    </option>
+                  <?php } ?>
+                </select>
+              </div>
 
-            <div class="col-lg-3 gap-2 col-md-4 align-items-center" id="otorisasiRole"
-              style="display: none;">
-              <label class="m-0 fw-medium">Role</label>
-              <select id="role" name="role" class="form-select" required>
-                <option value="">-- pilih role --</option>
-                <?php foreach ($role as $i => $row) { ?>
-                  <option value="<?= $row->id_role ?>">
-                    <?= $row->nama_role ?>
-                  </option>
-                <?php } ?>
-              </select>
-            </div>
-
-            <!-- [BARU] Tombol Dropdown untuk Sorting -->
-            <div class="col-auto" id="sorting">
-              <div class="dropdown">
-                <button class="btn btn-outline-secondary" type="button" id="sortDropdown"
-                  data-bs-toggle="dropdown" aria-expanded="false" title="Urutkan">
-                  <i class="bi bi-sort-down"></i> <span id="sort-label">Urutan Default</span>
-                </button>
-                <ul class="dropdown-menu" aria-labelledby="sortDropdown">
-                  <li><a class="dropdown-item" href="#" data-sort="default">Urutan Default</a></li>
-                  <li><a class="dropdown-item" href="#" data-sort="updated_desc">Terakhir Diupdate</a>
-                  </li>
-                  <li><a class="dropdown-item" href="#" data-sort="created_desc">Terakhir Dibuat</a>
-                  </li>
-                  <li><a class="dropdown-item" href="#" data-sort="created_asc">Paling Terdahulu</a>
-                  </li>
-                </ul>
+              <!-- [BARU] Tombol Dropdown untuk Sorting -->
+              <div class="col-auto" id="sorting">
+                <div class="dropdown">
+                  <button class="btn btn-outline-secondary" type="button" id="sortDropdown"
+                    data-bs-toggle="dropdown" aria-expanded="false" title="Urutkan">
+                    <i class="bi bi-sort-down"></i> <span id="sort-label">Urutan Default</span>
+                  </button>
+                  <ul class="dropdown-menu" aria-labelledby="sortDropdown">
+                    <li><a class="dropdown-item" href="#" data-sort="default">Urutan Default</a></li>
+                    <li><a class="dropdown-item" href="#" data-sort="updated_desc">Terakhir Diupdate</a>
+                    </li>
+                    <li><a class="dropdown-item" href="#" data-sort="created_desc">Terakhir Dibuat</a>
+                    </li>
+                    <li><a class="dropdown-item" href="#" data-sort="created_asc">Paling Terdahulu</a>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
-
-            <div class="col-lg-3 col-md-4" id="searching-folder-file">
-              <input type="text" class="form-control" id="search" placeholder="Cari nama folder/file...">
-            </div>
-
-            <div class="col-lg-2 col-md-4" id="filter-tipe">
-              <select id="filterTipe" class="form-select">
-                <option value="semua" selected>Semua Tipe</option>
-                <option value="folder">Hanya Folder</option>
-                <option value="file">Hanya File</option>
-              </select>
-            </div>
-
-            <div class="col-lg-2 col-md-4" id="filter-jenis">
-              <select id="filterJenisFile" class="form-select" style="display: none;">
-                <option value="semua">Jenis File</option>
-                <option value="pdf">PDF</option>
-                <option value="doc">DOC/DOCX</option>
-              </select>
-            </div>
-
-            <div class="col-lg-2 col-md-4">
-              <select id="filterKategori" class="form-select" style="display: none;">
-                <option value="semua">Semua Kategori</option>
-                <?php foreach ($categories as $kategori): ?>
-                  <option value="<?= $kategori->id_categories ?>"><?= esc($kategori->nama) ?></option>
-                <?php endforeach; ?>
-              </select>
-            </div>
-
           </div>
 
-          <?= $user->role_id == 8 ? '<div class="col-lg-2 col-md-4 d-flex gap-2 justify-content-center align-items-center">
+          <?= $user->role_id == 8 ? '<div class="col-lg-2 col-4 col-md-4 d-flex gap-2 justify-content-center align-items-center">
             <label class="m-0 fw-medium">Mode Otorisasi</label>
             <div class="form-check form-switch m-0">
               <input
@@ -182,6 +154,37 @@
             </div>
           </div>' : '' ?>
 
+          <div class="col-12 col-md-10 d-flex flex-column flex-md-row gap-2" id="findSection">
+            <div class="col-lg-3 col-md-5 col-12" id="searching-folder-file">
+              <input type="text" class="form-control" id="search" placeholder="Cari nama folder/file...">
+            </div>
+            <div class="col-12 d-flex gap-1">
+              <div class="col-lg-2 col-md-3 col-4" id="filter-tipe">
+                <select id="filterTipe" class="form-select">
+                  <option value="semua" selected>Semua Tipe</option>
+                  <option value="folder">Hanya Folder</option>
+                  <option value="file">Hanya File</option>
+                </select>
+              </div>
+
+              <div class="col-lg-2 col-md-3 col-4" id="filter-jenis">
+                <select id="filterJenisFile" class="form-select" style="display: none;">
+                  <option value="semua">Jenis File</option>
+                  <option value="pdf">PDF</option>
+                  <option value="doc">DOC/DOCX</option>
+                </select>
+              </div>
+
+              <div class="col-lg-2 col-md-3 col-4" id="filter-kategori">
+                <select id="filterKategori" class="form-select" style="display: none;">
+                  <option value="semua">Semua Kategori</option>
+                  <?php foreach ($categories as $kategori): ?>
+                    <option value="<?= $kategori->id_categories ?>"><?= esc($kategori->nama) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -257,7 +260,9 @@
           if ($tree !== []) {
             renderTree($tree, 0, null, $user);
           } else {
-            echo 'Apabila data kosong & filter masih di apply malah jadi muncul 2 pesan, ubah agar konsisten yaitu klo data kosong tanpa filter muncul pesan "Tidak Ditemukan" lalu klo ada filter muncul pesan "Tidak ada folder atau file yang cocok dengan kriteria filter Anda."';
+            echo '<div class="col-12 text-center p-5" id="noDataMessage">
+            <h4 class="text-muted">Document Not Available</h4>
+            </div>';
           }
           ?>
         </div>
@@ -477,12 +482,13 @@
       document.getElementById('opsiGunakanTemplate').classList.add('d-none');
     });
 
+
     const searchInput = document.getElementById('search');
     const filterTipe = document.getElementById('filterTipe');
     const filterJenisFile = document.getElementById('filterJenisFile');
     const filterKategori = document.getElementById('filterKategori');
     const noResultsMessage = document.getElementById('noResultsMessage');
-
+    const noDataMessage = document.getElementById('noDataMessage');
     /**
      * Menerapkan filter pada daftar folder/file berdasarkan input pencarian dan pilihan filter.
      */
@@ -512,9 +518,24 @@
           if (kategoriValue !== categoryId) show = false;
         }
         item.style.display = show ? 'flex' : 'none';
-        if (show) visibleCount++;
+        if (show) {
+          visibleCount++
+        }
       });
-      noResultsMessage.style.display = visibleCount === 0 ? 'block' : 'none';
+      // 🔍 Tampilkan pesan "tidak ditemukan" hanya jika hasil benar-benar kosong DAN filter aktif
+      const isDefaultFilter =
+        searchTerm === '' &&
+        tipeValue === 'semua'
+
+      if (noDataMessage) {
+        if (visibleCount === 0 && !isDefaultFilter) {
+          noResultsMessage.style.display = 'block';
+          noDataMessage.style.display = 'none';
+        } else {
+          noResultsMessage.style.display = 'none';
+          noDataMessage.style.display = 'block';
+        }
+      }
     }
 
     /**
@@ -628,9 +649,11 @@
 
   addAction();
 
-  refreshButton.addEventListener("click", function() {
-    loadContent('folder');
-  });
+  if (refreshButton) {
+    refreshButton.addEventListener("click", function() {
+      loadContent('folder');
+    });
+  }
 
   document.querySelectorAll(".file-item").forEach(item => {
     item.addEventListener("click", function(e) {
@@ -963,6 +986,7 @@
   filterJenis = document.getElementById("filter-jenis");
   searchInput = document.getElementById("searching-folder-file");
   filterTipe = document.getElementById("filter-tipe");
+  filterKategori = document.getElementById("filter-kategori");
 
   // Event listener untuk toggle otorisasi
   toggleOtorisasi = document.getElementById('toggleOtorisasi');
@@ -975,6 +999,7 @@
       var checkboxes = document.querySelectorAll(".checkbox-otorisasi-folder, .checkbox-otorisasi-file");
       var lihatFolderOtorisasi = document.querySelectorAll(".lihat-folder-otorisasi");
       var sortButton = document.getElementById("sorting");
+      var findSection = document.getElementById("findSection");
 
       if (this.checked) {
         addFolderBtn.style.display = "none";
@@ -989,6 +1014,8 @@
         filterJenis.style.display = "none";
         searchInput.style.display = "none";
         filterTipe.style.display = "none";
+        filterKategori.style.display = "none";
+        findSection.classList.add("d-none");
       } else {
         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
           bootstrap.Tooltip.getInstance(el)?.dispose();
@@ -1018,12 +1045,16 @@
       filterJenis.style.display = "none";
       searchInput.style.display = "none";
       filterTipe.style.display = "none";
+      filterKategori.style.display = "none";
+      findSection.classList.add("d-none");
     } else if (role != "") {
       document.querySelector('#info').classList.add('d-none');
       document.querySelector('#folder').classList.remove('d-none');
       filterJenis.style.display = "block";
       searchInput.style.display = "block";
       filterTipe.style.display = "block";
+      filterKategori.style.display = "block";
+      findSection.classList.remove("d-none");
 
       fetch(`otoritas/show?s=${role}`)
         .then(res => res.json())
@@ -1078,12 +1109,6 @@
         .then(data => {
           if (data.xname && data.xhash) {
             $(`[name="${data.xname}"]`).val(data.xhash);
-            console.log("Otorisasi tersimpan:", {
-              id,
-              type,
-              perm,
-              status
-            });
           }
 
         })

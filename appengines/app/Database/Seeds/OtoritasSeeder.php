@@ -10,7 +10,6 @@ class OtoritasSeeder extends Seeder
     {
         // Semua data otoritas (155 baris)
         $allData = [
-            ['id_otoritas' => 1, 'role_id' => 1, 'kode_menu' => '3', 'status_otoritas' => 1],
             ['id_otoritas' => 2, 'role_id' => 1, 'kode_menu' => '1', 'status_otoritas' => 1],
             ['id_otoritas' => 3, 'role_id' => 1, 'kode_menu' => '4', 'status_otoritas' => 1],
             ['id_otoritas' => 4, 'role_id' => 1, 'kode_menu' => '5', 'status_otoritas' => 1],
@@ -63,6 +62,8 @@ class OtoritasSeeder extends Seeder
             ['id_otoritas' => 153, 'role_id' => 1, 'kode_menu' => '12.1', 'status_otoritas' => 1],
             ['id_otoritas' => 154, 'role_id' => 1, 'kode_menu' => '12.3', 'status_otoritas' => 1],
             ['id_otoritas' => 155, 'role_id' => 1, 'kode_menu' => '12.4', 'status_otoritas' => 1],
+            ['id_otoritas' => 156, 'role_id' => 8, 'kode_menu' => '6', 'status_otoritas' => 1],
+            ['id_otoritas' => 157, 'role_id' => 2, 'kode_menu' => '6', 'status_otoritas' => 1],
         ];
 
         // Ambil semua kode_menu yang ada di tabel menus

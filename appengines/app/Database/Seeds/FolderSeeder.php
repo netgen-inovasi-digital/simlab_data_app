@@ -50,7 +50,7 @@ class FolderSeeder extends Seeder
                 'flag'       => 0
             ],
             [
-                'id_folder'  => 7,
+                'id_folder'  => 5,
                 'nama'       => 'test5',
                 'slug'       => 'test5',
                 'status'     => 'aktif',
