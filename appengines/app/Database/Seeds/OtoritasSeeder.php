@@ -64,6 +64,7 @@ class OtoritasSeeder extends Seeder
             ['id_otoritas' => 155, 'role_id' => 1, 'kode_menu' => '12.4', 'status_otoritas' => 1],
             ['id_otoritas' => 156, 'role_id' => 8, 'kode_menu' => '6', 'status_otoritas' => 1],
             ['id_otoritas' => 157, 'role_id' => 2, 'kode_menu' => '6', 'status_otoritas' => 1],
+            ['id_otoritas' => 158, 'role_id' => 1, 'kode_menu' => '6', 'status_otoritas' => 1],
         ];
 
         // Ambil semua kode_menu yang ada di tabel menus

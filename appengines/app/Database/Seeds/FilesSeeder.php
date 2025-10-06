@@ -24,7 +24,7 @@ class FilesSeeder extends Seeder
             ],
             [
                 'id_files'      => 2,
-                'categories_id' => 69,
+                'categories_id' => 68,
                 'user_id'       => 12,
                 'id_folder'     => 4,
                 'nomor_dokumen' => 'LPDDR20',

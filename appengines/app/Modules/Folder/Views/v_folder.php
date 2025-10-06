@@ -527,15 +527,15 @@
         searchTerm === '' &&
         tipeValue === 'semua'
 
-      if (noDataMessage) {
-        if (visibleCount === 0 && !isDefaultFilter) {
-          noResultsMessage.style.display = 'block';
-          noDataMessage.style.display = 'none';
-        } else {
-          noResultsMessage.style.display = 'none';
-          noDataMessage.style.display = 'block';
-        }
+
+      if (visibleCount === 0 && !isDefaultFilter) {
+        noResultsMessage.style.display = 'block';
+        if (noDataMessage) noDataMessage.style.display = 'none';
+      } else {
+        noResultsMessage.style.display = 'none';
+        if (noDataMessage) noDataMessage.style.display = 'block';
       }
+
     }
 
     /**
@@ -1061,19 +1061,23 @@
         .then(data => {
           data.forEach(item => {
             // checkbox view
-            const cbView = document.querySelector(
+            const cbView = document.querySelectorAll(
               `.form-check-otorisasi[data-id="${item.id}"][data-perm="view"]`
             );
             if (cbView) {
-              cbView.checked = item.can_view;
+              cbView.forEach(cb => {
+                cb.checked = item.can_view;
+              });
             }
 
             // checkbox crud
-            const cbCrud = document.querySelector(
+            const cbCrud = document.querySelectorAll(
               `.form-check-otorisasi[data-id="${item.id}"][data-perm="crud"]`
             );
             if (cbCrud) {
-              cbCrud.checked = item.can_crud;
+              cbCrud.forEach(cb => {
+                cb.checked = item.can_crud;
+              });
             }
           });
         })
