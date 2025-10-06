@@ -12,7 +12,7 @@ $routes->group('folder', ['namespace' => 'Modules\Folder\Controllers'], function
     $subroutes->get('edit-file/(:any)', 'Folder::editFile/$1');
     $subroutes->post('submit', 'Folder::submit');
     $subroutes->post('submit-folder-baru', 'Folder::submitFolderBaru'); // Rute baru
-    $subroutes->post('edit', 'Folder::edit'); // Seharusnya ini juga 'edit/(:any)' jika edit folder menggunakan ID di URL
+    // $subroutes->post('edit', 'Folder::edit'); // Dihapus: Rute POST yang tidak diperlukan
     $subroutes->post('delete/(:any)', 'Folder::delete/$1'); // <-- PERBAIKAN DI SINI
     $subroutes->post('updated', 'Folder::updated');
     $subroutes->post('toggle', 'Folder::toggle');

@@ -99,31 +99,56 @@ class Personel extends BaseController
     public function submit()
     {
         $idenc = $this->request->getPost('id');
+        $id = !empty($idenc) ? $this->encrypter->decrypt(hex2bin($idenc)) : null;
 
         $rules = [
             'nama' => 'required',
             'jabatan' => 'required',
             'penempatan' => 'required',
-            'nip' => 'required',
             'tempat_lahir' => 'required',
             'tanggal_lahir' => 'required',
             'jenis_kelamin' => 'required',
             'kebangsaan' => 'required',
             'alamat' => 'required',
-            'no_handphone' => 'required',
-            'email' => 'required|valid_email',
+            // Aturan validasi keunikan untuk NIP, No. Handphone, dan Email
+            'nip' => "required|is_unique[personel.nip,{$this->id},{$id}]",
+            'no_handphone' => "required|is_unique[personel.no_handphone,{$this->id},{$id}]",
+            'email' => "required|valid_email|is_unique[personel.email,{$this->id},{$id}]",
+        ];
+
+        // Pesan error kustom untuk validasi keunikan
+        $messages = [
+            'nip' => [
+                'is_unique' => 'NIP/NIPK ini sudah terdaftar. Silakan gunakan yang lain.'
+            ],
+            'no_handphone' => [
+                'is_unique' => 'No. Handphone ini sudah terdaftar. Silakan gunakan yang lain.'
+            ],
+            'email' => [
+                'is_unique' => 'Alamat email ini sudah terdaftar. Silakan gunakan yang lain.'
+            ]
         ];
 
         // --- PERUBAHAN 1: Hapus aturan 'uploaded[foto]' dari sini ---
         if (empty($idenc)) {
             // Aturan 'uploaded' dihapus agar bisa divalidasi manual nanti
             $rules['foto'] = 'max_size[foto,2048]|is_image[foto]';
+        } else {
+            // Jika sedang edit, aturan NIP, No. HP, dan Email diubah untuk mengabaikan ID saat ini
+            $rules['nip'] = "required|is_unique[personel.nip,{$this->id},{$id}]";
+            $rules['no_handphone'] = "required|is_unique[personel.no_handphone,{$this->id},{$id}]";
+            $rules['email'] = "required|valid_email|is_unique[personel.email,{$this->id},{$id}]";
         }
 
-        if (!$this->validate($rules)) {
+        if (!$this->validate($rules, $messages)) {
+            // Mengambil semua pesan error untuk ditampilkan
+            $errors = $this->validator->getErrors();
+            // Menggabungkan semua pesan error menjadi satu string
+            $errorMessage = implode(' ', array_values($errors));
+
             return $this->response->setJSON([
                 'res'     => 'validation_error',
-                'message' => 'Terdapat data yang tidak valid. Mohon periksa kembali.', // Pesan dibuat lebih umum
+                'message' => $errorMessage ?: 'Terdapat data yang tidak valid. Mohon periksa kembali.',
                 'xname'   => csrf_token(),
                 'xhash'   => csrf_hash()
             ]);

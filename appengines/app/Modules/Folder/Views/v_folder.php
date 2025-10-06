@@ -91,64 +91,57 @@
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
         <label class="card-title mb-0"><?= $title ?></label>
-        <div>
+        <div class="d-flex align-items-end gap-1">
+          <?= $user->role_id != 2 ? '
           <button id="refresh" class="btn btn-success">
             <i class="bi bi-arrow-clockwise"></i> Refresh
           </button>
           <button id="addFolderButton" class="btn btn-primary">
-            <i class="bi bi-plus-circle-dotted"></i> Tambah Folder
-          </button>
+    <i class="bi bi-plus-circle-dotted"></i> Tambah Folder
+</button>' : '' ?>
+
         </div>
       </div>
 
       <div class="card-body border-bottom">
-        <div class="row g-3 d-flex justify-content-between align-items-center">
-          <div class="d-flex gap-3 col-md-8 col-lg-10">
+        <div class="row g-3 d-flex flex-row justify-content-between align-items-center">
+          <div class="d-flex flex-column gap-3 col-8 col-md-8 col-lg-10">
+            <div class="col-10 d-flex gap-3">
+              <div class=" gap-2 col-lg-4 col-md-6 align-items-center" id="otorisasiRole"
+                style="display: none;">
+                <label class="m-0 fw-medium">Role</label>
+                <select id="role" name="role" class="form-select" required>
+                  <option value="">-- pilih role --</option>
+                  <?php foreach ($role as $i => $row) { ?>
+                    <option value="<?= $row->id_role ?>">
+                      <?= $row->nama_role ?>
+                    </option>
+                  <?php } ?>
+                </select>
+              </div>
 
-            <div class="col-lg-3 gap-2 col-md-4 align-items-center" id="otorisasiRole" style="display: none;">
-              <label class="m-0 fw-medium">Role</label>
-              <select id="role" name="role" class="form-select" required>
-                <option value="">-- pilih role --</option>
-                <?php foreach ($role as $i => $row) { ?>
-                  <option value="<?= $row->id_role ?>">
-                    <?= $row->nama_role ?>
-                  </option>
-                <?php } ?>
-              </select>
+              <!-- [BARU] Tombol Dropdown untuk Sorting -->
+              <div class="col-auto" id="sorting">
+                <div class="dropdown">
+                  <button class="btn btn-outline-secondary" type="button" id="sortDropdown"
+                    data-bs-toggle="dropdown" aria-expanded="false" title="Urutkan">
+                    <i class="bi bi-sort-down"></i> <span id="sort-label">Urutan Default</span>
+                  </button>
+                  <ul class="dropdown-menu" aria-labelledby="sortDropdown">
+                    <li><a class="dropdown-item" href="#" data-sort="default">Urutan Default</a></li>
+                    <li><a class="dropdown-item" href="#" data-sort="updated_desc">Terakhir Diupdate</a>
+                    </li>
+                    <li><a class="dropdown-item" href="#" data-sort="created_desc">Terakhir Dibuat</a>
+                    </li>
+                    <li><a class="dropdown-item" href="#" data-sort="created_asc">Paling Terdahulu</a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
-
-            <div class="col-lg-3 col-md-4" id="searching-folder-file">
-              <input type="text" class="form-control" id="search" placeholder="Cari nama folder/file...">
-            </div>
-
-            <div class="col-lg-2 col-md-4" id="filter-tipe">
-              <select id="filterTipe" class="form-select">
-                <option value="semua" selected>Semua Tipe</option>
-                <option value="folder">Hanya Folder</option>
-                <option value="file">Hanya File</option>
-              </select>
-            </div>
-
-            <div class="col-lg-2 col-md-4" id="filter-jenis">
-              <select id="filterJenisFile" class="form-select" style="display: none;">
-                <option value="semua">Jenis File</option>
-                <option value="pdf">PDF</option>
-                <option value="doc">DOC/DOCX</option>
-              </select>
-            </div>
-
-            <div class="col-lg-2 col-md-4">
-              <select id="filterKategori" class="form-select" style="display: none;">
-                <option value="semua">Semua Kategori</option>
-                <?php foreach ($categories as $kategori): ?>
-                  <option value="<?= $kategori->id_categories ?>"><?= esc($kategori->nama) ?></option>
-                <?php endforeach; ?>
-              </select>
-            </div>
-
           </div>
 
-          <?= $user->role_id == 8 ? '<div class="col-lg-2 col-md-4 d-flex gap-2 justify-content-center align-items-center">
+          <?= $user->role_id == 8 ? '<div class="col-lg-2 col-4 col-md-4 d-flex gap-2 justify-content-center align-items-center">
             <label class="m-0 fw-medium">Mode Otorisasi</label>
             <div class="form-check form-switch m-0">
               <input
@@ -161,11 +154,42 @@
             </div>
           </div>' : '' ?>
 
+          <div class="col-12 col-md-10 d-flex flex-column flex-md-row gap-2" id="findSection">
+            <div class="col-lg-3 col-md-5 col-12" id="searching-folder-file">
+              <input type="text" class="form-control" id="search" placeholder="Cari nama folder/file...">
+            </div>
+            <div class="col-12 d-flex gap-1">
+              <div class="col-lg-2 col-md-3 col-4" id="filter-tipe">
+                <select id="filterTipe" class="form-select">
+                  <option value="semua" selected>Semua Tipe</option>
+                  <option value="folder">Hanya Folder</option>
+                  <option value="file">Hanya File</option>
+                </select>
+              </div>
+
+              <div class="col-lg-2 col-md-3 col-4" id="filter-jenis">
+                <select id="filterJenisFile" class="form-select" style="display: none;">
+                  <option value="semua">Jenis File</option>
+                  <option value="pdf">PDF</option>
+                  <option value="doc">DOC/DOCX</option>
+                </select>
+              </div>
+
+              <div class="col-lg-2 col-md-3 col-4" id="filter-kategori">
+                <select id="filterKategori" class="form-select" style="display: none;">
+                  <option value="semua">Semua Kategori</option>
+                  <?php foreach ($categories as $kategori): ?>
+                    <option value="<?= $kategori->id_categories ?>"><?= esc($kategori->nama) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       <?php
-      function renderTree($nodes, $level = 0, $encrypter = null)
+      function renderTree($nodes, $level = 0, $encrypter = null, $user)
       {
         if ($encrypter === null) {
           $encrypter = \Config\Services::encrypter();
@@ -189,8 +213,12 @@
           }
 
       ?>
-          <div id="<?= $encId ?>" class="<?= $node->type ?>-item flex" style="margin-left: <?= $level * 30; ?>px"
-            draggable="true" <?= $dataAttrs ?>>
+          <div id="<?= $encId ?>" class="<?= $node->type ?>-item flex"
+            style="<?= $user->role_id == 2
+                      ? 'cursor: pointer; margin-left: ' . ($level * 30) . 'px;'
+                      : 'cursor: grab; margin-left: ' . ($level * 30) . 'px;' ?>"
+            draggable="<?= $user->role_id == 2 ? 'false' : 'true' ?>"
+            <?= $dataAttrs ?>>
 
             <div class="d-flex justify-content-between align-items-center col-12">
               <div class="d-flex align-items-center gap-3">
@@ -219,7 +247,7 @@
       <?php
           // render recursive jika ada children
           if (!empty($node->children)) {
-            renderTree($node->children, $level + 1, $encrypter);
+            renderTree($node->children, $level + 1, $encrypter, $user);
           }
         }
       }
@@ -230,9 +258,11 @@
         <div id="folder" class="d-flex flex-column">
           <?php
           if ($tree !== []) {
-            renderTree($tree);
+            renderTree($tree, 0, null, $user);
           } else {
-            echo 'Apabila data kosong & filter masih di apply malah jadi muncul 2 pesan, ubah agar konsisten yaitu klo data kosong tanpa filter muncul pesan "Tidak Ditemukan" lalu klo ada filter muncul pesan "Tidak ada folder atau file yang cocok dengan kriteria filter Anda."';
+            echo '<div class="col-12 text-center p-5" id="noDataMessage">
+            <h4 class="text-muted">Document Not Available</h4>
+            </div>';
           }
           ?>
         </div>
@@ -283,7 +313,7 @@
             <i class="bi bi-plus-circle"></i>
         </span>
         <label class="divider">|</label>
-        <span class="text-dark action-btn" role="button" title="Ubah" onclick="editItem(event, \'folder\')">
+        <span class="text-dark action-btn" role="button" title="Ubah" onclick="editItemFolder(event)">
                       <i class="bi bi-pencil-square"></i>
                   </span>
         <label class="divider">|</label>
@@ -347,6 +377,10 @@
         document.getElementById('opsiGunakanTemplate').classList.add('d-none');
         document.getElementById('subfolder-container').innerHTML = '';
         form.querySelector('[name="parent_id"]').value = "";
+        // [FIX] Reset form ke mode tambah
+        document.getElementById('modalFormLabel').textContent = 'Tambah Folder Baru';
+        form.action = "<?= site_url('folder/submit-folder-baru') ?>";
+        document.getElementById('id_folder_edit').value = '';
         addFolderModal.show();
       });
     }
@@ -380,14 +414,23 @@
      * Event listener untuk menambah input field sub-folder secara dinamis.
      */
     tambahSubfolderBtn.addEventListener('click', () => {
-      const newSubfolder = document.createElement('div');
-      newSubfolder.classList.add('input-group', 'mb-2');
-      newSubfolder.innerHTML = `
-                    <span class="input-group-text"><i class="bi bi-arrow-return-right"></i></span>
-                    <input type="text" name="subfolder_nama[]" class="form-control" placeholder="Nama Sub-folder">
-                    <button class="btn btn-outline-danger btn-remove-subfolder" type="button"><i class="bi bi-x"></i></button>
+      // Hitung level indentasi berdasarkan jumlah wrapper subfolder yang sudah ada
+      const currentLevel = subfolderContainer.querySelectorAll('.subfolder-wrapper').length;
+      const indentSize = 25; // Ukuran indentasi dalam pixel
+      const marginLeft = currentLevel * indentSize;
+
+      // [FIX] Buat div wrapper untuk menerapkan margin, bukan ke input-group langsung
+      const wrapper = document.createElement('div');
+      wrapper.classList.add('subfolder-wrapper', 'mb-2');
+      wrapper.style.marginLeft = `${marginLeft}px`;
+      wrapper.innerHTML = `
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-arrow-return-right"></i></span>
+                        <input type="text" name="subfolder_nama[]" class="form-control" placeholder="Nama Sub-folder">
+                        <button class="btn btn-outline-danger btn-remove-subfolder" type="button"><i class="bi bi-x"></i></button>
+                    </div>
                 `;
-      subfolderContainer.appendChild(newSubfolder);
+      subfolderContainer.appendChild(wrapper);
     });
 
     /**
@@ -395,7 +438,8 @@
      */
     subfolderContainer.addEventListener('click', (e) => {
       if (e.target.closest('.btn-remove-subfolder')) {
-        e.target.closest('.input-group').remove();
+        // [FIX] Hapus elemen wrapper, bukan hanya input-group
+        e.target.closest('.subfolder-wrapper').remove();
       }
     });
 
@@ -423,12 +467,28 @@
       });
     });
 
+    /**
+     * [FIX] Event listener untuk mereset tampilan form ketika modal ditutup.
+     * Ini penting agar elemen yang disembunyikan saat mode edit bisa tampil lagi
+     * saat membuka modal untuk mode tambah.
+     */
+    addFolderModalEl.addEventListener('hidden.bs.modal', function() {
+      document.getElementById('parent-folder-container').style.display = 'block';
+      document.getElementById('opsi-pembuatan-container').style.display = 'block';
+      document.getElementById('tambahSubfolder').style.display =
+        'inline-block'; // atau 'block' sesuai style asli
+      // Pastikan opsi default (buat baru) yang terlihat
+      document.getElementById('opsiBuatBaru').classList.remove('d-none');
+      document.getElementById('opsiGunakanTemplate').classList.add('d-none');
+    });
+
+
     const searchInput = document.getElementById('search');
     const filterTipe = document.getElementById('filterTipe');
     const filterJenisFile = document.getElementById('filterJenisFile');
     const filterKategori = document.getElementById('filterKategori');
     const noResultsMessage = document.getElementById('noResultsMessage');
-
+    const noDataMessage = document.getElementById('noDataMessage');
     /**
      * Menerapkan filter pada daftar folder/file berdasarkan input pencarian dan pilihan filter.
      */
@@ -458,9 +518,24 @@
           if (kategoriValue !== categoryId) show = false;
         }
         item.style.display = show ? 'flex' : 'none';
-        if (show) visibleCount++;
+        if (show) {
+          visibleCount++
+        }
       });
-      noResultsMessage.style.display = visibleCount === 0 ? 'block' : 'none';
+      // 🔍 Tampilkan pesan "tidak ditemukan" hanya jika hasil benar-benar kosong DAN filter aktif
+      const isDefaultFilter =
+        searchTerm === '' &&
+        tipeValue === 'semua'
+
+
+      if (visibleCount === 0 && !isDefaultFilter) {
+        noResultsMessage.style.display = 'block';
+        if (noDataMessage) noDataMessage.style.display = 'none';
+      } else {
+        noResultsMessage.style.display = 'none';
+        if (noDataMessage) noDataMessage.style.display = 'block';
+      }
+
     }
 
     /**
@@ -484,8 +559,89 @@
         filterKategori.value = 'semua';
       }
     });
+
+    /**
+     * [BARU] Event listener untuk dropdown sorting.
+     */
+    const sortDropdownMenu = document.querySelector('[aria-labelledby="sortDropdown"]');
+    if (sortDropdownMenu) {
+      sortDropdownMenu.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (e.target.classList.contains('dropdown-item')) {
+          const sortBy = e.target.dataset.sort;
+          // Simpan preferensi sorting di localStorage agar tetap saat refresh
+          localStorage.setItem('folderSortPreference', sortBy);
+          loadContent(`folder?sort_by=${sortBy}`);
+        }
+      });
+    }
+
+    // [BARU] Atur label tombol sort sesuai state saat ini
+    const currentSort = '<?= $current_sort ?? 'default' ?>';
+    const sortLabel = document.getElementById('sort-label');
+    const activeSortItem = document.querySelector(`.dropdown-item[data-sort="${currentSort}"]`);
+    if (sortLabel && activeSortItem) {
+      sortLabel.textContent = activeSortItem.textContent;
+    }
   })();
 
+  /**
+   * [REFACTOR] Fungsi untuk menangani edit folder.
+   * Sekarang menggunakan modal terpisah (#modalEditFolder) untuk menghindari bug UI.
+   */
+  function editItemFolder(event) {
+    const itemDiv = event.currentTarget.closest('[id]');
+    if (!itemDiv) return;
+
+    const id = itemDiv.id;
+    const url = `<?= site_url('folder/edit/') ?>${id}`; // Endpoint untuk mengambil data folder
+
+    showLoading();
+    fetch(url)
+      .then(res => res.ok ? res.json() : Promise.reject('Gagal mengambil data folder.'))
+      .then(data => {
+        if (data.error) throw new Error(data.error);
+
+        const modalEl = document.getElementById('modalEditFolder');
+        const modal = new bootstrap.Modal(modalEl);
+        const form = document.getElementById('formEditFolder');
+
+        form.querySelector('[name="id_folder_edit"]').value = data.id;
+        form.querySelector('[name="nama_folder_utama"]').value = data.nama;
+
+        modal.show();
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        sayAlert('errorModal', 'Gagal', error.message, 'warning');
+      })
+      .finally(() => {
+        hideLoading();
+      });
+  }
+
+  /**
+   * [BARU] Event listener untuk submit form edit folder.
+   */
+  document.getElementById('formEditFolder').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const modalEditFolder = bootstrap.Modal.getInstance(document.getElementById('modalEditFolder'));
+
+    saveData({
+      url: this.action,
+      formData: new FormData(this),
+      onSuccess: (data) => {
+        modalEditFolder.hide();
+        if (data.res === 'refresh') {
+          loadContent(data.link);
+          sayAlert('successModal', 'Berhasil', 'Folder berhasil diperbarui.', 'success');
+        } else {
+          sayAlert('errorModal', 'Gagal', data.message || 'Gagal memperbarui folder.',
+            'warning');
+        }
+      }
+    });
+  });
 
 
   folderState = {}; // Menyimpan state collapsed/expanded folder
@@ -493,9 +649,11 @@
 
   addAction();
 
-  refreshButton.addEventListener("click", function() {
-    loadContent('folder');
-  });
+  if (refreshButton) {
+    refreshButton.addEventListener("click", function() {
+      loadContent('folder');
+    });
+  }
 
   document.querySelectorAll(".file-item").forEach(item => {
     item.addEventListener("click", function(e) {
@@ -518,13 +676,29 @@
   placeholder.classList.add("drag-placeholder");
 
   // Inisialisasi
+
   document.querySelectorAll(".folder-item, .file-item").forEach(addDragEvents);
   updateKodeFolder();
 
   function addDragEvents(item) {
+    // [PERBAIKAN] Deklarasikan variabel di sini agar menjadi lokal untuk setiap event drag
+    let childrenOfDraggedItem = [];
+    let originalLevel = 0;
+
     item.addEventListener("dragstart", (e) => {
       draggedItem = item;
       dragStartX = e.clientX;
+
+      // ✅ Simpan parent lama atau level lama (buat referensi saat drop gagal)
+      item.dataset.oldCount = item.dataset.count;
+      item.dataset.prevId = item.previousElementSibling ? item.previousElementSibling.id : 'none';
+
+      childrenOfDraggedItem = []; // [PENTING] Reset setiap kali drag dimulai
+      if (item.dataset.type === 'folder') {
+        childrenOfDraggedItem = findChildrenRecursive(draggedItem);
+        // [BARU] Simpan level asli dari item yang di-drag
+        originalLevel = parseInt(item.dataset.count, 10);
+      }
       item.style.opacity = "0.7";
       setTimeout(() => {
         folderMenu.insertBefore(placeholder, item.nextSibling);
@@ -551,9 +725,6 @@
         if (el.dataset.type === "file") continue;
       }
 
-      // [PERBAIKAN] Pindahkan folder dan semua anaknya ke posisi baru
-      folderMenu.insertBefore(draggedItem, placeholder);
-      moveChildren(draggedItem);
 
       // Hitung level indentasi baru
       let count = parseInt(item.dataset.count) || 0;
@@ -572,19 +743,48 @@
       }
       if (count > maxLevel) count = maxLevel;
 
-      // Terapkan indentasi baru dan rapikan anak-anaknya
+      // [PERBAIKAN] Terapkan indentasi baru ke induk SEBELUM memindahkan anak
       item.dataset.count = count;
       item.style.marginLeft = (count * 30) + "px";
-      rapikanAnakFolder(draggedItem);
+
+      // [PERBAIKAN] 1. Pindahkan ke posisi sebelumnya apabila tidak ada induk
+      if (!parentFolder && draggedItem.dataset.type === "file") {
+        // 🧩 Kembalikan ke posisi DOM semula
+        item.dataset.count = item.dataset.oldCount || 0;
+        item.style.marginLeft = (item.dataset.count * 30) + "px";
+
+        const prevId = item.dataset.prevId;
+        if (prevId && prevId !== 'none') {
+          const prevEl = document.getElementById(prevId);
+          if (prevEl && prevEl.nextSibling) {
+            folderMenu.insertBefore(draggedItem, prevEl.nextSibling);
+          } else {
+            folderMenu.appendChild(draggedItem);
+          }
+        } else {
+          folderMenu.insertBefore(draggedItem, folderMenu.firstChild);
+        }
+      } else {
+        // Normal behavior
+        folderMenu.insertBefore(draggedItem, placeholder);
+      }
 
       // Kembalikan tampilan item dan hapus placeholder
       item.style.display = "flex";
       item.style.opacity = "1";
       if (placeholder.parentNode) placeholder.remove();
+
+      // [PERBAIKAN] 2. Pindahkan anak-anak yang sudah disimpan sebelumnya
+      moveChildren(draggedItem, childrenOfDraggedItem, originalLevel);
       updateKodeFolder();
       saveAll();
       updateCarets();
+
+      delete item.dataset.prevId;
+      delete item.dataset.oldCount;
     });
+
+
 
     item.addEventListener("dragover", (e) => {
       e.preventDefault();
@@ -598,45 +798,45 @@
      * @param {HTMLElement} folderEl - Elemen folder induk.
      * @returns {HTMLElement} - Elemen anak terakhir yang dipindahkan.
      */
-    function moveChildren(folderEl) {
-      const children = findChildrenRecursive(folderEl);
+    function moveChildren(folderEl, childrenToMove, originalParentLevel) {
+      const newParentLevel = parseInt(folderEl.dataset.count, 10);
+      const levelDifference = newParentLevel - originalParentLevel;
       let lastChild = folderEl;
 
-      children.forEach(child => {
+      childrenToMove.forEach((child, index) => {
+        // [PERBAIKAN] Pindahkan elemen anak ke posisi yang benar
         folderMenu.insertBefore(child, lastChild.nextSibling);
+
+        // [PERBAIKAN] Hitung level baru dengan menerapkan selisih, bukan meratakannya.
+        const childOriginalLevel = parseInt(child.dataset.count, 10);
+        const newLevel = childOriginalLevel + levelDifference;
+        child.dataset.count = newLevel;
+        child.style.marginLeft = (newLevel * 30) + 'px';
+
         lastChild = child;
       });
       return lastChild;
     }
 
-    function rapikanAnakFolder(folderEl) {
-      const folderLevel = parseInt(folderEl.dataset.count) || 0;
-      let nextEl = folderEl.nextSibling;
-      while (nextEl) {
-        const lvl = parseInt(nextEl.dataset.count) || 0;
-        // [PERBAIKAN] Berhenti jika menemukan item di level yang sama atau lebih tinggi
-        if (lvl <= folderLevel) break;
-
-        // [PERBAIKAN] Set level anak langsung menjadi level induk + 1
-        const newLevel = folderLevel + 1;
-        nextEl.dataset.count = newLevel;
-        nextEl.style.marginLeft = (newLevel * 30) + "px";
-
-        // Jika item ini adalah folder, panggil rekursif untuk merapikan anak-anaknya
-        if (nextEl.classList.contains('folder-item')) {
-          rapikanAnakFolder(nextEl);
-        }
-
-        nextEl = nextEl.nextSibling;
-      }
-    }
-
+    /**
+     * [PERBAIKAN] Mencari semua anak dari sebuah elemen folder secara rekursif di dalam DOM.
+     * Fungsi ini sekarang bekerja dengan menganalisis level indentasi (`data-count`)
+     * dari elemen-elemen berikutnya, bukan bergantung pada `data-parent` yang belum tentu up-to-date.
+     * @param {HTMLElement} parentEl - Elemen folder induk.
+     * @returns {HTMLElement[]} - Array dari elemen-elemen anak.
+     */
     function findChildrenRecursive(parentEl) {
-      const parentId = parentEl.id;
-      const directChildren = Array.from(folderMenu.children).filter(el => el.dataset.parent === parentId);
-      let allChildren = [...directChildren];
-      directChildren.forEach(child => allChildren.push(...findChildrenRecursive(child)));
-      return allChildren;
+      const children = [];
+      const parentLevel = parseInt(parentEl.dataset.count, 10);
+      let nextEl = parentEl.nextElementSibling;
+
+      while (nextEl) {
+        const nextLevel = parseInt(nextEl.dataset.count, 10);
+        if (nextLevel > parentLevel) children.push(nextEl);
+        else break; // Berhenti jika menemukan item di level yang sama atau lebih tinggi
+        nextEl = nextEl.nextElementSibling;
+      }
+      return children;
     }
   }
 
@@ -786,6 +986,7 @@
   filterJenis = document.getElementById("filter-jenis");
   searchInput = document.getElementById("searching-folder-file");
   filterTipe = document.getElementById("filter-tipe");
+  filterKategori = document.getElementById("filter-kategori");
 
   // Event listener untuk toggle otorisasi
   toggleOtorisasi = document.getElementById('toggleOtorisasi');
@@ -797,6 +998,8 @@
       var otorisasiRole = document.getElementById("otorisasiRole");
       var checkboxes = document.querySelectorAll(".checkbox-otorisasi-folder, .checkbox-otorisasi-file");
       var lihatFolderOtorisasi = document.querySelectorAll(".lihat-folder-otorisasi");
+      var sortButton = document.getElementById("sorting");
+      var findSection = document.getElementById("findSection");
 
       if (this.checked) {
         addFolderBtn.style.display = "none";
@@ -807,9 +1010,12 @@
         infoText.style.display = "block";
 
         manageDocument.classList.add("d-none");
+        sortButton.style.display = "none";
         filterJenis.style.display = "none";
         searchInput.style.display = "none";
         filterTipe.style.display = "none";
+        filterKategori.style.display = "none";
+        findSection.classList.add("d-none");
       } else {
         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
           bootstrap.Tooltip.getInstance(el)?.dispose();
@@ -839,31 +1045,39 @@
       filterJenis.style.display = "none";
       searchInput.style.display = "none";
       filterTipe.style.display = "none";
+      filterKategori.style.display = "none";
+      findSection.classList.add("d-none");
     } else if (role != "") {
       document.querySelector('#info').classList.add('d-none');
       document.querySelector('#folder').classList.remove('d-none');
       filterJenis.style.display = "block";
       searchInput.style.display = "block";
       filterTipe.style.display = "block";
+      filterKategori.style.display = "block";
+      findSection.classList.remove("d-none");
 
       fetch(`otoritas/show?s=${role}`)
         .then(res => res.json())
         .then(data => {
           data.forEach(item => {
             // checkbox view
-            const cbView = document.querySelector(
+            const cbView = document.querySelectorAll(
               `.form-check-otorisasi[data-id="${item.id}"][data-perm="view"]`
             );
             if (cbView) {
-              cbView.checked = item.can_view;
+              cbView.forEach(cb => {
+                cb.checked = item.can_view;
+              });
             }
 
             // checkbox crud
-            const cbCrud = document.querySelector(
+            const cbCrud = document.querySelectorAll(
               `.form-check-otorisasi[data-id="${item.id}"][data-perm="crud"]`
             );
             if (cbCrud) {
-              cbCrud.checked = item.can_crud;
+              cbCrud.forEach(cb => {
+                cb.checked = item.can_crud;
+              });
             }
           });
         })
@@ -899,12 +1113,6 @@
         .then(data => {
           if (data.xname && data.xhash) {
             $(`[name="${data.xname}"]`).val(data.xhash);
-            console.log("Otorisasi tersimpan:", {
-              id,
-              type,
-              perm,
-              status
-            });
           }
 
         })
@@ -942,14 +1150,17 @@
                     if (el.type === "checkbox") {
                       if (Array.isArray(value)) {
                         el.checked = value.includes(el.value);
-                      } else el.checked = value === "true" || value === "1" || value === true || value === el.value;
+                      } else el.checked = value === "true" || value === "1" ||
+                        value === true || value === el.value;
                     } else if (el.type === "radio") el.checked = el.value === value;
                   } else if (el.tagName === "SELECT") {
                     el.value = value || "";
                     const wrapper = el.parentElement.querySelector('.selected');
                     if (wrapper) {
-                      const option = Array.from(el.options).find(opt => opt.value === value);
-                      wrapper.textContent = option ? option.text : "-- pilih data --";
+                      const option = Array.from(el.options).find(opt => opt
+                        .value === value);
+                      wrapper.textContent = option ? option.text :
+                        "-- pilih data --";
                     }
                   } else el.value = value || "";
                 });
@@ -1002,7 +1213,8 @@
             }
           })
           .catch(error => {
-            sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.' + error.message, 'warning');
+            sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.' + error.message,
+              'warning');
           })
           .finally(() => {
             hideLoading();
@@ -1379,15 +1591,17 @@
     onError,
   }) {
     showLoading();
-    const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-    const csrfToken = csrfInput ? csrfInput.value : '';
+    // [FIX] CSRF token harus selalu ditambahkan ke FormData untuk konsistensi,
+    // terutama untuk request multipart/form-data (upload file).
+    const csrfName = '<?= csrf_token() ?>';
+    const csrfHash = document.querySelector(`[name="${csrfName}"]`).value;
+    if (!formData.has(csrfName)) {
+      formData.append(csrfName, csrfHash);
+    }
 
     fetch(url, {
         method: 'POST',
         body: formData,
-        headers: {
-          'X-CSRF-TOKEN': csrfToken
-        }
       })
       .then(response => response.json())
       .then(data => {
@@ -1554,15 +1768,16 @@
       </div>
       <form id="formFolderBaru" action="<?= site_url('folder/submit-folder-baru') ?>" method="post" novalidate>
         <?= csrf_field() ?>
+        <input type="hidden" name="id_folder_edit" id="id_folder_edit" value="">
         <div class="modal-body">
-          <div class="mb-3">
+          <div class="mb-3" id="parent-folder-container">
             <label class="form-label">Pilih Folder Induk (Opsional)</label>
             <select name="parent_id" class="form-select">
               <option value="">-- Tanpa Induk (Root Level) --</option>
               <?= buildFolderOptions($tree) ?>
             </select>
           </div>
-          <div class="mb-3">
+          <div class="mb-3" id="opsi-pembuatan-container">
             <label class="form-label">Opsi Pembuatan</label>
             <div class="form-check">
               <input class="form-check-input" type="radio" name="opsi_pembuatan" id="opsiBuatBaruRadio"
@@ -1606,8 +1821,39 @@
   </div>
 </div>
 
+<!-- [BARU] Modal Edit Folder (Terpisah) -->
+<div class="modal fade" id="modalEditFolder" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+  aria-labelledby="modalEditFolderLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document" style="margin: 2% auto">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalEditFolderLabel">Ubah Nama Folder</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="formEditFolder" action="<?= site_url('folder/submit-folder-baru') ?>" method="post" novalidate>
+        <?= csrf_field() ?>
+        <input type="hidden" name="id_folder_edit" value="">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Nama Folder</label>
+            <input name="nama_folder_utama" type="text" class="form-control"
+              placeholder="Masukkan nama folder baru" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>
+            Batal</button>
+          <button class="btn btn-primary" type="submit"><i class="bi bi-check2-circle"></i> Simpan
+            Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- Modal File -->
-<div class="modal fade" id="modalFormFile" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+<div class="modal fade" id="modalFormFile" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+  aria-labelledby="staticBackdropLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg" role="document" style="margin: 2% auto">
     <div class="modal-content">
       <div class="modal-header">
@@ -1625,17 +1871,20 @@
         <div class="row mb-2">
           <div class="col">
             <label class="col-md-3 col-form-label">Judul Berkas</label>
-            <input name="titleFile" type="text" class="form-control" required placeholder="Masukkan judul file">
+            <input name="titleFile" type="text" class="form-control" required
+              placeholder="Masukkan judul file">
           </div>
         </div>
         <div class="row mb-2">
           <div class="col">
             <label class="col-md-7 col-form-label">No. Dokumen</label>
-            <input name="nomor_dokumen" type="text" class="form-control bg-light" placeholder="Masukkan nomor dokumen" required>
+            <input name="nomor_dokumen" type="text" class="form-control bg-light"
+              placeholder="Masukkan nomor dokumen" required>
           </div>
           <div class="col">
             <label class="col-md-3 col-form-label">Revisi</label>
-            <input name="revisi" type="number" class="form-control bg-light" placeholder="Masukkan revisi" required>
+            <input name="revisi" type="number" class="form-control bg-light" placeholder="Masukkan revisi"
+              required>
           </div>
         </div>
         <div class="row mb-2">
@@ -1657,7 +1906,8 @@
           <div class="col">
             <label class="col-md-5 col-form-label">Kategori</label>
             <div class="d-flex gap-2 align-items-start">
-              <select id="kategori_id" name="kategori_id" class="form-select" required style="max-width: 150px;">
+              <select id="kategori_id" name="kategori_id" class="form-select" required
+                style="max-width: 150px;">
                 <option value="">-- pilih data --</option>
                 <?php foreach ($categories as $kategori): ?>
                   <option value="<?= $kategori->id_categories ?>">
@@ -1665,32 +1915,40 @@
                   </option>
                 <?php endforeach; ?>
               </select>
-              <button type="button" class="btn btn-outline-secondary" id="btn-kategori-aksi">Tambah</button>
+              <button type="button" class="btn btn-outline-secondary"
+                id="btn-kategori-aksi">Tambah</button>
             </div>
             <!-- Form tambah kategori akan muncul di sini -->
             <div id="form-kategori-baru" class="mt-2 d-none">
               <div class="input-group" style="max-width: 400px;">
-                <input type="text" class="form-control" id="input-kategori-baru" placeholder="Nama kategori baru">
-                <button class="btn btn-success ms-2" type="button" id="btn-simpan-kategori">Simpan</button>
+                <input type="text" class="form-control" id="input-kategori-baru"
+                  placeholder="Nama kategori baru">
+                <button class="btn btn-success ms-2" type="button"
+                  id="btn-simpan-kategori">Simpan</button>
                 <button class="btn btn-danger ms-2" type="button" id="btn-batal-kategori">Batal</button>
               </div>
             </div>
             <div class="d-flex gap-2 align-items-start mt-2" id="form-edit-kategori" style="display: none;">
-              <input type="text" class="form-control" id="input-edit-kategori" style="max-width: 200px;" placeholder="Edit nama kategori">
+              <input type="text" class="form-control" id="input-edit-kategori" style="max-width: 200px;"
+                placeholder="Edit nama kategori">
               <button type="button" class="btn btn-success" id="btn-update-kategori">Update</button>
               <button type="button" class="btn btn-danger" id="btn-delete-kategori">Hapus</button>
             </div>
           </div>
           <div class="col">
             <label class="col-md-3 col-form-label">Author</label>
-            <input name="nama" type="text" value="<?= $user->nama ?>" class="form-control bg-light" required readonly>
-            <input name="user_id" type="text" value="<?= $user->id_user ?>" class="form-control" required hidden>
+            <input name="nama" type="text" value="<?= $user->nama ?>" class="form-control bg-light" required
+              readonly>
+            <input name="user_id" type="text" value="<?= $user->id_user ?>" class="form-control" required
+              hidden>
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Batal</button>
-        <button class="btn btn-success" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
+        <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>
+          Batal</button>
+        <button class="btn btn-success" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i>
+          Simpan</button>
       </div>
       </form>
     </div>

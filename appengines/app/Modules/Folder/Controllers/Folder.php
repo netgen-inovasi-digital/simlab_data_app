@@ -9,6 +9,7 @@ class Folder extends BaseController
 {
   private $table = 'folder';
   private $id = 'id_folder';
+  private $visited = [];
 
   public function index()
   {
@@ -24,13 +25,35 @@ class Folder extends BaseController
     $modelOtorFolder  = new MyModel('otoritas_folder');
     $modelOtorFile    = new MyModel('otoritas_file');
 
+    // [BARU] Logika untuk sorting
+    $sortBy = $this->request->getGet('sort_by') ?? 'default';
+    $folderOrderColumn = 'sort_order';
+    $folderOrderDirection = 'asc';
+    $fileOrderColumn = 'created_at';
+    $fileOrderDirection = 'asc';
+
+    switch ($sortBy) {
+      case 'updated_desc':
+        $folderOrderColumn = 'updated_at';
+        $folderOrderDirection = 'desc';
+        $fileOrderColumn = 'updated_at';
+        $fileOrderDirection = 'desc';
+        break;
+      case 'created_desc':
+        $folderOrderColumn = 'id_folder'; // Asumsi id_folder auto-increment
+        $folderOrderDirection = 'desc';
+        $fileOrderColumn = 'created_at';
+        $fileOrderDirection = 'desc';
+        break;
+    }
+
     // ambil data user + role
     $user    = $modelUser->getDataById('id_user', $user_id);
 
-    // ambil semua data folder, link, file
-    $folders = $modelFolder->getAllData('sort_order', 'asc');
-    $links   = $modelFolderLink->getAllData('sort_order', 'asc');
-    $files   = $modelFiles->getAllData('created_at', 'asc');
+    // [MODIFIKASI] Ambil data dengan sorting dinamis
+    $folders = $modelFolder->getAllData($folderOrderColumn, $folderOrderDirection);
+    $links   = $modelFolderLink->getAllData(); // Sorting link tidak relevan, struktur pohon yang menentukan
+    $files   = $modelFiles->getAllData($fileOrderColumn, $fileOrderDirection);
 
     // ambil otoritas sesuai role
     $otorFolder = $modelOtorFolder->getAllDataByWhere(['id_role' => $user->role_id]);
@@ -78,10 +101,10 @@ class Folder extends BaseController
       }
     }
 
-    $tree = [];
     // [PERBAIKAN] Buat salinan struktur pohon folder sebelum file ditambahkan.
-    $folder_tree = $tree;
+    // Pindahkan reset $tree ke sini
 
+    $tree = [];
     // masukkan file ke folder setelah folder anak
     foreach ($files as $file) {
       $file->type     = 'file';
@@ -129,6 +152,8 @@ class Folder extends BaseController
       if ($n !== null) $tree[] = $n;
     }
 
+    $folder_tree = $tree;
+
     $data = [
       'title'      => 'Dokumen Akreditasi',
       'tree'       => $tree,
@@ -137,6 +162,7 @@ class Folder extends BaseController
       'categories' => $modelCategories->getAllData(),
       'user'       => $user,
       'role'       => $modelRoles->getAllData(),
+      'current_sort' => $sortBy, // Kirim state sorting saat ini ke view
     ];
 
     return view('Modules\Folder\Views\v_folder', $data);
@@ -207,16 +233,15 @@ class Folder extends BaseController
 
   function edit($id)
   {
-    $idenc = $id;
-    $id = $this->encrypter->decrypt(hex2bin($id));
-    $model = new MyModel($this->table);
-    $get = $model->getDataById($this->id, $id);
-
-    $data[csrf_token()] = csrf_hash();
-    $data['id'] = $idenc;
-    $data['nama'] = $get->nama;
-    $data['url'] = $get->url;
-    return $this->response->setJSON($data);
+    try {
+      $decryptedId = $this->encrypter->decrypt(hex2bin($id));
+      $model = new MyModel($this->table);
+      $folder = $model->getDataById($this->id, $decryptedId);
+      if (!$folder) return $this->response->setStatusCode(404)->setJSON(['error' => 'Folder tidak ditemukan.']);
+      return $this->response->setJSON(['id' => $id, 'nama' => $folder->nama]);
+    } catch (\Exception $e) {
+      return $this->response->setStatusCode(500)->setJSON(['error' => 'Gagal mengambil data folder.']);
+    }
   }
 
   function delete($id)
@@ -311,11 +336,51 @@ class Folder extends BaseController
 
   public function submitFolderBaru()
   {
+    $idFolderEdit = $this->request->getPost('id_folder_edit');
     $opsi = $this->request->getPost('opsi_pembuatan');
     $parentId = $this->request->getPost('parent_id') ?: null;
     $db = \Config\Database::connect(); // Panggil koneksi database
+    $session = session();
+    $user_id = $session->get('id_user');
+    $modelUser = new MyModel('users');
+    $user = $modelUser->getDataById('id_user', $user_id);
+    $role_id = $user->role_id;
 
-    if ($opsi === 'buat_baru') {
+    // Logika untuk EDIT folder
+    if (!empty($idFolderEdit)) {
+      $namaFolder = $this->request->getPost('nama_folder_utama');
+      if (empty(trim($namaFolder))) {
+        return $this->response->setJSON(['res' => false, 'message' => 'Nama Folder tidak boleh kosong.']);
+      }
+      try {
+        $decryptedId = $this->encrypter->decrypt(hex2bin($idFolderEdit));
+
+        // [FIX] Cek duplikasi slug saat edit, pastikan slug unik.
+        $modelFolder = new MyModel('folder');
+        $slug = url_title($namaFolder, '-', true);
+        $existingFolder = $modelFolder->getDataByWhere(['slug' => $slug]);
+
+        // Jika slug sudah ada dan bukan milik folder yang sedang diedit, buat slug baru.
+        if ($existingFolder && $existingFolder->id_folder != $decryptedId) {
+          $slug .= '-' . uniqid();
+        }
+
+        $dataUpdate = [
+          'nama' => $namaFolder,
+          'slug' => $slug,
+          'updated_at' => date('Y-m-d H:i:s'),
+        ];
+
+        // Memulai transaksi untuk memastikan konsistensi
+        $db->transStart();
+        $modelFolder->updateData($dataUpdate, 'id_folder', $decryptedId);
+        $db->transComplete();
+      } catch (\Exception $e) {
+        return $this->response->setStatusCode(500)->setJSON(['res' => 'error', 'message' => 'Gagal memperbarui folder.']);
+      }
+    }
+    // Logika untuk TAMBAH folder baru
+    elseif ($opsi === 'buat_baru') {
       $namaFolderUtama = $this->request->getPost('nama_folder_utama');
       $subfolders = $this->request->getPost('subfolder_nama') ?? [];
 
@@ -323,24 +388,112 @@ class Folder extends BaseController
         return $this->response->setJSON(['res' => false, 'message' => 'Nama Folder Utama tidak boleh kosong.']);
       }
 
+      // [REFACTOR] Cek duplikasi nama folder di lokasi (parent) yang sama.
+      $isDuplicate = $db->table('folder')
+        ->join('folder_links', 'folder_links.child_id = folder.id_folder')
+        ->where('folder.nama', $namaFolderUtama)
+        ->where('folder_links.parent_id', $parentId)
+        ->countAllResults() > 0;
+
+      if ($isDuplicate) {
+        return $this->response->setJSON([
+          'res' => 'error',
+          'message' => "Folder dengan nama '{$namaFolderUtama}' sudah ada di lokasi ini.",
+          'xname' => csrf_token(),
+          'xhash' => csrf_hash()
+        ]);
+      }
+
       $modelFolder = new MyModel('folder');
       $modelLinks = new MyModel('folder_links');
+      $modelOtorFolder = new MyModel('otoritas_folder');
+
+      // [REVISI] Hitung sort_order berikutnya secara global dari seluruh tabel folder
+      $lastSortOrder = $db->table('folder')
+        ->selectMax('folder.sort_order', 'max_sort')
+        ->get()->getRow('max_sort') ?? 0;
+
+      $nextSortOrder = $lastSortOrder + 1;
 
       $db->transStart();
       // 1. Buat folder utama
-      $folderUtamaId = $modelFolder->insertData(['nama' => $namaFolderUtama], true);
-      $modelLinks->insertData(['child_id' => $folderUtamaId, 'parent_id' => $parentId]);
+      $slugUtama = url_title($namaFolderUtama, '-', true);
+      // Cek duplikat slug global untuk keamanan, tambahkan uniqid jika perlu
+      $isSlugDuplicate = $modelFolder->getDataByWhere(['slug' => $slugUtama]);
+
+      $dataUtama = [
+        'nama' => $namaFolderUtama,
+        'slug' => $isSlugDuplicate ? $slugUtama . '-' . uniqid() : $slugUtama,
+        'updated_at' => date('Y-m-d H:i:s'),
+        'sort_order' => $nextSortOrder
+      ];
+      $folderUtamaId = $modelFolder->insertData($dataUtama, true);
+      $modelLinks->insertData([
+        'child_id'   => $folderUtamaId,
+        'parent_id'  => $parentId,
+        'sort_order' => $nextSortOrder // [FIX] Tambahkan sort_order di sini
+      ]);
+
+      // Insert otorisasi untuk folder utama
+      $roles = array_unique([(int)$role_id, 8]);
+      foreach ($roles as $r) {
+        $modelOtorFolder->insertData([
+          'id_folder' => $folderUtamaId,
+          'id_role' => $r,
+          'can_view' => 1,
+          'can_crud' => 1,
+        ]);
+      }
 
       // 2. Buat sub-folder secara berantai
       $currentParentId = $folderUtamaId;
+      $currentSortOrder = $nextSortOrder; // Gunakan sort order terakhir sebagai basis
       foreach ($subfolders as $subfolderNama) {
         if (!empty(trim($subfolderNama))) {
-          $subfolderId = $modelFolder->insertData(['nama' => $subfolderNama], true);
-          $modelLinks->insertData(['child_id' => $subfolderId, 'parent_id' => $currentParentId]);
+          // [REFACTOR] Cek duplikasi nama sub-folder di dalam parent-nya
+          $isSubDuplicate = $db->table('folder')
+            ->join('folder_links', 'folder_links.child_id = folder.id_folder')
+            ->where('folder.nama', $subfolderNama)
+            ->where('folder_links.parent_id', $currentParentId)
+            ->countAllResults() > 0;
+
+          if ($isSubDuplicate) {
+            $db->transRollback(); // Batalkan transaksi jika ada duplikat
+            return $this->response->setJSON([
+              'res' => 'error',
+              'message' => "Sub-folder dengan nama '{$subfolderNama}' sudah ada.",
+              'xname' => csrf_token(),
+              'xhash' => csrf_hash()
+            ]);
+          }
+          // [FIX] Cek duplikasi slug global untuk sub-folder
+          $slugSub = url_title($subfolderNama, '-', true);
+          $isSlugSubDuplicate = $modelFolder->getDataByWhere(['slug' => $slugSub]);
+
+          $dataSub = [
+            'nama' => $subfolderNama,
+            'slug' => $isSlugSubDuplicate ? $slugSub . '-' . uniqid() : $slugSub,
+            'updated_at' => date('Y-m-d H:i:s'),
+            'sort_order' => ++$currentSortOrder // [REVISI] Increment sort order untuk setiap sub-folder
+          ];
+          $subfolderId = $modelFolder->insertData($dataSub, true);
+          $modelLinks->insertData([
+            'child_id'   => $subfolderId,
+            'parent_id'  => $currentParentId,
+            'sort_order' => $currentSortOrder // [FIX] Tambahkan sort_order di sini juga
+          ]);
+          foreach ($roles as $r) {
+            $modelOtorFolder->insertData(['id_folder' => $subfolderId, 'id_role' => $r, 'can_view' => 1, 'can_crud' => 1]);
+          }
           $currentParentId = $subfolderId; // Subfolder berikutnya akan menjadi anak dari yang ini
         }
       }
       $db->transComplete();
+
+      if ($db->transStatus() === false) {
+        $db->transRollback();
+        return $this->response->setStatusCode(500)->setJSON(['res' => 'error', 'message' => 'Gagal menyimpan folder ke database.']);
+      }
     } elseif ($opsi === 'gunakan_template') {
       $templateId = $this->request->getPost('template_id');
       if (empty($templateId)) {
@@ -380,6 +533,16 @@ class Folder extends BaseController
     $modelFolder = new MyModel('folder');
     $modelLinks  = new MyModel('folder_links');
     $modelFiles  = new MyModel('files');
+    $modelOtorFolder = new MyModel('otoritas_folder');
+    $modelOtorFile = new MyModel('otoritas_file');
+    $db = \Config\Database::connect();
+
+    // Ambil role_id user saat ini untuk set otorisasi
+    $session = session();
+    $user_id = $session->get('id_user');
+    $modelUser = new MyModel('users');
+    $user = $modelUser->getDataById('id_user', $user_id);
+    $roles = array_unique([(int)$user->role_id, 8]); // Role user & Super Admin
 
     // 1. Ambil data folder template
     $templateFolder = $modelFolder->getDataById('id_folder', $templateFolderId);
@@ -387,9 +550,59 @@ class Folder extends BaseController
       throw new \Exception("Folder template dengan ID {$templateFolderId} tidak ditemukan.");
     }
 
-    $newFolderId = $modelFolder->insertData(['nama' => $templateFolder->nama], true);
+    // [REVISI] Logika penamaan baru secara GLOBAL: Nama(1), Nama(2), dst.
+    $baseName = $templateFolder->nama;
+
+    // Cari semua nama yang cocok dengan pola "Nama" atau "Nama(n)" di seluruh tabel
+    $existingNames = $db->table('folder')
+      ->select('nama')
+      ->like('nama', $baseName, 'after')
+      ->get()->getResultArray();
+
+    $highestCounter = 0;
+    foreach ($existingNames as $row) {
+      // Cocokkan dengan pola "Nama(n)"
+      if (preg_match('/^' . preg_quote($baseName, '/') . '\((\d+)\)$/', $row['nama'], $matches)) {
+        if ((int)$matches[1] > $highestCounter) {
+          $highestCounter = (int)$matches[1];
+        }
+      }
+    }
+    $newName = "{$baseName}(" . ($highestCounter + 1) . ")";
+
+    // [REVISI] Logika penamaan file yang di-clone juga diubah
+    $fileBaseName = 'copy ';
+    if (preg_match('/\((\d+)\)$/', $newName, $matches)) {
+      $fileBaseName = "({$matches[1]}) ";
+    }
+
+    // [REVISI] Hitung sort_order berikutnya secara global
+    $lastSortOrder = $db->table('folder')
+      ->selectMax('folder.sort_order', 'max_sort')
+      ->get()->getRow('max_sort') ?? 0;
+    $nextSortOrder = $lastSortOrder + 1;
+
+    // [REVISI] Simpan sort order terakhir untuk digunakan oleh sub-folder
+    $this->lastGlobalSortOrder = $nextSortOrder;
+    $newFolderData = [
+      'nama' => $newName,
+      'slug' => ($templateFolder->slug ?? url_title($templateFolder->nama, '-', true)) . '-' . uniqid(),
+      'updated_at' => date('Y-m-d H:i:s'),
+      'sort_order' => $this->lastGlobalSortOrder
+    ];
+    $newFolderId = $modelFolder->insertData($newFolderData, true);
     if (!$newFolderId) {
-      throw new \Exception("Gagal memasukkan folder baru ke database.");
+      throw new \Exception("Gagal memasukkan folder baru ke database. Periksa struktur tabel 'folder'.");
+    }
+
+    // [FIX] Tambahkan otorisasi untuk folder yang baru di-clone
+    foreach ($roles as $r) {
+      $modelOtorFolder->insertData([
+        'id_folder' => $newFolderId,
+        'id_role' => $r,
+        'can_view' => 1,
+        'can_crud' => 1,
+      ]);
     }
 
     // 3. Hubungkan folder baru ke parent yang ditentukan
@@ -415,7 +628,7 @@ class Folder extends BaseController
 
         // 5. Siapkan data file baru dengan kolom yang relevan
         $newFileData = [
-          'title'         => $file->title ?? 'Salinan File',
+          'title'         => ($file->title ?? 'File') . $fileBaseName,
           'slug'          => ($file->slug ?? 'salinan-file') . '-' . uniqid(),
           'nomor_dokumen' => $file->nomor_dokumen ?? null,
           'revisi'        => $file->revisi ?? 0,
@@ -428,16 +641,32 @@ class Folder extends BaseController
         ];
 
         // 6. Masukkan data file baru ke database
-        $insertFile = $modelFiles->insertData($newFileData);
-        if (!$insertFile) {
+        $newFileId = $modelFiles->insertData($newFileData, true);
+        if (!$newFileId) {
           throw new \Exception("Gagal memasukkan data file '{$newFileData['title']}' ke database. Periksa struktur tabel 'files'.");
+        }
+
+        // [FIX] Tambahkan otorisasi untuk file yang baru di-clone
+        foreach ($roles as $r) {
+          $modelOtorFile->insertData([
+            'id_file' => $newFileId,
+            'id_role' => $r,
+            'can_view' => 1,
+            'can_crud' => 1,
+          ]);
         }
       }
     }
     // 7. [PERBAIKAN] Proses rekursif untuk setiap subfolder dari template
     $subfolders = $modelLinks->getAllDataById(['parent_id' => $templateFolderId]);
     foreach ($subfolders as $subfolderLink) {
-      $this->_cloneFolderStructure($subfolderLink->child_id, $newFolderId);
+      // [FIX] Panggil rekursif dengan ID folder baru sebagai parent
+      // Ini memastikan sub-folder yang di-clone menjadi anak dari folder yang baru dibuat, bukan dari template asli.
+      // Logika sort_order di dalam pemanggilan rekursif akan menangani urutan sub-folder secara otomatis.
+      $this->_cloneFolderStructure($subfolderLink->child_id, $newFolderId); // $newFolderId adalah parent yang benar
+
+      // [REVISI] Update sort order global setelah pemanggilan rekursif
+      $this->lastGlobalSortOrder++;
     }
   }
 
@@ -484,119 +713,70 @@ class Folder extends BaseController
 
   public function updated()
   {
-    $items = $this->request->getPost('items');
+    $items = $this->request->getPost('items') ?? [];
+    if (empty($items)) {
+      return $this->response->setJSON(['res' => false, 'message' => 'No items to update.']);
+    }
 
-    $folderData = [];
-    $fileData   = [];
+    $folderSortData = [];
+    $folderLinkData = [];
+    $fileData = [];
 
     foreach ($items as $item) {
       $type = $item['type'];
-      $id   = $this->encrypter->decrypt(hex2bin($item['id']));
+      $id = $this->encrypter->decrypt(hex2bin($item['id']));
       $parentId = !empty($item['parent_id'])
         ? $this->encrypter->decrypt(hex2bin($item['parent_id']))
         : null;
       $sortOrder = $item['sort_order'];
 
       if ($type === 'folder') {
-        $folderData[] = [
-          'parent_id'  => $parentId,
-          'child_id'   => $id,
-          'sort_order' => $sortOrder,
+        // Data untuk memperbarui urutan di tabel `folder`
+        $folderSortData[] = [
+          'id_folder' => $id,
+          'sort_order' => $sortOrder
+        ];
+        // Data untuk memperbarui relasi di tabel `folder_links`
+        $folderLinkData[] = [
+          'child_id' => $id,
+          'parent_id' => $parentId,
+          'sort_order' => $sortOrder
         ];
       } elseif ($type === 'file') {
         $fileData[] = [
-          'id_files'  => $id,
-          'id_folder' => $parentId ?? null,
+          'id_files' => $id,
+          'id_folder' => $parentId,
         ];
       }
     }
 
     $db = \Config\Database::connect();
+    $db->transStart();
 
-    if (!empty($folderData)) {
-      // ambil semua child yang terlibat
-      $childIds = array_unique(array_column($folderData, 'child_id'));
-
-      $existing = $db->table('folder_links')
-        ->whereIn('child_id', $childIds)
-        ->get()->getResultArray();
-
-      $existingMap = [];
-      foreach ($existing as $row) {
-        $key = ($row['parent_id'] ?? 0) . ':' . $row['child_id'];
-        $existingMap[$key] = $row;
-      }
-
-      $incomingMap = [];
-      foreach ($folderData as $row) {
-        $key = ($row['parent_id'] ?? 0) . ':' . $row['child_id'];
-        $incomingMap[$key] = $row;
-      }
-
-      $toInsert = [];
-      $toUpdate = [];
-      $toDelete = [];
-
-      foreach ($incomingMap as $key => $row) {
-        if (!isset($existingMap[$key])) {
-          $toInsert[] = $row;
-        } else {
-          if ($existingMap[$key]['sort_order'] != $row['sort_order']) {
-            $toUpdate[] = [
-              'id' => $existingMap[$key]['id'],
-              'sort_order' => $row['sort_order']
-            ];
-          }
-        }
-      }
-
-      foreach ($existingMap as $key => $row) {
-        if (!isset($incomingMap[$key])) {
-          $toDelete[] = $row['id'];
-        }
-      }
-
-      // 1. Update existing dulu
-      if (!empty($toUpdate)) {
-        $db->table('folder_links')->updateBatch($toUpdate, 'id');
-      }
-
-      // 2. Insert parent baru (tanpa hapus parent lama)
-      if (!empty($toInsert)) {
-        foreach ($toInsert as $row) {
-          $exists = $db->table('folder_links')
-            ->where('child_id', $row['child_id'])
-            ->where('parent_id', $row['parent_id'])
-            ->countAllResults();
-
-          if ($exists == 0) {
-            $db->table('folder_links')->insert($row);
-          }
-        }
-      }
-
-      // 3. Cascade move untuk setiap child unik
-      $childIds = array_unique(array_column($folderData, 'child_id'));
-      foreach ($childIds as $childId) {
-        $parents = $db->table('folder_links')
-          ->where('child_id', $childId)
-          ->get()->getResultArray();
-
-        foreach ($parents as $p) {
-          // kirim parent yang bener
-          $this->cascadeMove($childId, $p['parent_id']);
-        }
-      }
-
-      // 4. Terakhir: hapus relasi yg udah ga ada
-      if (!empty($toDelete)) {
-        $db->table('folder_links')->whereIn('id', $toDelete)->delete();
-      }
+    // 1. Update urutan folder di tabel `folder`
+    if (!empty($folderSortData)) {
+      $db->table('folder')->updateBatch($folderSortData, 'id_folder');
     }
 
+    // 2. Update relasi parent-child di tabel `folder_links`
+    if (!empty($folderLinkData)) {
+      // Hapus semua link lama untuk folder yang dipindahkan
+      $childIds = array_column($folderLinkData, 'child_id');
+      $db->table('folder_links')->whereIn('child_id', $childIds)->delete();
+      // Masukkan semua link baru
+      $db->table('folder_links')->insertBatch($folderLinkData);
+    }
+
+    // 3. Update folder untuk file yang dipindahkan
     if (!empty($fileData)) {
       $fileModel = new MyModel('files');
       $fileModel->updateDataBatch($fileData, 'id_files');
+    }
+
+    $db->transComplete();
+
+    if ($db->transStatus() === false) {
+      return $this->response->setStatusCode(500)->setJSON(['res' => false, 'message' => 'Database transaction failed.']);
     }
 
     return $this->response->setJSON([
@@ -604,9 +784,6 @@ class Folder extends BaseController
       'xhash' => csrf_hash()
     ]);
   }
-
-  private $visited = [];
-
   private function cascadeMove($folderId, $parentId)
   {
     // base case: kalau sudah pernah dikunjungi → stop
