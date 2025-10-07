@@ -860,8 +860,6 @@
       delete item.dataset.oldCount;
     });
 
-
-
     item.addEventListener("dragover", (e) => {
       e.preventDefault();
       var after = getDragAfterElement(folderMenu, e.clientY);

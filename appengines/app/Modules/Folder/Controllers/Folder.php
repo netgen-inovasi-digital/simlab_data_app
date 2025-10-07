@@ -120,23 +120,10 @@ class Folder extends BaseController
       $map['folder_' . $f->id_folder] = $f;
     }
 
-    // [PERBAIKAN] Kembalikan logika pembangunan pohon utama di sini, setelah $map lengkap
-    foreach ($links as $link) {
-      $childKey  = 'folder_' . $link->child_id;
-      $parentKey = $link->parent_id ? 'folder_' . $link->parent_id : null;
-
-      // Pastikan child ada di map (belum terfilter oleh otorisasi)
-      if (isset($map[$childKey])) {
-        if ($parentKey === null) {
-          // Ini adalah root folder, tambahkan langsung ke $tree
-        } else if (isset($map[$parentKey])) { // Pastikan parent juga ada di map
-          array_push($map[$parentKey]->children, $map[$childKey]);
-        }
-      }
-    }
-
+    // masukkan file ke folder setelah folder anak
     // [UBAH] Reset $tree di sini sebelum memasukkan file
     $tree = [];
+
     foreach ($files as $file) {
       $file->type     = 'file';
       $file->children = [];
@@ -152,6 +139,21 @@ class Folder extends BaseController
 
       if (isset($map['folder_' . $file->id_folder])) {
         $map['folder_' . $file->id_folder]->children[] = $file;
+      }
+    }
+
+    // [PERBAIKAN] Kembalikan logika pembangunan pohon utama di sini, setelah $map lengkap
+    foreach ($links as $link) {
+      $childKey  = 'folder_' . $link->child_id;
+      $parentKey = $link->parent_id ? 'folder_' . $link->parent_id : null;
+
+      // Pastikan child ada di map (belum terfilter oleh otorisasi)
+      if (isset($map[$childKey])) {
+        if ($parentKey === null) {
+          // Ini adalah root folder, tambahkan langsung ke $tree
+        } else if (isset($map[$parentKey])) { // Pastikan parent juga ada di map
+          array_push($map[$parentKey]->children, $map[$childKey]);
+        }
       }
     }
 
@@ -752,6 +754,7 @@ class Folder extends BaseController
     ]);
   }
 
+
   private function _cloneFolderStructure($templateFolderId, $newParentId)
   {
     $modelFolder = new MyModel('folder');
@@ -966,5 +969,39 @@ class Folder extends BaseController
       'res'   => true,
       'xhash' => csrf_hash()
     ]);
+  }
+  private function cascadeMove($folderId, $parentId)
+  {
+    // base case: kalau sudah pernah dikunjungi → stop
+    if (isset($this->visited[$folderId])) {
+      return;
+    }
+    $this->visited[$folderId] = true;
+
+    $db = \Config\Database::connect();
+
+    // File tetap di folderId
+    $db->table('files')
+      ->where('id_folder', $folderId)
+      ->update(['id_folder' => $folderId]);
+
+    // Ambil semua anak folder
+    $children = $db->table('folder_links')
+      ->where('parent_id', $folderId)
+      ->get()->getResultArray();
+
+    foreach ($children as $child) {
+      // kalau parent_id sudah benar, skip
+      if ($child['parent_id'] != $folderId) {
+        $db->table('folder_links')
+          ->where('id', $child['id'])
+          ->update([
+            'parent_id' => $folderId
+          ]);
+      }
+
+      // rekursif ke cucu
+      $this->cascadeMove($child['child_id'], $child['parent_id']);
+    }
   }
 }
