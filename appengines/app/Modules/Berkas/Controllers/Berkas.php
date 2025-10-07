@@ -56,9 +56,44 @@ class Berkas extends BaseController
     $idenc = $this->encrypter->decrypt(hex2bin($id));
     $model = new MyModel($this->table);
     $file = $model->getDataById($this->id, $idenc);
-    unlink('uploads/' . $file->berkas); // hapus file berkas
+
+    // [BARU] Cek apakah file berada di dalam folder personel
+    if ($file) {
+      $folderModel = new MyModel('folder');
+      $parentFolder = $folderModel->getDataById('id_folder', $file->id_folder);
+
+      $personelModel = new MyModel('personel');
+      $isPersonelFolder = $parentFolder && $personelModel->getDataByWhere(['nama' => $parentFolder->nama]);
+
+      if ($isPersonelFolder) {
+        // Jika ini adalah folder personel, tolak penghapusan dan kirim pesan error
+        return $this->response->setStatusCode(403)->setJSON([
+          'res' => 'error',
+          'message' => 'File di dalam folder personel tidak dapat dihapus. Silakan kelola melalui menu Personel.',
+          'xname' => csrf_token(),
+          'xhash' => csrf_hash()
+        ]);
+      }
+    }
+
+    // [PERBAIKAN] Jangan hapus file fisik, pindahkan ke folder 'sampah'
+    if ($file && !empty($file->berkas)) {
+      $filePath = FCPATH . 'uploads/' . $file->berkas;
+      $trashPath = FCPATH . 'uploads/trash/';
+
+      // Buat direktori sampah jika belum ada
+      if (!is_dir($trashPath)) {
+        mkdir($trashPath, 0777, true);
+      }
+
+      if (file_exists($filePath)) {
+        // Pindahkan file ke direktori sampah dengan nama unik untuk menghindari tumpukan
+        $newFilePath = $trashPath . uniqid() . '_' . basename($filePath);
+        rename($filePath, $newFilePath);
+      }
+    }
+
     $res = $model->deleteData($this->id, $idenc);
-    // return $this->response->setJSON(array('res' => $res, 'xname' => csrf_token(), 'xhash' => csrf_hash()));
 
     if ($res) {
       $res = 'refresh';
