@@ -97,7 +97,7 @@
             <i class="bi bi-arrow-clockwise"></i> Refresh
           </button>
           <button id="addFolderButton" class="btn btn-primary">
-    <i class="bi bi-plus-circle-dotted"></i> Tambah Folder
+    <i class="bi bi-plus-circle-dotted"></i> Tambah
 </button>' : '' ?>
 
         </div>
