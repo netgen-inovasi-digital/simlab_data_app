@@ -243,41 +243,6 @@ class Folder extends BaseController
     }
   }
 
-  function editFile($id)
-  {
-    try {
-      $idenc = $id;
-      $id = $this->encrypter->decrypt(hex2bin($idenc));
-
-      $model = new MyModel('files');
-      $select = 'files.*, users.nama as author';
-      $join = ['users' => 'users.id_user = files.user_id'];
-      $where = ['id_files' => $id];
-      $get = $model->getOneByJoin($join, $where, $select, 'LEFT');
-
-      if (!$get) {
-        return $this->response->setStatusCode(404)->setJSON(['error' => 'File tidak ditemukan']);
-      }
-
-      $data[csrf_token()] = csrf_hash();
-      $data['idFile'] = $idenc;
-      $data['titleFile'] = $get->title;
-      $data['kategori_id'] = $get->categories_id;
-      $data['nomor_dokumen'] = $get->nomor_dokumen;
-      $data['slug'] = $get->slug;
-      $data['revisi'] = $get->revisi;
-      $data['status'] = $get->status;
-      $data['user_id'] = $get->user_id;
-      $data['nama'] = $get->author; // Menggunakan nama author dari join
-      $data['tanggal'] = $get->created_at ? date('Y-m-d', strtotime($get->created_at)) : date('Y-m-d');
-
-      return $this->response->setJSON($data);
-    } catch (\Exception $e) {
-      log_message('error', '[FolderController] EditFile: ' . $e->getMessage());
-      return $this->response->setStatusCode(500)->setJSON(['error' => 'Terjadi kesalahan pada server.']);
-    }
-  }
-
   function edit($id)
   {
     try {
@@ -787,30 +752,6 @@ class Folder extends BaseController
     ]);
   }
 
-  public function getPersonelForDropdown()
-  {
-    if (!$this->request->isAJAX()) {
-      return $this->response->setStatusCode(403);
-    }
-
-    $db = \Config\Database::connect();
-    $personelWithDocs = $db->table('personel as p')
-      ->select('p.id_personel, p.nama')
-      ->where('EXISTS (SELECT 1 FROM dokumen d WHERE d.id_personel = p.id_personel)')
-      ->orderBy('p.nama', 'ASC')
-      ->get()
-      ->getResult();
-
-    $response_data = [
-      'personel' => $personelWithDocs,
-      'xname' => csrf_token(),
-      'xhash' => csrf_hash()
-    ];
-
-    return $this->response->setJSON($response_data);
-  }
-
-
   private function _cloneFolderStructure($templateFolderId, $newParentId)
   {
     $modelFolder = new MyModel('folder');
@@ -951,47 +892,6 @@ class Folder extends BaseController
       // [REVISI] Update sort order global setelah pemanggilan rekursif
       $this->lastGlobalSortOrder++;
     }
-  }
-
-  public function submit()
-  {
-    $idenc = $this->request->getPost('id');
-    $sumber = $this->request->getPost('sumber_menu'); // halaman | berita | url
-    $slug   = $this->request->getPost("url_$sumber");
-
-    $url = match ($sumber) {
-      'halaman' => "hal/$slug",
-      'berita'  => "berita/$slug",
-      'manual'   => $slug,
-    };
-
-    $nama_menu = ($sumber === 'manual')
-      ? $this->request->getPost('nama_menu_url')
-      : $this->request->getPost('nama');
-
-    $data = [
-      'nama' => $nama_menu,
-      'url'  => $url,
-    ];
-
-
-    $model = new MyModel($this->table);
-    if ($idenc == "") {
-      $code = $this->request->getPost('code');
-      $data['kode_folder'] = (int)$code  + 1;
-      $data['kode_induk'] = 0;
-      $data['sort_order'] = 0;
-      $res = $model->insertData($data);
-    } else {
-      $id = $this->encrypter->decrypt(hex2bin($idenc));
-      $res = $model->updateData($data, $this->id, $id);
-    }
-
-    if ($res) {
-      $res = 'refresh';
-      $link = 'folder';
-    }
-    return $this->response->setJSON(array('res' => $res, 'link' => $link ?? '', 'xname' => csrf_token(), 'xhash' => csrf_hash()));
   }
 
   public function updated()
