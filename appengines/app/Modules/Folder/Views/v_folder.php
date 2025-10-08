@@ -414,7 +414,11 @@
           return html;
         }
 
-        fetch('<?= site_url('folder/getModalData') ?>')
+        fetch('<?= site_url('folder/getModalData') ?>', {
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          })
           .then(res => res.json())
           .then(data => {
             if (data.xhash) {
@@ -855,8 +859,6 @@
       delete item.dataset.prevId;
       delete item.dataset.oldCount;
     });
-
-
 
     item.addEventListener("dragover", (e) => {
       e.preventDefault();

@@ -120,23 +120,10 @@ class Folder extends BaseController
       $map['folder_' . $f->id_folder] = $f;
     }
 
-    // [PERBAIKAN] Kembalikan logika pembangunan pohon utama di sini, setelah $map lengkap
-    foreach ($links as $link) {
-      $childKey  = 'folder_' . $link->child_id;
-      $parentKey = $link->parent_id ? 'folder_' . $link->parent_id : null;
-
-      // Pastikan child ada di map (belum terfilter oleh otorisasi)
-      if (isset($map[$childKey])) {
-        if ($parentKey === null) {
-          // Ini adalah root folder, tambahkan langsung ke $tree
-        } else if (isset($map[$parentKey])) { // Pastikan parent juga ada di map
-          array_push($map[$parentKey]->children, $map[$childKey]);
-        }
-      }
-    }
-
+    // masukkan file ke folder setelah folder anak
     // [UBAH] Reset $tree di sini sebelum memasukkan file
     $tree = [];
+
     foreach ($files as $file) {
       $file->type     = 'file';
       $file->children = [];
@@ -152,6 +139,21 @@ class Folder extends BaseController
 
       if (isset($map['folder_' . $file->id_folder])) {
         $map['folder_' . $file->id_folder]->children[] = $file;
+      }
+    }
+
+    // [PERBAIKAN] Kembalikan logika pembangunan pohon utama di sini, setelah $map lengkap
+    foreach ($links as $link) {
+      $childKey  = 'folder_' . $link->child_id;
+      $parentKey = $link->parent_id ? 'folder_' . $link->parent_id : null;
+
+      // Pastikan child ada di map (belum terfilter oleh otorisasi)
+      if (isset($map[$childKey])) {
+        if ($parentKey === null) {
+          // Ini adalah root folder, tambahkan langsung ke $tree
+        } else if (isset($map[$parentKey])) { // Pastikan parent juga ada di map
+          array_push($map[$parentKey]->children, $map[$childKey]);
+        }
       }
     }
 
@@ -239,41 +241,6 @@ class Folder extends BaseController
       return $this->response->setJSON($data);
     } catch (\Exception $e) {
       log_message('error', '[FolderController] ' . $e->getMessage());
-      return $this->response->setStatusCode(500)->setJSON(['error' => 'Terjadi kesalahan pada server.']);
-    }
-  }
-
-  function editFile($id)
-  {
-    try {
-      $idenc = $id;
-      $id = $this->encrypter->decrypt(hex2bin($idenc));
-
-      $model = new MyModel('files');
-      $select = 'files.*, users.nama as author';
-      $join = ['users' => 'users.id_user = files.user_id'];
-      $where = ['id_files' => $id];
-      $get = $model->getOneByJoin($join, $where, $select, 'LEFT');
-
-      if (!$get) {
-        return $this->response->setStatusCode(404)->setJSON(['error' => 'File tidak ditemukan']);
-      }
-
-      $data[csrf_token()] = csrf_hash();
-      $data['idFile'] = $idenc;
-      $data['titleFile'] = $get->title;
-      $data['kategori_id'] = $get->categories_id;
-      $data['nomor_dokumen'] = $get->nomor_dokumen;
-      $data['slug'] = $get->slug;
-      $data['revisi'] = $get->revisi;
-      $data['status'] = $get->status;
-      $data['user_id'] = $get->user_id;
-      $data['nama'] = $get->author; // Menggunakan nama author dari join
-      $data['tanggal'] = $get->created_at ? date('Y-m-d', strtotime($get->created_at)) : date('Y-m-d');
-
-      return $this->response->setJSON($data);
-    } catch (\Exception $e) {
-      log_message('error', '[FolderController] EditFile: ' . $e->getMessage());
       return $this->response->setStatusCode(500)->setJSON(['error' => 'Terjadi kesalahan pada server.']);
     }
   }
@@ -787,29 +754,6 @@ class Folder extends BaseController
     ]);
   }
 
-  public function getPersonelForDropdown()
-  {
-    if (!$this->request->isAJAX()) {
-      return $this->response->setStatusCode(403);
-    }
-
-    $db = \Config\Database::connect();
-    $personelWithDocs = $db->table('personel as p')
-      ->select('p.id_personel, p.nama')
-      ->where('EXISTS (SELECT 1 FROM dokumen d WHERE d.id_personel = p.id_personel)')
-      ->orderBy('p.nama', 'ASC')
-      ->get()
-      ->getResult();
-
-    $response_data = [
-      'personel' => $personelWithDocs,
-      'xname' => csrf_token(),
-      'xhash' => csrf_hash()
-    ];
-
-    return $this->response->setJSON($response_data);
-  }
-
 
   private function _cloneFolderStructure($templateFolderId, $newParentId)
   {
@@ -953,47 +897,6 @@ class Folder extends BaseController
     }
   }
 
-  public function submit()
-  {
-    $idenc = $this->request->getPost('id');
-    $sumber = $this->request->getPost('sumber_menu'); // halaman | berita | url
-    $slug   = $this->request->getPost("url_$sumber");
-
-    $url = match ($sumber) {
-      'halaman' => "hal/$slug",
-      'berita'  => "berita/$slug",
-      'manual'   => $slug,
-    };
-
-    $nama_menu = ($sumber === 'manual')
-      ? $this->request->getPost('nama_menu_url')
-      : $this->request->getPost('nama');
-
-    $data = [
-      'nama' => $nama_menu,
-      'url'  => $url,
-    ];
-
-
-    $model = new MyModel($this->table);
-    if ($idenc == "") {
-      $code = $this->request->getPost('code');
-      $data['kode_folder'] = (int)$code  + 1;
-      $data['kode_induk'] = 0;
-      $data['sort_order'] = 0;
-      $res = $model->insertData($data);
-    } else {
-      $id = $this->encrypter->decrypt(hex2bin($idenc));
-      $res = $model->updateData($data, $this->id, $id);
-    }
-
-    if ($res) {
-      $res = 'refresh';
-      $link = 'folder';
-    }
-    return $this->response->setJSON(array('res' => $res, 'link' => $link ?? '', 'xname' => csrf_token(), 'xhash' => csrf_hash()));
-  }
-
   public function updated()
   {
     $items = $this->request->getPost('items') ?? [];
@@ -1066,5 +969,39 @@ class Folder extends BaseController
       'res'   => true,
       'xhash' => csrf_hash()
     ]);
+  }
+  private function cascadeMove($folderId, $parentId)
+  {
+    // base case: kalau sudah pernah dikunjungi → stop
+    if (isset($this->visited[$folderId])) {
+      return;
+    }
+    $this->visited[$folderId] = true;
+
+    $db = \Config\Database::connect();
+
+    // File tetap di folderId
+    $db->table('files')
+      ->where('id_folder', $folderId)
+      ->update(['id_folder' => $folderId]);
+
+    // Ambil semua anak folder
+    $children = $db->table('folder_links')
+      ->where('parent_id', $folderId)
+      ->get()->getResultArray();
+
+    foreach ($children as $child) {
+      // kalau parent_id sudah benar, skip
+      if ($child['parent_id'] != $folderId) {
+        $db->table('folder_links')
+          ->where('id', $child['id'])
+          ->update([
+            'parent_id' => $folderId
+          ]);
+      }
+
+      // rekursif ke cucu
+      $this->cascadeMove($child['child_id'], $child['parent_id']);
+    }
   }
 }
