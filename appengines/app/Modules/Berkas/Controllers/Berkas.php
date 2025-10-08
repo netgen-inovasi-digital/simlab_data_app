@@ -122,7 +122,6 @@ class Berkas extends BaseController
     $id_folder = $this->encrypter->decrypt(hex2bin($idFolderRaw));
 
     $data = [
-      'title' => $this->request->getPost('titleFile'),
       'nomor_dokumen' => $this->request->getPost('nomor_dokumen'),
       'revisi' => (int)$this->request->getPost('revisi'),
       'slug' => $this->request->getPost('slug'),
@@ -145,25 +144,10 @@ class Berkas extends BaseController
       }
 
       $data['berkas'] = $uploadResult['filename'];
+      $data['title'] = $uploadResult['title'];
     }
 
     $model = new MyModel($this->table);
-
-    // Cek duplicate
-    $cek = $model->groupStart()
-      ->where('title', $this->request->getPost('titleFile'))
-      ->orWhere('nomor_dokumen', $this->request->getPost('nomor_dokumen'))
-      ->groupEnd()
-      ->first();
-
-    if ($cek && (empty($idenc) || $cek[$this->id] != $this->encrypter->decrypt(hex2bin($idenc)))) {
-      return $this->response->setJSON([
-        'res' => 'duplicate',
-        'message' => 'File dengan judul atau nomor dokumen ini sudah ada!',
-        'xname' => csrf_token(),
-        'xhash' => csrf_hash()
-      ]);
-    }
 
     if (!empty($idenc) && ctype_xdigit($idenc) && strlen($idenc) % 2 === 0) {
       $data['updated_at'] = $now; // waktu sekarang saat diupdate
@@ -178,7 +162,7 @@ class Berkas extends BaseController
       // insert ke otoritas_file
       if ($res) {
         $files = $model->getDataByWhere([
-          'title' => $this->request->getPost('titleFile'),
+          'title' => $data['title'],
           'nomor_dokumen' => $this->request->getPost('nomor_dokumen'),
         ]);
         $id_file = $files->id_files;
@@ -212,14 +196,16 @@ class Berkas extends BaseController
 
   function doUpload($file)
   {
-    // Pastikan file valid dan belum dipindahkan
     if (!($file && $file->isValid() && !$file->hasMoved())) {
       return ['status' => false, 'msg' => 'File tidak valid atau sudah dipindahkan'];
     }
 
-    // Validasi tipe file (ekstensi & MIME)
     $allowedExt  = ['pdf', 'doc', 'docx'];
-    $allowedMime = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    $allowedMime = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
 
     $ext  = strtolower($file->getClientExtension());
     $mime = $file->getMimeType();
@@ -228,18 +214,42 @@ class Berkas extends BaseController
       return ['status' => false, 'msg' => 'Format file tidak diperbolehkan (hanya PDF/DOC/DOCX)'];
     }
 
-    // Validasi ukuran file (contoh: max 10MB)
     if ($file->getSize() > 10 * 1024 * 1024) {
       return ['status' => false, 'msg' => 'Ukuran file maksimal 10MB'];
     }
 
-    // Simpan file
-    $filename = time() . bin2hex(random_bytes(5)) . '.' . $ext;
+    // 🔹 Ambil title dari input
+    $titleInput = $this->request->getPost('titleFile');
+    $safeTitle = preg_replace('/[^A-Za-z0-9_\- ]/', '', $titleInput);
+    $safeTitle = trim($safeTitle);
+    if ($safeTitle === '') {
+      $safeTitle = 'file_' . time();
+    }
+
+    // 🔹 Nama awal file
+    $filename = $safeTitle . '.' . $ext;
     $path = FCPATH . 'uploads';
+
+    // 🔹 Kalau nama sudah ada, tambah (1), (2), dst
+    $i = 1;
+    while (file_exists($path . '/' . $filename)) {
+      $filename = $safeTitle . "_($i)." . $ext;
+      $i++;
+    }
+
+    // 🔹 Pindahkan file
     $file->move($path, $filename, true);
 
-    return ['status' => true, 'filename' => $filename];
+    // 🔹 Title sama dengan nama file full (termasuk extension)
+    $finalTitle = $filename;
+
+    return [
+      'status' => true,
+      'filename' => $filename,   // misal: DokumenRapat (1).docx
+      'title' => $finalTitle     // misal: DokumenRapat (1).docx
+    ];
   }
+
 
 
   public function upload()
