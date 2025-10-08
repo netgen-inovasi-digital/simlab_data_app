@@ -239,7 +239,7 @@
               </div>
 
               <div class="d-flex align-items-center gap-2">
-                <?= aksi($encId, $rawId, $node->type, $node->can_crud) ?>
+                <?= aksi($encId, $rawId, $node) ?>
               </div>
             </div>
           </div>
@@ -275,9 +275,9 @@
 
 
       <?php
-      function aksi($encId, $id, $type, $can_crud = 0)
+      function aksi($encId, $id, $node)
       {
-        $btnFile = ($type === 'file') ? '
+        $btnFile = ($node->type === 'file') ? '
         <span class="text-dark action-btn" role="button" title="Lihat Detail" onclick="showFileDetails(event)">
                       <i class="bi bi-eye"></i>
                   </span>
@@ -285,7 +285,7 @@
                data-type="file" data-id="' . esc($id) . '"data-perm="view"
                onClick="event.stopPropagation()" style="display:none;">
         
-        ' . ($can_crud ? '
+        ' . ($node->can_crud ? '
         <label class="divider">|</label>
         <span class="action-btn text-dark" role="button" title="Ubah" onclick="editItemFile(event)">
             <i class="bi bi-pencil-square"></i></span>
@@ -298,7 +298,7 @@
             ' : '';
 
 
-        $btnFolder = ($type === 'folder') ? '
+        $btnFolder = ($node->type === 'folder') ? '
         <span class="action-btn text-dark lihat-folder-otorisasi" title="Lihat" style="display: none;">
             <i class="bi bi-eye lihat-folder-otorisasi"></i>
         </span>
@@ -308,7 +308,7 @@
                onClick="event.stopPropagation()" style="display:none;">
         
 
-        ' . ($can_crud ? '
+        ' . ($node->can_crud ? '
         <label class="divider lihat-folder-otorisasi" style="display: none;">|</label>
         <span class=" action-btn text-dark" role="button" title="Tambah" onclick="tambahItemFile(event)" id="addFile">
             <i class="bi bi-plus-circle"></i>
@@ -326,9 +326,13 @@
                onClick="event.stopPropagation()" style="display:none;">' : '') . '
             ' : '';
 
-        return '<div id="' . $encId . '">
-        ' . $btnFile . $btnFolder . '        
-        </div>';
+        return '<div id="' . $encId . '" data-nama="' .
+          ($node->type === 'folder'
+            ? esc($node->nama)
+            : (isset($node->title) ? esc($node->title) : '')
+          ) . '">
+    ' . $btnFile . $btnFolder . '        
+</div>';
       }
 
       function buildFolderOptions($tree, $level = 0)
@@ -1300,7 +1304,8 @@
   }
 
   function tambahItemFile(event) {
-    var id = event.target.closest("div").id;
+    var item = event.target.closest("div");
+    var id = item.id;
     var form = document.getElementById('myFileForm');
     var errorDivs = form.querySelectorAll('.error');
     errorDivs.forEach(errorDiv => {
@@ -1318,7 +1323,7 @@
     });
     document.querySelector('input[name="idFile"]').value = '';
     document.querySelector('input[name="id_folder"]').value = id;
-    $('.modal-title-file').text('Tambah File');
+    $('.modal-title-file').text('Tambah File - Folder ' + item.dataset.nama);
     $('#modalFormFile').modal('show');
     perbaruiTombol();
   }
