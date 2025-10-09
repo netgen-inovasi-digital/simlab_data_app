@@ -26,12 +26,12 @@ class DatabaseSeeder extends Seeder
 
     // 4. Data tanpa FK
     $this->call('KonfigurasiSeeder');
-    $this->call('MitraSeeder');
 
     $this->call('PersonelSeeder');
     $this->call('PagesSeeder');
 
     // 8. Password Reset
     $this->call('PasswordResetsSeeder');
+    $this->call('DokumenSeeder');
   }
 }

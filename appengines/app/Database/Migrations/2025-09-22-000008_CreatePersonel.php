@@ -85,7 +85,7 @@ class CreatePersonel extends Migration
         'null'       => true,
       ],
       'doc_lainnya' => [
-        'type'       => 'text',
+        'type'       => 'TEXT',
         'null'       => true,
       ],
       'urutan' => [

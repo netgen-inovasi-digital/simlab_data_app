@@ -36,10 +36,13 @@ class Berkas extends BaseController
     $get = $model->getDataById($this->id, $idenc);
 
     $idencFolder = bin2hex($this->encrypter->encrypt($get->id_folder));
+    // 🔹 Olah title agar tampil tanpa ekstensi dan tanpa _(angka)
+    $baseName = pathinfo($get->title, PATHINFO_FILENAME);
+    $baseName = preg_replace('/_\(\d+\)$/', '', $baseName);
 
     $data[csrf_token()] = csrf_hash();
     $data['idFile'] = $id;
-    $data['titleFile'] = $get->title;
+    $data['titleFile'] = $baseName; // ← bersih buat form
     $data['kategori_id'] = $get->categories_id;
     $data['id_folder'] = $idencFolder;
     $data['nomor_dokumen'] = $get->nomor_dokumen;
@@ -112,9 +115,9 @@ class Berkas extends BaseController
     $idenc = $this->request->getPost('idFile');
     $modelOtorisasiFile = new MyModel('otoritas_file');
     $modelUser = new MyModel('users');
+    $model = new MyModel($this->table);
 
     $role_id = $modelUser->getDataById('id_user', $this->request->getPost('user_id'));
-
     $tanggalUp = $this->request->getPost('tanggal') ?? date('Y-m-d');
     $now = date('Y-m-d H:i:s');
 
@@ -128,10 +131,27 @@ class Berkas extends BaseController
       'categories_id' => $this->request->getPost('kategori_id'),
       'user_id' => $this->request->getPost('user_id'),
       'id_folder' => $id_folder,
-      'updated_at' => $now, // waktu sekarang
+      'updated_at' => $now,
     ];
+
     $berkas = $this->request->getFile('berkas');
+    $path = FCPATH . 'uploads';
+
+    // 🔹 Kalau upload file baru
     if ($berkas && $berkas->getName() !== '') {
+
+      if (!empty($idenc) && ctype_xdigit($idenc) && strlen($idenc) % 2 === 0) {
+        // ambil data lama dulu
+        $oldData = $model->getDataById($this->id, $this->encrypter->decrypt(hex2bin($idenc)));
+        $oldFile = $oldData->berkas ?? null;
+        $path = FCPATH . 'uploads';
+
+        // hapus file lama dulu kalau ada
+        if ($oldFile && file_exists($path . '/' . $oldFile)) {
+          unlink($path . '/' . $oldFile);
+        }
+      }
+
       $uploadResult = $this->doUpload($berkas);
 
       if (!$uploadResult['status']) {
@@ -146,28 +166,62 @@ class Berkas extends BaseController
       $data['berkas'] = $uploadResult['filename'];
       $data['title'] = $uploadResult['title'];
     }
+    // 🔹 Kalau TIDAK upload file baru tapi ubah nama
+    else {
+      $newTitleInput = $this->request->getPost('titleFile');
+      if ($newTitleInput) {
+        $oldData = $model->getDataById($this->id, $this->encrypter->decrypt(hex2bin($idenc)));
+        $oldFile = $oldData->berkas;
+        $oldPath = $path . '/' . $oldFile;
 
-    $model = new MyModel($this->table);
+        $ext = pathinfo($oldFile, PATHINFO_EXTENSION);
+        $safeTitle = preg_replace('/[^A-Za-z0-9_\- .]/', '', $newTitleInput);
 
+
+        $safeTitle = trim($safeTitle) ?: 'file_' . time();
+
+        // 🔹 Pastikan gak dobel ekstensi
+        if (!preg_match('/\.' . preg_quote($ext, '/') . '$/i', $safeTitle)) {
+          $newFilename = $safeTitle . '.' . $ext;
+        } else {
+          $newFilename = $safeTitle;
+        }
+
+        // 🔹 Cek nama duplikat (abaikan file lamanya sendiri)
+        $i = 1;
+        while (file_exists($path . '/' . $newFilename) && $newFilename !== $oldFile) {
+          $newFilename = $safeTitle . "_($i)." . $ext;
+          $i++;
+        }
+
+        // 🔹 Rename file fisik
+        if (file_exists($oldPath)) {
+          rename($oldPath, $path . '/' . $newFilename);
+        }
+
+        // 🔹 Simpan ke database
+        $data['title'] = $newFilename;
+        $data['berkas'] = $newFilename;
+      }
+    }
+
+    // 🔹 Simpan ke database
     if (!empty($idenc) && ctype_xdigit($idenc) && strlen($idenc) % 2 === 0) {
-      $data['updated_at'] = $now; // waktu sekarang saat diupdate
+      $data['updated_at'] = $now;
       $data['created_at'] = $tanggalUp;
       $id = $this->encrypter->decrypt(hex2bin($idenc));
       $res = $model->updateData($data, $this->id, $id);
     } else {
-      // kalau ga valid → anggap insert aja, atau return error
-      $data['created_at'] = $tanggalUp; // waktu sekarang saat dibuat
+      $data['created_at'] = $tanggalUp;
       $res = $model->insertData($data);
 
-      // insert ke otoritas_file
       if ($res) {
         $files = $model->getDataByWhere([
           'title' => $data['title'],
           'nomor_dokumen' => $this->request->getPost('nomor_dokumen'),
         ]);
         $id_file = $files->id_files;
-        $roles = array_unique([(int)$role_id->role_id, 8]); // gunakan role_id dari input atau default 8
-
+        $roles = array_unique([(int)$role_id->role_id, 8]);
         foreach ($roles as $r) {
           $otor = [
             'id_file' => (int)$id_file,
@@ -175,7 +229,6 @@ class Berkas extends BaseController
             'can_view' => 1,
             'can_crud' => 1,
           ];
-          // insert default otorisasi
           $modelOtorisasiFile->insertData($otor);
         }
       }
@@ -193,6 +246,7 @@ class Berkas extends BaseController
       'xhash' => csrf_hash()
     ]);
   }
+
 
   function doUpload($file)
   {
@@ -220,7 +274,7 @@ class Berkas extends BaseController
 
     // 🔹 Ambil title dari input
     $titleInput = $this->request->getPost('titleFile');
-    $safeTitle = preg_replace('/[^A-Za-z0-9_\- ]/', '', $titleInput);
+    $safeTitle = preg_replace('/[^A-Za-z0-9_\- .]/', '', $titleInput);
     $safeTitle = trim($safeTitle);
     if ($safeTitle === '') {
       $safeTitle = 'file_' . time();
@@ -230,7 +284,7 @@ class Berkas extends BaseController
     $filename = $safeTitle . '.' . $ext;
     $path = FCPATH . 'uploads';
 
-    // 🔹 Kalau nama sudah ada, tambah (1), (2), dst
+    // 🔹 Kalau nama sudah ada, tambah _($i)
     $i = 1;
     while (file_exists($path . '/' . $filename)) {
       $filename = $safeTitle . "_($i)." . $ext;
@@ -240,15 +294,16 @@ class Berkas extends BaseController
     // 🔹 Pindahkan file
     $file->move($path, $filename, true);
 
-    // 🔹 Title sama dengan nama file full (termasuk extension)
+    // 🔹 Title sama dengan nama file full
     $finalTitle = $filename;
 
     return [
       'status' => true,
-      'filename' => $filename,   // misal: DokumenRapat (1).docx
-      'title' => $finalTitle     // misal: DokumenRapat (1).docx
+      'filename' => $filename,
+      'title' => $finalTitle
     ];
   }
+
 
 
 
