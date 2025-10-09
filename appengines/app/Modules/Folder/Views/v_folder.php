@@ -1360,9 +1360,6 @@
         } else if (data.res == 'refresh-print') {
           loadContent(data.link);
           window.open(data.print, "_blank");
-        } else if (data.res == 'duplicate') {
-          // Pop up khusus jika file sudah ada
-          sayAlert('errorModal', 'Error', data.message, 'warning');
         } else {
           sayAlert('errorModal', 'Error', 'Data gagal disimpan.', 'warning');
         }
