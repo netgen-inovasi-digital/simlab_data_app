@@ -25,7 +25,6 @@ class Folder extends BaseController
     $modelOtorFolder  = new MyModel('otoritas_folder');
     $modelOtorFile    = new MyModel('otoritas_file');
 
-
     // [BARU] Logika untuk sorting
     $sortBy = $this->request->getGet('sort_by') ?? 'default';
     $folderOrderColumn = 'sort_order';
@@ -95,6 +94,7 @@ class Folder extends BaseController
       $f->type     = 'folder';
       $f->children = [];
       $f->can_view = $permsFolder[$f->id_folder]->can_view ?? 0;
+      $f->flag     = $f->flag ?? 0; // [MODIFIKASI] Pastikan properti flag ada
       $f->can_crud = $permsFolder[$f->id_folder]->can_crud ?? 0;
       $map['folder_' . $f->id_folder] = $f;
     }
@@ -116,6 +116,7 @@ class Folder extends BaseController
       $f->type     = 'folder';
       $f->children = [];
       $f->can_view = $permsFolder[$f->id_folder]->can_view ?? 0;
+      $f->flag     = $f->flag ?? 0; // [MODIFIKASI] Pastikan properti flag ada
       $f->can_crud = $permsFolder[$f->id_folder]->can_crud ?? 0;
       $map['folder_' . $f->id_folder] = $f;
     }
@@ -135,7 +136,6 @@ class Folder extends BaseController
       if ($parentFolder && in_array($parentFolder->nama, $personelNames)) {
         $file->can_crud = 0;
       }
-
 
       if (isset($map['folder_' . $file->id_folder])) {
         $map['folder_' . $file->id_folder]->children[] = $file;
@@ -186,7 +186,6 @@ class Folder extends BaseController
       return $node;
     };
 
-
     foreach ($roots as $root) {
       $n = $filter($root);
       if ($n !== null) $tree[] = $n;
@@ -200,7 +199,6 @@ class Folder extends BaseController
       ->orderBy('p.nama', 'ASC')
       ->get()
       ->getResult();
-
 
     $data = [
       'title'      => 'Dokumen Akreditasi',
@@ -636,7 +634,13 @@ class Folder extends BaseController
       $nextSortOrder = $lastSortOrder + 1;
 
       $slug = url_title($namaFolder, '-', true) . '-' . uniqid();
-      $folderData = ['nama' => $namaFolder, 'slug' => $slug, 'sort_order' => $nextSortOrder];
+      // [MODIFIKASI] Set flag = 1 saat membuat folder personel
+      $folderData = [
+        'nama' => $namaFolder,
+        'slug' => $slug,
+        'sort_order' => $nextSortOrder,
+        'flag' => 1
+      ];
       $folderId = $modelFolder->insertData($folderData, true);
       $modelLinks->insertData(['child_id' => $folderId, 'parent_id' => $parentId]);
 
@@ -744,7 +748,6 @@ class Folder extends BaseController
       });
     }
 
-
     return $this->response->setJSON([
       'personel' => $personelWithDocs,
       'folder_tree' => $tree,
@@ -753,7 +756,6 @@ class Folder extends BaseController
       'xhash' => csrf_hash()
     ]);
   }
-
 
   private function _cloneFolderStructure($templateFolderId, $newParentId)
   {
