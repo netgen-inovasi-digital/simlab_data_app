@@ -97,7 +97,7 @@
             <i class="bi bi-arrow-clockwise"></i> Refresh
           </button>
           <button id="addFolderButton" class="btn btn-primary">
-    <i class="bi bi-plus-circle-dotted"></i> Tambah Folder
+    <i class="bi bi-plus-circle-dotted"></i> Tambah
 </button>' : '' ?>
 
         </div>
@@ -112,7 +112,9 @@
                 <label class="m-0 fw-medium">Role</label>
                 <select id="role" name="role" class="form-select" required>
                   <option value="">-- pilih role --</option>
-                  <?php foreach ($role as $i => $row) { ?>
+                  <?php foreach ($role as $i => $row) {
+                    if ($row->id_role == 8) continue;
+                  ?>
                     <option value="<?= $row->id_role ?>">
                       <?= $row->nama_role ?>
                     </option>
@@ -128,12 +130,16 @@
                     <i class="bi bi-sort-down"></i> <span id="sort-label">Urutan Default</span>
                   </button>
                   <ul class="dropdown-menu" aria-labelledby="sortDropdown">
-                    <li><a class="dropdown-item" href="#" data-sort="default">Urutan Default</a></li>
-                    <li><a class="dropdown-item" href="#" data-sort="updated_desc">Terakhir Diupdate</a>
+                    <li><a class="dropdown-item" href="#" data-sort="default">Urutan Default</a>
                     </li>
-                    <li><a class="dropdown-item" href="#" data-sort="created_desc">Terakhir Dibuat</a>
+                    <li><a class="dropdown-item" href="#" data-sort="updated_desc">Terakhir
+                        Diupdate</a>
                     </li>
-                    <li><a class="dropdown-item" href="#" data-sort="created_asc">Paling Terdahulu</a>
+                    <li><a class="dropdown-item" href="#" data-sort="created_desc">Terakhir
+                        Dibuat</a>
+                    </li>
+                    <li><a class="dropdown-item" href="#" data-sort="created_asc">Paling
+                        Terdahulu</a>
                     </li>
                   </ul>
                 </div>
@@ -189,11 +195,15 @@
       </div>
 
       <?php
-      function renderTree($nodes, $level = 0, $encrypter = null, $user)
+      // [MODIFIKASI] Tambahkan parameter $is_in_personel_folder
+      function renderTree($nodes, $level = 0, $encrypter = null, $user, $is_in_personel_folder = false)
       {
         if ($encrypter === null) {
           $encrypter = \Config\Services::encrypter();
         }
+
+        // [BARU] Tentukan apakah anak-anak dari node saat ini akan berada di dalam folder personel
+        $is_child_in_personel_folder = $is_in_personel_folder;
 
         foreach ($nodes as $node) {
           $rawId = $node->type === 'folder' ? $node->id_folder : $node->id_files;
@@ -203,6 +213,8 @@
           $dataAttrs = 'data-type="' . $node->type . '" data-count="' . $level . '" data-id="' . esc($rawId) . '"';
           if ($node->type === 'folder') {
             $dataAttrs .= ' data-nama="' . esc(strtolower($node->nama)) . '"';
+            // [BARU] Jika folder ini memiliki flag=1, set status untuk anak-anaknya
+            $is_child_in_personel_folder = $is_in_personel_folder || !empty($node->flag);
           } else { // File
             $dataAttrs .= ' data-nama="' . esc(strtolower($node->title)) . '"';
             $dataAttrs .= ' data-filename="' . esc($node->berkas) . '"';
@@ -212,13 +224,16 @@
             $dataAttrs .= ' data-url="' . base_url('uploads/' . $node->berkas) . '"';
           }
 
+          // [BARU] Tentukan apakah item ini bisa di-drag.
+          // File tidak bisa di-drag jika berada di dalam folder personel.
+          $is_draggable = ($user->role_id != 2) && !($node->type === 'file' && $is_in_personel_folder);
+
       ?>
           <div id="<?= $encId ?>" class="<?= $node->type ?>-item flex"
             style="<?= $user->role_id == 2
                       ? 'cursor: pointer; margin-left: ' . ($level * 30) . 'px;'
-                      : 'cursor: grab; margin-left: ' . ($level * 30) . 'px;' ?>"
-            draggable="<?= $user->role_id == 2 ? 'false' : 'true' ?>"
-            <?= $dataAttrs ?>>
+                      : ($is_draggable ? 'cursor: grab; ' : 'cursor: default; ') . 'margin-left: ' . ($level * 30) . 'px;' ?>"
+            draggable="<?= $is_draggable ? 'true' : 'false' ?>" <?= $dataAttrs ?>>
 
             <div class="d-flex justify-content-between align-items-center col-12">
               <div class="d-flex align-items-center gap-3">
@@ -239,7 +254,7 @@
               </div>
 
               <div class="d-flex align-items-center gap-2">
-                <?= aksi($encId, $rawId, $node->type, $node->can_crud) ?>
+                <?= aksi($encId, $rawId, $node) ?>
               </div>
             </div>
           </div>
@@ -247,7 +262,7 @@
       <?php
           // render recursive jika ada children
           if (!empty($node->children)) {
-            renderTree($node->children, $level + 1, $encrypter, $user);
+            renderTree($node->children, $level + 1, $encrypter, $user, $is_child_in_personel_folder);
           }
         }
       }
@@ -257,11 +272,11 @@
         <small id="info" style="display: none;"><em>-- Silahkan pilih role terlebih dahulu.</em></small>
         <div id="folder" class="d-flex flex-column">
           <?php
-          if ($tree !== []) {
+          if (!empty($tree)) {
             renderTree($tree, 0, null, $user);
           } else {
             echo '<div class="col-12 text-center p-5" id="noDataMessage">
-            <h4 class="text-muted">Document Not Available</h4>
+            <h4 class="text-muted">Dokumen tidak ditemukan</h4>
             </div>';
           }
           ?>
@@ -273,10 +288,13 @@
       </div>
 
 
+
       <?php
-      function aksi($encId, $id, $type, $can_crud = 0)
+      function aksi($encId, $id, $node)
       {
-        $btnFile = ($type === 'file') ? '
+        $btnFile = ($node->type === 'file') ? '
+        <span id="aksi-text" class=" me-1" style="display: none;">Bisa Lihat</span>
+
         <span class="text-dark action-btn" role="button" title="Lihat Detail" onclick="showFileDetails(event)">
                       <i class="bi bi-eye"></i>
                   </span>
@@ -284,8 +302,11 @@
                data-type="file" data-id="' . esc($id) . '"data-perm="view"
                onClick="event.stopPropagation()" style="display:none;">
         
-        ' . ($can_crud ? '
-        <label class="divider">|</label>
+        ' . ($node->can_crud ? '
+        <label class="divider" id="divider-crud">|</label>
+
+        <span id="aksi-text2" class="ms-2 me-1" style="display: none;" >Bisa Aksi</span>
+
         <span class="action-btn text-dark" role="button" title="Ubah" onclick="editItemFile(event)">
             <i class="bi bi-pencil-square"></i></span>
         <label class="divider">|</label>
@@ -297,7 +318,10 @@
             ' : '';
 
 
-        $btnFolder = ($type === 'folder') ? '
+        $btnFolder = ($node->type === 'folder') ? '
+
+        <span id="aksi-text3" class=" me-1" style="display: none;">Bisa Lihat</span>
+
         <span class="action-btn text-dark lihat-folder-otorisasi" title="Lihat" style="display: none;">
             <i class="bi bi-eye lihat-folder-otorisasi"></i>
         </span>
@@ -307,8 +331,11 @@
                onClick="event.stopPropagation()" style="display:none;">
         
 
-        ' . ($can_crud ? '
-        <label class="divider lihat-folder-otorisasi" style="display: none;">|</label>
+        ' . ($node->can_crud ? '
+        <label class="divider lihat-folder-otorisasi" id="divider-crud2" style="display: none;">|</label>
+
+        <span id="aksi-text4" class="ms-2 me-1" style="display: none;" >Bisa Aksi</span>
+
         <span class=" action-btn text-dark" role="button" title="Tambah" onclick="tambahItemFile(event)" id="addFile">
             <i class="bi bi-plus-circle"></i>
         </span>
@@ -325,9 +352,13 @@
                onClick="event.stopPropagation()" style="display:none;">' : '') . '
             ' : '';
 
-        return '<div id="' . $encId . '">
-        ' . $btnFile . $btnFolder . '        
-        </div>';
+        return '<div id="' . $encId . '" data-nama="' .
+          ($node->type === 'folder'
+            ? esc($node->nama)
+            : (isset($node->title) ? esc($node->title) : '')
+          ) . '">
+    ' . $btnFile . $btnFolder . '        
+</div>';
       }
 
       function buildFolderOptions($tree, $level = 0)
@@ -375,6 +406,8 @@
         document.getElementById('opsiBuatBaruRadio').checked = true;
         document.getElementById('opsiBuatBaru').classList.remove('d-none');
         document.getElementById('opsiGunakanTemplate').classList.add('d-none');
+        document.getElementById('opsiPersonel').classList.add(
+          'd-none'); // [BARU] Sembunyikan juga opsi personel saat reset
         document.getElementById('subfolder-container').innerHTML = '';
         form.querySelector('[name="parent_id"]').value = "";
         // [FIX] Reset form ke mode tambah
@@ -385,27 +418,99 @@
       });
     }
 
+    /**
+     * [FIX] Event listener untuk memperbarui data dropdown personel
+     * setiap kali modal tambah folder akan ditampilkan.
+     * Ini menyelesaikan masalah data basi setelah menambah personel baru.
+     */
+    if (addFolderModalEl) {
+      addFolderModalEl.addEventListener('show.bs.modal', function() {
+        const parentSelect = document.querySelector('select[name="parent_id"]');
+        const templateSelect = document.querySelector('select[name="template_id"]');
+        const personelSelect = document.querySelector('select[name="personel_id"]');
+
+        // Helper function to build dropdown options recursively
+        function buildOptions(nodes, level = 0) {
+          let html = '';
+          nodes.forEach(node => {
+            if (node.type === 'folder' || !node.type) { // Handle both types
+              const indent = '&nbsp;&nbsp;&nbsp;'.repeat(level);
+              html += `<option value="${node.id_folder}">${indent}${node.nama}</option>`;
+              if (node.children && node.children.length > 0) {
+                html += buildOptions(node.children, level + 1);
+              }
+            }
+          });
+          return html;
+        }
+
+        fetch('<?= site_url('folder/getModalData') ?>', {
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.xhash) {
+              document.querySelector('[name="<?= csrf_token() ?>"]').value = data.xhash;
+            }
+
+            // 1. Update dropdown folder induk
+            if (parentSelect && data.folder_tree) {
+              parentSelect.innerHTML =
+                '<option value="">-- Tanpa Induk (Root Level) --</option>' +
+                buildOptions(data.folder_tree);
+            }
+
+            // 2. Update dropdown template
+            if (templateSelect && data.template_tree) {
+              templateSelect.innerHTML =
+                '<option value="">-- Pilih Template Folder --</option>' +
+                buildOptions(data.template_tree);
+            }
+
+            // 3. Update dropdown personel
+            if (data.personel) {
+              personelSelect.innerHTML = '<option value="">-- Pilih Personel --</option>';
+              data.personel.forEach(p => {
+                personelSelect.innerHTML +=
+                  `<option value="${p.id_personel}">${p.nama}</option>`;
+              });
+            }
+          }).catch(err => console.error('Gagal mengambil data untuk modal:', err));
+      });
+    }
+
     const opsiBuatBaruRadio = document.getElementById('opsiBuatBaruRadio');
     const opsiTemplateRadio = document.getElementById('opsiTemplateRadio');
+    const opsiPersonelRadio = document.getElementById('opsiPersonelRadio'); // [BARU]
     const opsiBuatBaruDiv = document.getElementById('opsiBuatBaru');
     const opsiTemplateDiv = document.getElementById('opsiGunakanTemplate');
+    const opsiPersonelDiv = document.getElementById('opsiPersonel'); // [BARU]
 
     /**
      * Event listener untuk radio button opsi pembuatan folder (buat baru vs. dari template).
      */
-    opsiBuatBaruRadio.addEventListener('change', () => {
-      if (opsiBuatBaruRadio.checked) {
-        opsiBuatBaruDiv.classList.remove('d-none');
+    // [REFAKTOR] Gabungkan semua event listener radio button menjadi satu
+    document.querySelectorAll('input[name="opsi_pembuatan"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        // Sembunyikan semua div opsi terlebih dahulu
+        opsiBuatBaruDiv.classList.add('d-none');
         opsiTemplateDiv.classList.add('d-none');
-      }
+        opsiPersonelDiv.classList.add('d-none');
+
+        // Tampilkan div yang sesuai dengan radio yang dipilih
+        const selectedValue = e.target.value;
+        if (selectedValue === 'buat_baru') {
+          opsiBuatBaruDiv.classList.remove('d-none');
+        } else if (selectedValue === 'gunakan_template') {
+          opsiTemplateDiv.classList.remove('d-none');
+        } else if (selectedValue === 'tambah_folder_personel') {
+          opsiPersonelDiv.classList.remove('d-none');
+        }
+      });
     });
 
-    opsiTemplateRadio.addEventListener('change', () => {
-      if (opsiTemplateRadio.checked) {
-        opsiBuatBaruDiv.classList.add('d-none');
-        opsiTemplateDiv.classList.remove('d-none');
-      }
-    });
 
     const tambahSubfolderBtn = document.getElementById('tambahSubfolder');
     const subfolderContainer = document.getElementById('subfolder-container');
@@ -480,8 +585,9 @@
       // Pastikan opsi default (buat baru) yang terlihat
       document.getElementById('opsiBuatBaru').classList.remove('d-none');
       document.getElementById('opsiGunakanTemplate').classList.add('d-none');
+      document.getElementById('opsiPersonel').classList.add(
+        'd-none'); // [BARU] Pastikan disembunyikan saat modal ditutup
     });
-
 
     const searchInput = document.getElementById('search');
     const filterTipe = document.getElementById('filterTipe');
@@ -535,7 +641,6 @@
         noResultsMessage.style.display = 'none';
         if (noDataMessage) noDataMessage.style.display = 'block';
       }
-
     }
 
     /**
@@ -575,6 +680,7 @@
         }
       });
     }
+
 
     // [BARU] Atur label tombol sort sesuai state saat ini
     const currentSort = '<?= $current_sort ?? 'default' ?>';
@@ -744,6 +850,25 @@
       if (count > maxLevel) count = maxLevel;
 
       // [PERBAIKAN] Terapkan indentasi baru ke induk SEBELUM memindahkan anak
+      // [BARU] Logika untuk mencegah folder dipindahkan ke dalam sub-foldernya sendiri.
+      // [PERBAIKAN] Logika untuk mencegah folder dipindahkan ke dalam sub-foldernya sendiri.
+      if (draggedItem.dataset.type === 'folder' && parentFolder) {
+        // Cek apakah parentFolder yang baru adalah salah satu dari anak-anak (descendants) dari item yang di-drag.
+        const isMovingIntoOwnChild = childrenOfDraggedItem.some(child => child.id === parentFolder.id);
+
+        if (isMovingIntoOwnChild) {
+          // Jika terdeteksi, batalkan perubahan level (indentasi).
+          count = originalLevel;
+          // Tampilkan pesan error kepada pengguna.
+          sayAlert('errorModal', 'Operasi Dibatalkan',
+            'Folder tidak bisa dipindahkan ke dalam sub-foldernya sendiri.', 'warning');
+          // Jika terdeteksi, batalkan perubahan level dan posisi, lalu tampilkan pesan error.
+          count = originalLevel; // Kembalikan ke level semula.
+          sayAlert('errorModal', 'Operasi Dibatalkan',
+            'Folder tidak bisa dipindahkan ke dalam sub-foldernya sendiri.', 'warning');
+        }
+      }
+
       item.dataset.count = count;
       item.style.marginLeft = (count * 30) + "px";
 
@@ -783,8 +908,6 @@
       delete item.dataset.prevId;
       delete item.dataset.oldCount;
     });
-
-
 
     item.addEventListener("dragover", (e) => {
       e.preventDefault();
@@ -953,8 +1076,6 @@
     });
   }
 
-
-
   function saveAll() {
     var tokenName = "<?= csrf_token() ?>";
     var elName = document.querySelector(`[name="${tokenName}"]`);
@@ -987,6 +1108,10 @@
   searchInput = document.getElementById("searching-folder-file");
   filterTipe = document.getElementById("filter-tipe");
   filterKategori = document.getElementById("filter-kategori");
+  keteranganAksi = document.getElementById("aksi-text");
+  keteranganAksi2 = document.getElementById("aksi-text2");
+  keteranganAksi3 = document.getElementById("aksi-text3");
+  keteranganAksi4 = document.getElementById("aksi-text4");
 
   // Event listener untuk toggle otorisasi
   toggleOtorisasi = document.getElementById('toggleOtorisasi');
@@ -1000,6 +1125,8 @@
       var lihatFolderOtorisasi = document.querySelectorAll(".lihat-folder-otorisasi");
       var sortButton = document.getElementById("sorting");
       var findSection = document.getElementById("findSection");
+      var divider = document.getElementById("divider-crud");
+      var divider2 = document.getElementById("divider-crud2");
 
       if (this.checked) {
         addFolderBtn.style.display = "none";
@@ -1015,16 +1142,20 @@
         searchInput.style.display = "none";
         filterTipe.style.display = "none";
         filterKategori.style.display = "none";
+        divider.style.display = "none";
+        divider2.style.display = "none";
         findSection.classList.add("d-none");
       } else {
         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
           bootstrap.Tooltip.getInstance(el)?.dispose();
+          loadContent('folder');
+          initTooltips();
         });
-        loadContent('folder');
-        initTooltips();
       }
     });
+
   }
+
 
   function initTooltips() {
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
@@ -1047,6 +1178,11 @@
       filterTipe.style.display = "none";
       filterKategori.style.display = "none";
       findSection.classList.add("d-none");
+      keteranganAksi.style.display = "none";
+      keteranganAksi2.style.display = "none";
+      keteranganAksi3.style.display = "none";
+      keteranganAksi4.style.display = "none";
+
     } else if (role != "") {
       document.querySelector('#info').classList.add('d-none');
       document.querySelector('#folder').classList.remove('d-none');
@@ -1054,6 +1190,10 @@
       searchInput.style.display = "block";
       filterTipe.style.display = "block";
       filterKategori.style.display = "block";
+      keteranganAksi.style.display = "inline";
+      keteranganAksi2.style.display = "inline";
+      keteranganAksi3.style.display = "inline";
+      keteranganAksi4.style.display = "inline";
       findSection.classList.remove("d-none");
 
       fetch(`otoritas/show?s=${role}`)
@@ -1061,30 +1201,25 @@
         .then(data => {
           data.forEach(item => {
             // checkbox view
-            const cbView = document.querySelectorAll(
-              `.form-check-otorisasi[data-id="${item.id}"][data-perm="view"]`
+            const cbView = document.querySelector(
+              `.form-check-otorisasi[data-type="${item.type}"][data-id="${item.id}"][data-perm="view"]`
             );
             if (cbView) {
-              cbView.forEach(cb => {
-                cb.checked = item.can_view;
-              });
+              cbView.checked = item.can_view;
             }
 
             // checkbox crud
-            const cbCrud = document.querySelectorAll(
-              `.form-check-otorisasi[data-id="${item.id}"][data-perm="crud"]`
+            const cbCrud = document.querySelector(
+              `.form-check-otorisasi[data-type="${item.type}"][data-id="${item.id}"][data-perm="crud"]`
             );
             if (cbCrud) {
-              cbCrud.forEach(cb => {
-                cb.checked = item.can_crud;
-              });
+              cbCrud.checked = item.can_crud;
             }
           });
         })
         .catch({});
     }
   })
-
 
   document.querySelectorAll('.form-check-otorisasi').forEach(checkbox => {
     checkbox.addEventListener('change', (event) => {
@@ -1114,6 +1249,7 @@
           if (data.xname && data.xhash) {
             $(`[name="${data.xname}"]`).val(data.xhash);
           }
+
 
         })
         .catch(err => console.error("Error submit otorisasi:", err));
@@ -1196,6 +1332,11 @@
           })
           .then(response => response.json())
           .then(data => {
+            // [FIX] Selalu update CSRF token, bahkan saat error
+            if (data.xhash) {
+              document.querySelector('[name="<?= csrf_token() ?>"]').value = data.xhash;
+            }
+
             if (data.res == 'refresh') {
               var detailModalEl = document.getElementById('detailFileModal');
               var detailModal = bootstrap.Modal.getInstance(detailModalEl);
@@ -1209,7 +1350,8 @@
               $('[name=' + data.xname + ']').val(data.xhash);
               sayAlert('successModal', 'Success', 'Data berhasil dihapus.', 'success');
             } else {
-              sayAlert('errorModal', 'Error', 'Data gagal dihapus.', 'warning');
+              // [FIX] Tampilkan pesan error dari server
+              sayAlert('errorModal', 'Error', data.message || 'Data gagal dihapus.', 'warning');
             }
           })
           .catch(error => {
@@ -1224,7 +1366,8 @@
   }
 
   function tambahItemFile(event) {
-    var id = event.target.closest("div").id;
+    var item = event.target.closest("div");
+    var id = item.id;
     var form = document.getElementById('myFileForm');
     var errorDivs = form.querySelectorAll('.error');
     errorDivs.forEach(errorDiv => {
@@ -1242,7 +1385,7 @@
     });
     document.querySelector('input[name="idFile"]').value = '';
     document.querySelector('input[name="id_folder"]').value = id;
-    $('.modal-title-file').text('Tambah File');
+    $('.modal-title-file').text('Tambah File - Folder ' + item.dataset.nama);
     $('#modalFormFile').modal('show');
     perbaruiTombol();
   }
@@ -1276,12 +1419,11 @@
           window.location.href = data.link;
         } else if (data.res == 'check') {
           sayAlert('errorModal', 'Error', data.link, 'warning');
+        } else if (data.res == 'duplicate') {
+          sayAlert('errorModal', 'Error', data.message, 'warning');
         } else if (data.res == 'refresh-print') {
           loadContent(data.link);
           window.open(data.print, "_blank");
-        } else if (data.res == 'duplicate') {
-          // Pop up khusus jika file sudah ada
-          sayAlert('errorModal', 'Error', data.message, 'warning');
         } else {
           sayAlert('errorModal', 'Error', 'Data gagal disimpan.', 'warning');
         }
@@ -1590,9 +1732,14 @@
     onSuccess,
     onError,
   }) {
-    showLoading();
-    // [FIX] CSRF token harus selalu ditambahkan ke FormData untuk konsistensi,
-    // terutama untuk request multipart/form-data (upload file).
+    // [FIX] Gunakan try-catch untuk memanggil showLoading.
+    // Ini mencegah error jika elemen loading overlay tidak ditemukan di DOM,
+    // dan memastikan proses fetch untuk menyimpan data tetap berjalan.
+    try {
+      showLoading();
+    } catch (e) {
+      console.warn("showLoading() failed, but proceeding with save:", e);
+    }
     const csrfName = '<?= csrf_token() ?>';
     const csrfHash = document.querySelector(`[name="${csrfName}"]`).value;
     if (!formData.has(csrfName)) {
@@ -1648,7 +1795,11 @@
         }
       })
       .finally(() => {
-        hideLoading();
+        try {
+          hideLoading();
+        } catch (e) {
+          console.warn("hideLoading() failed:", e);
+        }
       });
   }
 
@@ -1695,8 +1846,12 @@
       }
       contentArea.innerHTML =
         `<div class="row g-4"><div class="col-md-4 d-flex flex-column align-items-center">${filePreviewHtml}<div class="d-flex mt-3"><a href="${fileUrl}" target="_blank" class="btn btn-secondary">View</a></div></div><div class="col-md-8"><table class="biodata-table"><tr><td>Nama File</td><td>:</td><td>${data.title || '-'}</td></tr><tr><td>No. Dokumen</td><td>:</td><td>${data.nomor_dokumen || '-'}</td></tr><tr><td>Revisi</td><td>:</td><td>${data.revisi || '-'}</td></tr><tr><td>Tanggal Upload</td><td>:</td><td>${formatTanggal(data.created_at)}</td></tr><tr><td>Author</td><td>:</td><td>${data.author || '-'}</td></tr><tr><td>Kategori</td><td>:</td><td>${data.kategori || '-'}</td></tr></table></div></div>`;
-      modalAksiContainer.innerHTML =
-        `<div id="${id}" class="d-flex gap-2"><button class="btn btn-warning" onclick="editItemFile(event)">Edit</button><button class="btn btn-danger" onclick="deleteItemFile(event)"><i class="bi bi-trash"></i> Hapus</button></div>`;
+      <?php if ($user->username == 'superadmin' || $user->username == 'admin') { ?>
+        modalAksiContainer.innerHTML =
+          `<button type="button" class="btn btn-primary me-2" onclick="editItemFile(event)"><i class="bi bi-pencil-square me-1"></i> Edit</button><button type="button" class="btn btn-danger" onclick="deleteItemFile(event)"><i class="bi bi-trash me-1"></i> Hapus</button>`;
+      <?php } else { ?>
+        modalAksiContainer.innerHTML = '';
+      <?php } ?>
     }).catch(error => {
       console.error('Error fetching file details:', error);
       contentArea.innerHTML = '<p class="text-center text-danger">Gagal memuat data. ' + error.message +
@@ -1725,17 +1880,19 @@
     const controller = 'folder'; // Selalu gunakan controller folder
     const message = 'Menghapus folder juga akan menghapus semua file di dalamnya. Yakin ingin melanjutkan?'
     sayAlert('confirmModal', 'Hapus Data', message, 'danger', true, () => {
-      const tokenName = "<?= csrf_token() ?>";
-      const elName = document.querySelector(`[name="${tokenName}"]`);
+      const csrfName = "<?= csrf_token() ?>";
+      const csrfHash = document.querySelector(`[name="${csrfName}"]`).value;
       const formData = new FormData();
-      formData.append(tokenName, elName.value);
       formData.append('type', type); // Kirim tipe item yang akan dihapus
 
       fetch(`./${controller}/delete/${id}`, {
         method: 'POST',
-        body: formData
+        body: formData,
+        headers: {
+          'X-CSRF-TOKEN': csrfHash
+        }
       }).then(res => res.json()).then(data => {
-        if (data.xhash) elName.value = data.xhash;
+        if (data.xhash) document.querySelector(`[name="${csrfName}"]`).value = data.xhash;
 
         if (data.res == "refresh") {
           var detailModalEl = document.getElementById('detailFileModal');
@@ -1745,7 +1902,7 @@
             'success');
           loadContent(data.link);
         } else {
-          sayAlert('errorModal', 'Gagal', 'Gagal menghapus data.', 'warning');
+          sayAlert('errorModal', 'Gagal', data.message || 'Gagal menghapus data.', 'warning');
         }
       })
     });
@@ -1790,6 +1947,12 @@
               <label class="form-check-label" for="opsiTemplateRadio">Gunakan Folder yang Sudah
                 Ada</label>
             </div>
+            <!-- [BARU] Opsi Tambah Folder Personel -->
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="opsi_pembuatan" id="opsiPersonelRadio"
+                value="tambah_folder_personel">
+              <label class="form-check-label" for="opsiPersonelRadio">Tambah Folder Personel</label>
+            </div>
           </div>
           <div id="opsiBuatBaru">
             <div class="mb-3">
@@ -1807,6 +1970,20 @@
               <select name="template_id" class="form-select">
                 <option value="">-- Pilih Template Folder --</option>
                 <?= buildFolderOptions($folder_tree ?? []) ?>
+              </select>
+            </div>
+          </div>
+          <!-- [BARU] Kontainer untuk Opsi Personel -->
+          <div id="opsiPersonel" class="d-none">
+            <div class="mb-3">
+              <label class="form-label">Pilih Personel</label>
+              <select name="personel_id" class="form-select">
+                <option value="">-- Pilih Personel --</option>
+                <?php if (isset($personel_with_docs) && !empty($personel_with_docs)): ?>
+                  <?php foreach ($personel_with_docs as $personel): ?>
+                    <option value="<?= $personel->id_personel ?>"><?= esc($personel->nama) ?></option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
               </select>
             </div>
           </div>
@@ -1864,9 +2041,8 @@
       <?php echo form_open('berkas/submit', array('id' => 'myFileForm', 'novalidate' => '')) ?>
       <div class="modal-body">
         <input type="hidden" value="" name="idFile" />
-        <input type="hidden" class="form-control" name="id_folder">
+        <input type="hidden" name="id_folder">
         <input name="slug" type="text" class="form-control bg-light" value="" hidden>
-        <!-- <input name="role_id" type="text" class="form-control bg-light" value="" hidden> -->
 
         <div class="row mb-2">
           <div class="col">

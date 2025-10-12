@@ -59,6 +59,15 @@ class Folder extends BaseController
     $otorFolder = $modelOtorFolder->getAllDataByWhere(['id_role' => $user->role_id]);
     $otorFile   = $modelOtorFile->getAllDataByWhere(['id_role' => $user->role_id]);
 
+    // [BARU] Ambil semua nama personel untuk filtering template
+    $db = \Config\Database::connect();
+    $personelNamesQuery = $db->table('personel')->select('nama')->get()->getResultArray();
+    $personelNames = array_column($personelNamesQuery, 'nama');
+
+    // [BARU] Filter folder yang namanya sama dengan nama personel
+    $templateFolders = array_filter($folders, function ($folder) use ($personelNames) {
+      return !in_array($folder->nama, $personelNames);
+    });
     // mapping otoritas folder
     $permsFolder = [];
 
@@ -80,40 +89,71 @@ class Folder extends BaseController
 
     // bikin map folder
     $map = [];
-    foreach ($folders as $f) {
+    // [UBAH] Gunakan $templateFolders untuk membangun pohon template
+    foreach ($templateFolders as $f) {
       $f->type     = 'folder';
       $f->children = [];
       $f->can_view = $permsFolder[$f->id_folder]->can_view ?? 0;
+      $f->flag     = $f->flag ?? 0; // [MODIFIKASI] Pastikan properti flag ada
       $f->can_crud = $permsFolder[$f->id_folder]->can_crud ?? 0;
       $map['folder_' . $f->id_folder] = $f;
     }
-
-
-    // relasi antar folder
+    $folder_tree = [];
+    // [UBAH] Bangun pohon template dari map yang sudah difilter
     foreach ($links as $link) {
       $childKey  = 'folder_' . $link->child_id;
       $parentKey = $link->parent_id ? 'folder_' . $link->parent_id : null;
 
-      if ($parentKey === null) {
-        $tree[] = $map[$childKey]; // root
-      } else if (isset($map[$parentKey])) { // Pastikan parent ada
-        array_push($map[$parentKey]->children, $map[$childKey]);
+      if (isset($map[$childKey])) { // Hanya proses jika folder ada di map (belum terfilter)
+        if ($parentKey === null) $folder_tree[] = $map[$childKey];
+        else if (isset($map[$parentKey])) array_push($map[$parentKey]->children, $map[$childKey]);
       }
     }
 
-    // [PERBAIKAN] Buat salinan struktur pohon folder sebelum file ditambahkan.
-    // Pindahkan reset $tree ke sini
+    // [UBAH] Reset map dan bangun ulang untuk pohon utama (yang berisi semua folder)
+    $map = [];
+    foreach ($folders as $f) {
+      $f->type     = 'folder';
+      $f->children = [];
+      $f->can_view = $permsFolder[$f->id_folder]->can_view ?? 0;
+      $f->flag     = $f->flag ?? 0; // [MODIFIKASI] Pastikan properti flag ada
+      $f->can_crud = $permsFolder[$f->id_folder]->can_crud ?? 0;
+      $map['folder_' . $f->id_folder] = $f;
+    }
 
-    $tree = [];
     // masukkan file ke folder setelah folder anak
+    // [UBAH] Reset $tree di sini sebelum memasukkan file
+    $tree = [];
+
     foreach ($files as $file) {
       $file->type     = 'file';
       $file->children = [];
       $file->can_view = $permsFile[$file->id_files]->can_view ?? 0;
       $file->can_crud = $permsFile[$file->id_files]->can_crud ?? 0;
 
+      // [FIX] Logika keamanan tambahan: Paksa can_crud menjadi 0 jika file ada di folder personel
+      $parentFolder = $map['folder_' . $file->id_folder] ?? null;
+      if ($parentFolder && in_array($parentFolder->nama, $personelNames)) {
+        $file->can_crud = 0;
+      }
+
       if (isset($map['folder_' . $file->id_folder])) {
         $map['folder_' . $file->id_folder]->children[] = $file;
+      }
+    }
+
+    // [PERBAIKAN] Kembalikan logika pembangunan pohon utama di sini, setelah $map lengkap
+    foreach ($links as $link) {
+      $childKey  = 'folder_' . $link->child_id;
+      $parentKey = $link->parent_id ? 'folder_' . $link->parent_id : null;
+
+      // Pastikan child ada di map (belum terfilter oleh otorisasi)
+      if (isset($map[$childKey])) {
+        if ($parentKey === null) {
+          // Ini adalah root folder, tambahkan langsung ke $tree
+        } else if (isset($map[$parentKey])) { // Pastikan parent juga ada di map
+          array_push($map[$parentKey]->children, $map[$childKey]);
+        }
       }
     }
 
@@ -146,13 +186,19 @@ class Folder extends BaseController
       return $node;
     };
 
-
     foreach ($roots as $root) {
       $n = $filter($root);
       if ($n !== null) $tree[] = $n;
     }
 
-    $folder_tree = $tree;
+    // [BARU] Ambil daftar personel yang punya dokumen untuk dropdown
+    $db = \Config\Database::connect();
+    $personelWithDocs = $db->table('personel as p')
+      ->select('p.id_personel, p.nama')
+      ->where('EXISTS (SELECT 1 FROM dokumen d WHERE d.id_personel = p.id_personel)')
+      ->orderBy('p.nama', 'ASC')
+      ->get()
+      ->getResult();
 
     $data = [
       'title'      => 'Dokumen Akreditasi',
@@ -163,6 +209,7 @@ class Folder extends BaseController
       'user'       => $user,
       'role'       => $modelRoles->getAllData(),
       'current_sort' => $sortBy, // Kirim state sorting saat ini ke view
+      'personel_with_docs' => $personelWithDocs, // [BARU] Kirim data personel ke view
     ];
 
     return view('Modules\Folder\Views\v_folder', $data);
@@ -196,41 +243,6 @@ class Folder extends BaseController
     }
   }
 
-  function editFile($id)
-  {
-    try {
-      $idenc = $id;
-      $id = $this->encrypter->decrypt(hex2bin($idenc));
-
-      $model = new MyModel('files');
-      $select = 'files.*, users.nama as author';
-      $join = ['users' => 'users.id_user = files.user_id'];
-      $where = ['id_files' => $id];
-      $get = $model->getOneByJoin($join, $where, $select, 'LEFT');
-
-      if (!$get) {
-        return $this->response->setStatusCode(404)->setJSON(['error' => 'File tidak ditemukan']);
-      }
-
-      $data[csrf_token()] = csrf_hash();
-      $data['idFile'] = $idenc;
-      $data['titleFile'] = $get->title;
-      $data['kategori_id'] = $get->categories_id;
-      $data['nomor_dokumen'] = $get->nomor_dokumen;
-      $data['slug'] = $get->slug;
-      $data['revisi'] = $get->revisi;
-      $data['status'] = $get->status;
-      $data['user_id'] = $get->user_id;
-      $data['nama'] = $get->author; // Menggunakan nama author dari join
-      $data['tanggal'] = $get->created_at ? date('Y-m-d', strtotime($get->created_at)) : date('Y-m-d');
-
-      return $this->response->setJSON($data);
-    } catch (\Exception $e) {
-      log_message('error', '[FolderController] EditFile: ' . $e->getMessage());
-      return $this->response->setStatusCode(500)->setJSON(['error' => 'Terjadi kesalahan pada server.']);
-    }
-  }
-
   function edit($id)
   {
     try {
@@ -247,26 +259,68 @@ class Folder extends BaseController
   function delete($id)
   {
     $db = \Config\Database::connect();
-    $db->transStart();
 
     try {
       $decryptedId = $this->encrypter->decrypt(hex2bin($id));
       $type = $this->request->getPost('type'); // 'folder' atau 'file'
 
       if ($type === 'folder') {
-        $this->_deleteFolderRecursive($decryptedId);
-        $message = "Folder dan semua isinya berhasil dihapus.";
+        $db->transStart(); // Mulai transaksi khusus untuk penghapusan folder
+        // Cek apakah folder yang akan dihapus adalah folder personel
+        $folderModel = new MyModel('folder');
+        $folder = $folderModel->getDataById('id_folder', $decryptedId);
+        $isPersonelFolder = false;
+        if ($folder) {
+          $personelModel = new MyModel('personel');
+          $personelData = $personelModel->getDataByWhere(['nama' => $folder->nama]);
+          if ($personelData) {
+            $isPersonelFolder = true;
+          }
+        }
+
+        // Panggil fungsi rekursif dengan status folder personel
+        $this->_deleteFolderRecursive($decryptedId, $isPersonelFolder);
+        $message = $isPersonelFolder ? "Folder Personel berhasil dihapus. Dokumen asli tetap aman." : "Folder dan semua isinya berhasil dihapus.";
+
+        $db->transComplete();
+        if ($db->transStatus() === false) {
+          throw new \Exception("Gagal menghapus folder dari database.");
+        }
       } elseif ($type === 'file') {
+        // [PERBAIKAN] Untuk file, transaksi dimulai di sini
+        // Ini mencegah file dihapus jika ada error sebelum operasi DB
+        $db->transStart();
+
         $fileModel = new MyModel('files');
         $file = $fileModel->getDataById('id_files', $decryptedId);
 
         if ($file) {
-          // Hapus file fisik dari server
+          // [PERBAIKAN] Cek apakah file ini berada di dalam folder personel.
+          $folderModel = new MyModel('folder');
+          $parentFolder = $folderModel->getDataById('id_folder', $file->id_folder);
+          $personelModel = new MyModel('personel');
+          $parentIsPersonel = $parentFolder && $personelModel->getDataByWhere(['nama' => $parentFolder->nama]);
+
+          if ($parentIsPersonel) {
+            // [FIX] Lempar exception agar bisa ditangkap dan dikirim dengan CSRF hash baru
+            throw new \CodeIgniter\Security\Exceptions\SecurityException("File di dalam folder personel tidak dapat dihapus dari sini. Silakan kelola melalui menu Personel.");
+          }
+
+          // [PERBAIKAN] Pindahkan file ke 'trash' daripada menghapus permanen
+          $trashPath = FCPATH . 'uploads/trash/';
+          if (!is_dir($trashPath)) {
+            mkdir($trashPath, 0777, true);
+          }
           if (!empty($file->berkas) && file_exists(FCPATH . 'uploads/' . $file->berkas)) {
-            unlink(FCPATH . 'uploads/' . $file->berkas);
+            $newFilePath = $trashPath . basename($file->berkas);
+            // Tambahkan uniqid jika file dengan nama sama sudah ada di trash
+            if (file_exists($newFilePath)) {
+              $newFilePath = $trashPath . pathinfo($file->berkas, PATHINFO_FILENAME) . '_' . uniqid() . '.' . pathinfo($file->berkas, PATHINFO_EXTENSION);
+            }
+            rename(FCPATH . 'uploads/' . $file->berkas, $newFilePath);
           }
           // Hapus record dari database
-          $fileModel->deleteData('id_files', $decryptedId);
+          $fileModel->deleteData('id_files', $decryptedId); // Hapus record file dari tabel 'files'
           $message = "File berhasil dihapus.";
         } else {
           throw new \Exception("File tidak ditemukan untuk dihapus.");
@@ -275,18 +329,17 @@ class Folder extends BaseController
         throw new \Exception("Tipe item untuk dihapus tidak valid.");
       }
 
-      $db->transComplete();
-
-      if ($db->transStatus() === false) {
-        throw new \Exception("Gagal menghapus item dari database.");
+      // [PERBAIKAN] Selesaikan transaksi untuk file jika belum selesai
+      if ($type === 'file' && $db->transStatus() !== false) {
+        $db->transComplete();
       }
 
       $res = 'refresh';
       $link = 'folder';
-      // Menyertakan pesan sukses dalam respons
-      $response_data['message'] = $message;
     } catch (\Exception $e) {
       $db->transRollback();
+      // [FIX] Reset status transaksi yang gagal agar query berikutnya bisa jalan
+      $db->transFailure = false;
       return $this->response->setStatusCode(500)->setJSON([
         'res' => 'error',
         'message' => $e->getMessage(),
@@ -305,27 +358,35 @@ class Folder extends BaseController
     return $this->response->setJSON($response_data);
   }
 
-  private function _deleteFolderRecursive($folderId)
+  private function _deleteFolderRecursive($folderId, $isPersonelFolder = false)
   {
     $linkModel = new MyModel('folder_links');
     $folderModel = new MyModel('folder');
     $fileModel = new MyModel('files');
 
     // 1. Cari semua child folder dari tabel folder_links dan hapus secara rekursif
-    $children = $linkModel->getAllDataById(['parent_id' => $folderId]);
+    $children = $linkModel->getAllDataByWhere(['parent_id' => $folderId]);
     foreach ($children as $child) {
-      $this->_deleteFolderRecursive($child->child_id);
+      // [PENTING] Wariskan status $isPersonelFolder ke anak-anaknya
+      $this->_deleteFolderRecursive($child->child_id, $isPersonelFolder);
     }
 
     // 2. Hapus semua file di dalam folder ini
-    $filesInFolder = $fileModel->getAllDataById(['id_folder' => $folderId]);
-    foreach ($filesInFolder as $file) {
-      // Hapus file fisik dari server
-      if (!empty($file->berkas) && file_exists(FCPATH . 'uploads/' . $file->berkas)) {
-        unlink(FCPATH . 'uploads/' . $file->berkas);
+    if (!$isPersonelFolder) {
+      // HANYA HAPUS FILE FISIK & RECORD DB JIKA BUKAN FOLDER PERSONEL
+      $filesInFolder = $fileModel->getAllDataByWhere(['id_folder' => $folderId]);
+      foreach ($filesInFolder as $file) {
+        if (!empty($file->berkas) && file_exists(FCPATH . 'uploads/' . $file->berkas)) {
+          $trashPath = FCPATH . 'uploads/trash/';
+          if (!is_dir($trashPath)) {
+            mkdir($trashPath, 0777, true);
+          }
+          $newFilePath = $trashPath . uniqid() . '_' . basename($file->berkas);
+          rename(FCPATH . 'uploads/' . $file->berkas, $newFilePath);
+        }
       }
+      $fileModel->deleteData('id_folder', $folderId);
     }
-    $fileModel->deleteData('id_folder', $folderId);
 
     // 3. Hapus relasi folder dari folder_links
     $linkModel->deleteData('child_id', $folderId);
@@ -388,12 +449,17 @@ class Folder extends BaseController
         return $this->response->setJSON(['res' => false, 'message' => 'Nama Folder Utama tidak boleh kosong.']);
       }
 
-      // [REFACTOR] Cek duplikasi nama folder di lokasi (parent) yang sama.
-      $isDuplicate = $db->table('folder')
-        ->join('folder_links', 'folder_links.child_id = folder.id_folder')
-        ->where('folder.nama', $namaFolderUtama)
-        ->where('folder_links.parent_id', $parentId)
-        ->countAllResults() > 0;
+      // [PERBAIKAN] Logika pengecekan duplikat yang lebih akurat
+      $builder = $db->table('folder');
+      if ($parentId) {
+        // Cek duplikat di dalam parent folder yang spesifik
+        $builder->join('folder_links', 'folder_links.child_id = folder.id_folder')
+          ->where('folder_links.parent_id', $parentId);
+      } else {
+        // Cek duplikat hanya di level root
+        $builder->where("NOT EXISTS (SELECT 1 FROM folder_links fl WHERE fl.child_id = folder.id_folder AND fl.parent_id IS NOT NULL)", null, false);
+      }
+      $isDuplicate = $builder->where('folder.nama', $namaFolderUtama)->countAllResults() > 0;
 
       if ($isDuplicate) {
         return $this->response->setJSON([
@@ -523,9 +589,172 @@ class Folder extends BaseController
           'xhash'   => csrf_hash()
         ]);
       }
+    } elseif ($opsi === 'tambah_folder_personel') {
+      $id_personel = $this->request->getPost('personel_id');
+      if (empty($id_personel)) {
+        return $this->response->setJSON(['res' => 'error', 'message' => 'Silakan pilih personel.']);
+      }
+
+      $modelPersonel = new MyModel('personel');
+      $personel = $modelPersonel->getDataById('id_personel', $id_personel);
+      if (!$personel) {
+        return $this->response->setJSON(['res' => 'error', 'message' => 'Data personel tidak ditemukan.']);
+      }
+
+      $namaFolder = $personel->nama;
+
+      // [PERBAIKAN] Cek duplikasi nama folder di dalam parent yang dipilih
+      $builder = $db->table('folder');
+      if ($parentId) {
+        $builder->join('folder_links', 'folder_links.child_id = folder.id_folder')
+          ->where('folder_links.parent_id', $parentId);
+      } else {
+        $builder->where("NOT EXISTS (SELECT 1 FROM folder_links fl WHERE fl.child_id = folder.id_folder AND fl.parent_id IS NOT NULL)", null, false);
+      }
+      $isDuplicate = $builder->where('folder.nama', $namaFolder)->countAllResults() > 0;
+
+      if ($isDuplicate) {
+        return $this->response->setJSON(['res' => 'error', 'message' => "Folder dengan nama '{$namaFolder}' sudah ada di lokasi ini."]);
+      }
+
+      $db->transStart();
+
+      // 1. Buat folder baru dengan nama personel
+      $modelFolder = new MyModel('folder');
+      $modelLinks = new MyModel('folder_links');
+      $modelFiles = new MyModel('files');
+      $modelOtorFolder = new MyModel('otoritas_folder'); // [BARU]
+      $modelOtorFile = new MyModel('otoritas_file'); // [BARU]
+
+      // [BARU] Ambil role yang akan diberi akses (user saat ini & super admin)
+      $roles = array_unique([(int)$role_id, 8]);
+
+      // [BARU] Hitung sort_order berikutnya
+      $lastSortOrder = $db->table('folder')->selectMax('sort_order', 'max_sort')->get()->getRow('max_sort') ?? 0;
+      $nextSortOrder = $lastSortOrder + 1;
+
+      $slug = url_title($namaFolder, '-', true) . '-' . uniqid();
+      // [MODIFIKASI] Set flag = 1 saat membuat folder personel
+      $folderData = [
+        'nama' => $namaFolder,
+        'slug' => $slug,
+        'sort_order' => $nextSortOrder,
+        'flag' => 1
+      ];
+      $folderId = $modelFolder->insertData($folderData, true);
+      $modelLinks->insertData(['child_id' => $folderId, 'parent_id' => $parentId]);
+
+      // [BARU] Berikan otorisasi untuk folder yang baru dibuat
+      foreach ($roles as $r) {
+        $modelOtorFolder->insertData([
+          'id_folder' => $folderId,
+          'id_role' => $r,
+          'can_view' => 1,
+          'can_crud' => 1,
+        ]);
+      }
+
+      // 2. Ambil semua dokumen milik personel dari tabel 'dokumen'
+      $modelDokumen = new MyModel('dokumen');
+      $dokumenPersonel = $modelDokumen->getAllDataByWhere(['id_personel' => $id_personel]);
+
+      // 3. Salin setiap dokumen sebagai 'file' baru di dalam folder yang baru dibuat
+      foreach ($dokumenPersonel as $doc) {
+        $newFileData = [
+          'title'         => $doc->nama_asli_file,
+          'slug'          => url_title($doc->nama_asli_file, '-', true) . '-' . uniqid(),
+          'id_folder'     => $folderId,
+          'user_id'       => $user_id,
+          'berkas'        => basename($doc->path_file), // [FIX] Ambil hanya nama file dari path
+          'created_at'    => date('Y-m-d H:i:s'),
+          'updated_at'    => date('Y-m-d H:i:s'),
+        ];
+        $newFileId = $modelFiles->insertData($newFileData, true);
+
+        // [BARU] Berikan otorisasi untuk setiap file yang baru dibuat
+        if ($newFileId) {
+          foreach ($roles as $r) {
+            $modelOtorFile->insertData([
+              'id_file' => $newFileId,
+              'id_role' => $r,
+              'can_view' => 1,
+              'can_crud' => 1,
+            ]);
+          }
+        }
+      }
+
+      $db->transComplete();
+
+      if ($db->transStatus() === false) {
+        $db->transRollback();
+        return $this->response->setStatusCode(500)->setJSON(['res' => 'error', 'message' => 'Gagal membuat folder personel.']);
+      }
     }
 
     return $this->response->setJSON(['res' => 'refresh', 'link' => 'folder', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
+  }
+
+  /**
+   * [BARU] Endpoint untuk mengambil data dinamis yang diperlukan oleh modal tambah/edit folder.
+   * Menggabungkan pengambilan data personel dan struktur folder dalam satu request.
+   */
+  public function getModalData()
+  {
+    if (!$this->request->isAJAX()) {
+      return $this->response->setStatusCode(403);
+    }
+
+    $db = \Config\Database::connect();
+
+    // 1. Ambil daftar personel yang punya dokumen
+    $personelWithDocs = $db->table('personel as p')
+      ->select('p.id_personel, p.nama')
+      ->where('EXISTS (SELECT 1 FROM dokumen d WHERE d.id_personel = p.id_personel)')
+      ->orderBy('p.nama', 'ASC')
+      ->get()
+      ->getResult();
+
+    // 2. Ambil struktur folder untuk dropdown
+    $folders = $db->table('folder')->orderBy('sort_order', 'asc')->get()->getResult();
+    $links = $db->table('folder_links')->get()->getResult();
+    $personelNamesQuery = $db->table('personel')->select('nama')->get()->getResultArray();
+    $personelNames = array_column($personelNamesQuery, 'nama');
+
+    $map = [];
+    foreach ($folders as $f) {
+      $f->children = [];
+      // [FIX] Tambahkan properti 'type' agar konsisten dengan data dari method index()
+      $f->type = 'folder';
+      $map[$f->id_folder] = $f;
+    }
+
+    $tree = [];
+    foreach ($links as $link) {
+      if (isset($map[$link->child_id])) {
+        if ($link->parent_id === null || !isset($map[$link->parent_id])) {
+          $tree[] = $map[$link->child_id];
+        } else {
+          $map[$link->parent_id]->children[] = $map[$link->child_id];
+        }
+      }
+    }
+
+    // Filter folder template (yang namanya bukan nama personel)
+    $templateFolders = [];
+    if (!empty($tree)) {
+      $templateFolders = array_filter($tree, function ($folder) use ($personelNames) {
+        return !in_array($folder->nama, $personelNames);
+      });
+    }
+
+    return $this->response->setJSON([
+      'personel' => $personelWithDocs,
+      'folder_tree' => $tree,
+      'template_tree' => array_values($templateFolders), // Re-index array
+      'xname' => csrf_token(),
+      'xhash' => csrf_hash()
+    ]);
   }
 
   private function _cloneFolderStructure($templateFolderId, $newParentId)
@@ -668,47 +897,6 @@ class Folder extends BaseController
       // [REVISI] Update sort order global setelah pemanggilan rekursif
       $this->lastGlobalSortOrder++;
     }
-  }
-
-  public function submit()
-  {
-    $idenc = $this->request->getPost('id');
-    $sumber = $this->request->getPost('sumber_menu'); // halaman | berita | url
-    $slug   = $this->request->getPost("url_$sumber");
-
-    $url = match ($sumber) {
-      'halaman' => "hal/$slug",
-      'berita'  => "berita/$slug",
-      'manual'   => $slug,
-    };
-
-    $nama_menu = ($sumber === 'manual')
-      ? $this->request->getPost('nama_menu_url')
-      : $this->request->getPost('nama');
-
-    $data = [
-      'nama' => $nama_menu,
-      'url'  => $url,
-    ];
-
-
-    $model = new MyModel($this->table);
-    if ($idenc == "") {
-      $code = $this->request->getPost('code');
-      $data['kode_folder'] = (int)$code  + 1;
-      $data['kode_induk'] = 0;
-      $data['sort_order'] = 0;
-      $res = $model->insertData($data);
-    } else {
-      $id = $this->encrypter->decrypt(hex2bin($idenc));
-      $res = $model->updateData($data, $this->id, $id);
-    }
-
-    if ($res) {
-      $res = 'refresh';
-      $link = 'folder';
-    }
-    return $this->response->setJSON(array('res' => $res, 'link' => $link ?? '', 'xname' => csrf_token(), 'xhash' => csrf_hash()));
   }
 
   public function updated()
