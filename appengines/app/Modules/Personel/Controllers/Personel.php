@@ -10,8 +10,30 @@ class Personel extends BaseController
     private $table = 'personel';
     private $id = 'id_personel';
 
+    /**
+     * Helper function untuk mengecek otorisasi.
+     * Hanya superadmin dan admin yang diizinkan.
+     * @return bool
+     */
+    private function _isAuthorized(): bool
+    {
+        $session = session();
+        // [PERBAIKAN] Mengambil 'role_id' dari session, sesuai dengan data yang Anda berikan.
+        // Pastikan 'role_id' disimpan di session saat user login.
+        $user_role_id = $session->get('role_id');
+
+        // Jika role ID tidak ada di session, anggap tidak berizin
+        if (!$user_role_id) return false;
+
+        // [UBAH] Cek apakah role ID adalah superadmin (8) atau admin (1)
+        return in_array($user_role_id, [8, 1]);
+    }
+
     public function index()
     {
+        // --- LANGKAH DEBUGGING: Kode dd() sudah bisa dihapus ---
+        // dd(session()->get());
+
         $session = session();
         $user_id = $session->get('id_user');
 
@@ -26,12 +48,16 @@ class Personel extends BaseController
         // Ambil semua data personel, diurutkan berdasarkan 'urutan'
         $getPersonel = $modelPersonel->getAllData('urutan', 'asc');
 
-        // [UBAH] Karena otorisasi dinonaktifkan, berikan akses penuh untuk sementara
-        // Ini akan membuat semua tombol (edit, hapus, kelola dokumen) muncul.
+        // [UBAH] Terapkan otorisasi hardcode
+        // Tombol hanya akan muncul jika pengguna adalah superadmin atau admin
+        $isAuthorized = $this->_isAuthorized();
+
         foreach ($getPersonel as $personel) {
-            $personel->can_edit = 1;
-            $personel->can_delete = 1;
-            $personel->can_manage_docs = 1;
+            if ($isAuthorized) {
+                $personel->can_edit = 1;
+                $personel->can_delete = 1;
+                $personel->can_manage_docs = 1;
+            }
         }
 
         $data = [
@@ -39,6 +65,7 @@ class Personel extends BaseController
             'getPersonel' => array_values($getPersonel), // Re-index array setelah filter
             'user' => $user,
             'role' => $modelRoles->getAllData(),
+            'can_add' => $isAuthorized, // [BARU] Kirim status otorisasi ke view
         ];
         return view('Modules\Personel\Views\v_personel', $data);
     }
@@ -99,6 +126,15 @@ class Personel extends BaseController
                 'doc_lainnya' => isset($docs_by_type['lainnya']) ? json_encode($docs_by_type['lainnya']) : '[]',
             ];
 
+            // [PERBAIKAN] Sisipkan data izin hanya jika pengguna berwenang.
+            // Ini memungkinkan semua orang melihat data, tetapi hanya admin yang mendapat "kunci" untuk edit/hapus.
+            if ($this->_isAuthorized()) {
+                $data['can_edit'] = true;
+                $data['can_delete'] = true;
+                $data['can_manage_docs'] = true;
+            }
+
+
             $data['xname'] = csrf_token();
             $data['xhash'] = csrf_hash();
 
@@ -113,6 +149,11 @@ class Personel extends BaseController
     function delete()
     {
         try {
+            // [PERBAIKAN] Tambahkan pengecekan otorisasi di awal
+            if (!$this->_isAuthorized()) {
+                return $this->response->setStatusCode(403)->setJSON(['error' => 'Anda tidak memiliki izin untuk menghapus data ini.']);
+            }
+
             if (!$this->request->is('post')) {
                 return $this->response->setStatusCode(405)->setJSON(['error' => 'Metode tidak diizinkan.']);
             }
@@ -123,16 +164,6 @@ class Personel extends BaseController
             }
 
             $decryptedId = $this->encrypter->decrypt(hex2bin($id));
-
-            $session = session();
-            $user_id = $session->get('id_user');
-            $modelUser = new MyModel('users');
-            $user = $modelUser->getDataById('id_user', $user_id);
-
-            // [UBAH] Nonaktifkan sementara pengecekan otorisasi
-            if (false) { // Ganti dengan 'true' jika ingin mengaktifkan kembali otorisasi
-                return $this->response->setStatusCode(403)->setJSON(['error' => 'Anda tidak memiliki izin untuk menghapus data ini.']);
-            }
 
             $model = new MyModel($this->table);
             $res = $model->deleteData($this->id, $decryptedId);
@@ -154,6 +185,11 @@ class Personel extends BaseController
 
     public function submit()
     {
+        // [PERBAIKAN] Tambahkan pengecekan otorisasi di awal
+        if (!$this->_isAuthorized()) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Anda tidak memiliki izin untuk menyimpan data ini.']);
+        }
+
         $idenc = $this->request->getPost('id');
         $id = !empty($idenc) ? $this->encrypter->decrypt(hex2bin($idenc)) : null; // Dekripsi ID di awal
 
@@ -374,6 +410,11 @@ class Personel extends BaseController
 
     function updated()
     {
+        // [PERBAIKAN] Tambahkan pengecekan otorisasi di awal
+        if (!$this->_isAuthorized()) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Anda tidak memiliki izin untuk mengubah urutan data.']);
+        }
+
         $data = [];
         $items = $this->request->getPost('items');
         foreach ($items as $item) {
@@ -416,6 +457,11 @@ class Personel extends BaseController
 
     function toggle()
     {
+        // [PERBAIKAN] Tambahkan pengecekan otorisasi di awal
+        if (!$this->_isAuthorized()) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Anda tidak memiliki izin untuk mengubah status data.']);
+        }
+
         $idenc = $this->request->getPost('id');
         $id = $this->encrypter->decrypt(hex2bin($idenc));
         $status = $this->request->getPost('status');

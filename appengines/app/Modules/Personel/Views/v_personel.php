@@ -204,7 +204,10 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0"><?php echo $title ?></h5>
-                <button id="addPersonelButton" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Tambah</button>
+                <?php if ($can_add) : // [PERBAIKAN] Tombol hanya muncul jika diizinkan 
+                ?>
+                    <button id="addPersonelButton" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Tambah</button>
+                <?php endif; ?>
             </div>
             <div class="card-body">
 
@@ -234,8 +237,10 @@
                     foreach ($getPersonel as $row) {
                         $id = bin2hex($encrypter->encrypt($row->id_personel));
                     ?>
-                        <div id="<?= $id ?>" class="col-12 col-sm-6 col-md-4 col-lg-3 personel-item" draggable="true"
-                            data-code="<?= $row->urutan ?>" data-nama="<?= esc(strtolower($row->nama)) ?>"
+                        <!-- [PERBAIKAN] Atribut draggable hanya aktif jika pengguna memiliki izin -->
+                        <div id="<?= $id ?>" class="col-12 col-sm-6 col-md-4 col-lg-3 personel-item"
+                            draggable="<?= $can_add ? 'true' : 'false' ?>" data-code="<?= $row->urutan ?>"
+                            data-nama="<?= esc(strtolower($row->nama)) ?>"
                             data-jabatan="<?= esc(strtolower($row->jabatan)) ?>"
                             data-penempatan="<?= esc($row->penempatan) ?>" onclick="showBiodata(event)">
                             <div class="card h-100 text-center shadow-sm">
@@ -245,7 +250,24 @@
                                     <h6 class="card-title fw-bold"><?= esc($row->nama) ?></h6>
                                     <p class="card-text text-muted"><?= esc($row->jabatan) ?></p>
                                     <hr class="my-2">
-                                    <?= aksi($id) ?>
+                                    <!-- [PERBAIKAN] Mengganti fungsi aksi() dengan pengecekan izin langsung -->
+                                    <div id="<?= $id ?>" class="d-flex justify-content-center gap-3">
+                                        <?php if (isset($row->can_edit)) : ?>
+                                            <span class="text-secondary" role="button" title="Ubah"
+                                                onclick="event.stopPropagation(); editPersonel(event)"><i
+                                                    class="bi bi-pencil-square"></i> Edit</span>
+                                        <?php endif; ?>
+                                        <?php if (isset($row->can_manage_docs)) : ?>
+                                            <span class="text-info" role="button" title="Dokumen"
+                                                onclick="event.stopPropagation(); manageDokumen(event)"><i
+                                                    class="bi bi-file-earmark-text"></i> Dokumen</span>
+                                        <?php endif; ?>
+                                        <?php if (isset($row->can_delete)) : ?>
+                                            <span class="text-danger" role="button" title="Hapus"
+                                                onclick="event.stopPropagation(); deleteItem(event)"><i class="bi bi-trash"></i>
+                                                Hapus</span>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -262,20 +284,7 @@
         </div>
     </div>
 
-    <?php
-    /**
-     * Menghasilkan HTML untuk tombol aksi (Edit dan Hapus) pada setiap item personel.
-     *
-     * @param string $id ID terenkripsi dari item personel.
-     * @return string HTML string yang berisi tombol-tombol aksi.
-     * @note Fungsi ini menggunakan event.stopPropagation() pada onclick untuk mencegah event klik pada parent (card) tereksekusi.
-     */
-    function aksi($id)
-    {
-        return '<div id="' . $id . '" class="d-flex justify-content-center gap-3">
-        <span class="text-secondary" role="button" title="Ubah" onclick="event.stopPropagation(); editPersonel(event)"><i class="bi bi-pencil-square"></i> Edit</span><span class="text-info" role="button" title="Dokumen" onclick="event.stopPropagation(); manageDokumen(event)"><i class="bi bi-file-earmark-text"></i> Dokumen</span><span class="text-danger" role="button" title="Hapus" onclick="event.stopPropagation(); deleteItem(event)"><i class="bi bi-trash"></i> Hapus</span>
-        </div>';
-    }
+    <?php // [PERBAIKAN] Fungsi aksi() tidak lagi digunakan dan telah dihapus. 
     ?>
 
     <!-- Modal untuk Detail Biodata -->
@@ -1095,93 +1104,115 @@
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
         }
-        // Inisialisasi event drag-and-drop untuk semua item personel.
-        document.querySelectorAll(".personel-item").forEach(addDragEvents);
-        /**
-         * Menambahkan event listener drag-and-drop ke setiap item personel.
-         * @param {HTMLElement} item - Elemen DOM dari item personel.
-         */
-        function addDragEvents(item) {
-            item.addEventListener("dragstart", (e) => {
-                draggedItem = item;
-                setTimeout(() => {
-                    item.style.display = 'none';
-                    container.insertBefore(placeholder, item.nextSibling);
-                }, 0);
-            });
-            item.addEventListener("dragend", () => {
-                setTimeout(() => {
+
+        // [PERBAIKAN] Seluruh logika drag-and-drop hanya diaktifkan jika pengguna memiliki izin.
+        if (<?= $can_add ? 'true' : 'false' ?>) {
+            // Inisialisasi event drag-and-drop untuk semua item personel.
+            document.querySelectorAll(".personel-item").forEach(addDragEvents);
+            /**
+             * Menambahkan event listener drag-and-drop ke setiap item personel.
+             * @param {HTMLElement} item - Elemen DOM dari item personel.
+             */
+            function addDragEvents(item) {
+                item.addEventListener("dragstart", (e) => {
+                    draggedItem = item;
+                    // [FIX] Kembalikan setTimeout agar browser sempat memulai proses drag
+                    // sebelum elemen disembunyikan. Ini memperbaiki bug "tidak bisa di-drag".
+                    setTimeout(() => {
+                        item.style.display = 'none';
+                        container.insertBefore(placeholder, item.nextSibling);
+                    }, 0);
+                });
+                item.addEventListener("dragend", () => {
                     item.style.display = 'block';
                     container.insertBefore(draggedItem, placeholder);
                     placeholder.remove();
                     updateOrder();
                     saveAll();
-                }, 0);
-            });
-        }
-
-        /**
-         * Event listener pada kontainer untuk menangani perpindahan placeholder saat item di-drag.
-         * @param {DragEvent} e - Event object dragover.
-         */
-        container.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            const afterElement = getDragAfterElement(container, e.clientX);
-            if (afterElement == null) {
-                container.appendChild(placeholder);
-            } else {
-                container.insertBefore(placeholder, afterElement);
+                });
             }
-        });
 
-        /**
-         * Menentukan elemen mana yang berada setelah posisi kursor saat item di-drag.
-         * @param {HTMLElement} container - Kontainer dari elemen-elemen yang bisa di-drag.
-         * @param {number} x - Posisi horizontal kursor (clientX).
-         * @returns {HTMLElement|null} Elemen yang menjadi target posisi drop.
-         */
-        function getDragAfterElement(container, x) {
-            const draggableElements = [...container.querySelectorAll('.personel-item:not([style*="display: none"])')];
-            return draggableElements.reduce((closest, child) => {
-                const box = child.getBoundingClientRect();
-                const offset = x - box.left - box.width / 2;
-                if (offset < 0 && offset > closest.offset) {
-                    return {
-                        offset: offset,
-                        element: child
-                    };
+            /**
+             * Event listener pada kontainer untuk menangani perpindahan placeholder saat item di-drag.
+             * @param {DragEvent} e - Event object dragover.
+             */
+            container.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(container, e.clientX, e.clientY);
+                if (afterElement == null) {
+                    container.appendChild(placeholder);
                 } else {
-                    return closest;
+                    container.insertBefore(placeholder, afterElement);
                 }
-            }, {
-                offset: Number.NEGATIVE_INFINITY
-            }).element;
-        }
-
-        /**
-         * Memperbarui atribut `data-code` (urutan) pada setiap item setelah operasi drag-and-drop selesai.
-         */
-        function updateOrder() {
-            const items = document.querySelectorAll(".personel-item:not(.drag-placeholder)");
-            items.forEach((el, i) => {
-                el.dataset.code = i + 1;
-            });
-        }
-        /**
-         * Menyimpan urutan baru dari semua item personel ke server melalui AJAX.
-         */
-        function saveAll() {
-            const formData = new FormData();
-            document.querySelectorAll(".personel-item:not(.drag-placeholder)").forEach((el, i) => {
-                formData.append(`items[${i}][id]`, el.id);
-                formData.append(`items[${i}][code]`, el.dataset.code);
             });
 
-            fetch('./personel/updated', {
-                method: 'POST',
-                body: formData
-            }).then(res => res.json()).then(data => updateCsrfToken(data.xname, data.xhash)).catch(err =>
-                console.error(
-                    err));
+            /**
+             * Menentukan elemen mana yang berada setelah posisi kursor saat item di-drag.
+             * @param {HTMLElement} container - Kontainer dari elemen-elemen yang bisa di-drag.
+             * @param {number} x - Posisi horizontal kursor (clientX).
+             * @returns {HTMLElement|null} Elemen yang menjadi target posisi drop.
+             */
+            function getDragAfterElement(container, x, y) {
+                const draggableElements = [...container.querySelectorAll('.personel-item:not([style*="display: none"])')];
+
+                const closest = draggableElements.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    // [FIX] Hitung jarak Euclidean dari kursor ke tengah elemen
+                    const distance = Math.sqrt(Math.pow(x - (box.left + box.width / 2), 2) + Math.pow(y - (box.top +
+                        box.height / 2), 2));
+
+                    if (distance < closest.distance) {
+                        return {
+                            distance: distance,
+                            element: child
+                        };
+                    } else {
+                        return closest;
+                    }
+                }, {
+                    distance: Number.POSITIVE_INFINITY,
+                    element: null
+                });
+
+                // [FIX] Tentukan apakah placeholder harus sebelum atau sesudah elemen terdekat
+                const box = closest.element?.getBoundingClientRect();
+                const isAfter = box && x > box.left + box.width / 2;
+
+                return isAfter ? closest.element.nextSibling : closest.element;
+            }
+
+            /**
+             * Memperbarui atribut `data-code` (urutan) pada setiap item setelah operasi drag-and-drop selesai.
+             */
+            function updateOrder() {
+                const items = document.querySelectorAll(".personel-item:not(.drag-placeholder)");
+                items.forEach((el, i) => {
+                    el.dataset.code = i + 1;
+                });
+            }
+            /**
+             * Menyimpan urutan baru dari semua item personel ke server melalui AJAX.
+             */
+            function saveAll() {
+                // [PERBAIKAN] Tambahkan CSRF token ke dalam permintaan POST
+                const formData = new FormData();
+                const csrfTokenName = '<?= csrf_token() ?>';
+                // Ambil token CSRF terbaru dari salah satu form yang ada di halaman
+                const csrfTokenValue = document.querySelector('#personelForm [name="' + csrfTokenName + '"]').value;
+
+                formData.append(csrfTokenName, csrfTokenValue);
+
+                document.querySelectorAll(".personel-item:not(.drag-placeholder)").forEach((el, i) => {
+                    formData.append(`items[${i}][id]`, el.id);
+                    formData.append(`items[${i}][code]`, el.dataset.code);
+                });
+
+                fetch('<?= site_url('personel/updated') ?>', {
+                    method: 'POST',
+                    body: formData
+                }).then(res => res.json()).then(data => updateCsrfToken(data.xname, data.xhash)).catch(err =>
+                    console.error("Gagal menyimpan urutan:", err)
+                );
+            }
         }
     </script>
