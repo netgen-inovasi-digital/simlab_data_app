@@ -293,7 +293,7 @@
       function aksi($encId, $id, $node)
       {
         $btnFile = ($node->type === 'file') ? '
-        <span id="aksi-text" class=" me-1" style="display: none;">Bisa Lihat</span>
+        <span class="aksi-text me-1" style="display: none;">Bisa Lihat</span>
 
         <span class="text-dark action-btn" role="button" title="Lihat Detail" onclick="showFileDetails(event)">
                       <i class="bi bi-eye"></i>
@@ -303,9 +303,9 @@
                onClick="event.stopPropagation()" style="display:none;">
         
         ' . ($node->can_crud ? '
-        <label class="divider" id="divider-crud">|</label>
+        <label class="divider divider-crud">|</label>
 
-        <span id="aksi-text2" class="ms-2 me-1" style="display: none;" >Bisa Aksi</span>
+        <span class="aksi-text ms-2 me-1" style="display: none;" >Bisa Aksi</span>
 
         <span class="action-btn text-dark" role="button" title="Ubah" onclick="editItemFile(event)">
             <i class="bi bi-pencil-square"></i></span>
@@ -320,7 +320,7 @@
 
         $btnFolder = ($node->type === 'folder') ? '
 
-        <span id="aksi-text3" class=" me-1" style="display: none;">Bisa Lihat</span>
+        <span class="aksi-text me-1" style="display: none;">Bisa Lihat</span>
 
         <span class="action-btn text-dark lihat-folder-otorisasi" title="Lihat" style="display: none;">
             <i class="bi bi-eye lihat-folder-otorisasi"></i>
@@ -332,9 +332,9 @@
         
 
         ' . ($node->can_crud ? '
-        <label class="divider lihat-folder-otorisasi" id="divider-crud2" style="display: none;">|</label>
+        <label class="divider lihat-folder-otorisasi divider-crud" style="display: none;">|</label>
 
-        <span id="aksi-text4" class="ms-2 me-1" style="display: none;" >Bisa Aksi</span>
+        <span class="aksi-text ms-2 me-1" style="display: none;" >Bisa Aksi</span>
 
         <span class=" action-btn text-dark" role="button" title="Tambah" onclick="tambahItemFile(event)" id="addFile">
             <i class="bi bi-plus-circle"></i>
@@ -1108,10 +1108,7 @@
   searchInput = document.getElementById("searching-folder-file");
   filterTipe = document.getElementById("filter-tipe");
   filterKategori = document.getElementById("filter-kategori");
-  keteranganAksi = document.getElementById("aksi-text");
-  keteranganAksi2 = document.getElementById("aksi-text2");
-  keteranganAksi3 = document.getElementById("aksi-text3");
-  keteranganAksi4 = document.getElementById("aksi-text4");
+  keteranganAksi = document.querySelectorAll(".aksi-text");
 
   // Event listener untuk toggle otorisasi
   toggleOtorisasi = document.getElementById('toggleOtorisasi');
@@ -1125,8 +1122,7 @@
       var lihatFolderOtorisasi = document.querySelectorAll(".lihat-folder-otorisasi");
       var sortButton = document.getElementById("sorting");
       var findSection = document.getElementById("findSection");
-      var divider = document.getElementById("divider-crud");
-      var divider2 = document.getElementById("divider-crud2");
+      var divider = document.querySelectorAll(".divider-crud");
 
       if (this.checked) {
         addFolderBtn.style.display = "none";
@@ -1142,8 +1138,7 @@
         searchInput.style.display = "none";
         filterTipe.style.display = "none";
         filterKategori.style.display = "none";
-        divider.style.display = "none";
-        divider2.style.display = "none";
+        divider.forEach(el => el.style.display = "none");
         findSection.classList.add("d-none");
       } else {
         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
@@ -1178,10 +1173,7 @@
       filterTipe.style.display = "none";
       filterKategori.style.display = "none";
       findSection.classList.add("d-none");
-      keteranganAksi.style.display = "none";
-      keteranganAksi2.style.display = "none";
-      keteranganAksi3.style.display = "none";
-      keteranganAksi4.style.display = "none";
+      keteranganAksi.forEach(el => el.style.display = "none");
 
     } else if (role != "") {
       document.querySelector('#info').classList.add('d-none');
@@ -1190,10 +1182,7 @@
       searchInput.style.display = "block";
       filterTipe.style.display = "block";
       filterKategori.style.display = "block";
-      keteranganAksi.style.display = "inline";
-      keteranganAksi2.style.display = "inline";
-      keteranganAksi3.style.display = "inline";
-      keteranganAksi4.style.display = "inline";
+      keteranganAksi.forEach(el => el.style.display = "inline");
       findSection.classList.remove("d-none");
 
       fetch(`otoritas/show?s=${role}`)
