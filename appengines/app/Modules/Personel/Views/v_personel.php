@@ -474,7 +474,7 @@
     </div>
 
     <!-- [BARU] Modal Loading -->
-    <div id="loading-indicator" class="loading-overlay d-none justify-content-center align-items-center">
+    <div id="loading-indicator-new" class="loading-overlay d-none justify-content-center align-items-center">
         <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
             <span class="visually-hidden">Loading...</span>
         </div>
@@ -493,15 +493,19 @@
         var draggedItem = null;
         var container = document.getElementById("personel-container");
         var placeholder = document.createElement("div");
+        var loadingIndicator = document.getElementById('loading-indicator');
         placeholder.classList.add("col-12", "col-sm-6", "col-md-4", "col-lg-3", "drag-placeholder");
 
         // === Fungsi Utilitas ===
         function showLoading() {
-            document.getElementById('loading-indicator').classList.replace('d-none', 'd-flex');
+          if (loadingIndicator)
+            loadingIndicator.classList.replace('d-none', 'd-flex');
         }
 
         function hideLoading() {
-            document.getElementById('loading-indicator').classList.replace('d-flex', 'd-none');
+          if (loadingIndicator) {
+            loadingIndicator.classList.replace('d-flex', 'd-none');
+          }
         }
 
         /**

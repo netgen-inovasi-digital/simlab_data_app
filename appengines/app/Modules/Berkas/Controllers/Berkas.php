@@ -113,6 +113,8 @@ class Berkas extends BaseController
   public function submit()
   {
     $idenc = $this->request->getPost('idFile');
+    $isEdit = !empty($idenc) && ctype_xdigit($idenc) && strlen($idenc) % 2 === 0;
+
     $modelOtorisasiFile = new MyModel('otoritas_file');
     $modelUser = new MyModel('users');
     $model = new MyModel($this->table);
@@ -130,7 +132,7 @@ class Berkas extends BaseController
       'slug' => $this->request->getPost('slug'),
       'categories_id' => $this->request->getPost('kategori_id'),
       'user_id' => $this->request->getPost('user_id'),
-      'id_folder' => $id_folder,
+      'id_folder' => (int)$id_folder,
       'updated_at' => $now,
     ];
 
@@ -139,21 +141,53 @@ class Berkas extends BaseController
 
     // 🔹 Kalau upload file baru
     if ($berkas && $berkas->getName() !== '') {
+      $titleInput = $this->request->getPost('titleFile');
+      $safeTitle = preg_replace('/[^A-Za-z0-9_\- .]/', '', $titleInput);
+      $ext = strtolower($berkas->getClientExtension());
+      $filename = trim($safeTitle) . '.' . $ext;
 
-      if (!empty($idenc) && ctype_xdigit($idenc) && strlen($idenc) % 2 === 0) {
-        // ambil data lama dulu
+      $cekDuplikat = $model->getDataByWhere([
+        'title' => $filename,
+        'id_folder' => $id_folder
+      ]);
+
+      $cekNoDok = $model->getDataByWhere([
+        'nomor_dokumen' => $data['nomor_dokumen'],
+        'id_folder' => $id_folder
+      ]);
+
+      if ($isEdit) {
         $oldData = $model->getDataById($this->id, $this->encrypter->decrypt(hex2bin($idenc)));
-        $oldFile = $oldData->berkas ?? null;
-        $path = FCPATH . 'uploads';
 
-        // hapus file lama dulu kalau ada
-        if ($oldFile && file_exists($path . '/' . $oldFile)) {
-          unlink($path . '/' . $oldFile);
+        if (
+          ($cekDuplikat && $cekDuplikat->id_files != $oldData->id_files) ||
+          ($cekNoDok && $cekNoDok->id_files != $oldData->id_files)
+        ) {
+          return $this->response->setJSON([
+            'res' => 'duplicate',
+            'message' => 'File atau nomor dokumen sudah ada di folder ini.',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+          ]);
+        }
+
+        // 🔹 Hapus file lama
+        if ($oldData && $oldData->berkas && file_exists($path . '/' . $oldData->berkas)) {
+          unlink($path . '/' . $oldData->berkas);
+        }
+      } else {
+        if ($cekDuplikat || $cekNoDok) {
+          return $this->response->setJSON([
+            'res' => 'duplicate',
+            'message' => 'File sudah ada di folder ini.',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+          ]);
         }
       }
 
+      // 🔹 Upload file baru
       $uploadResult = $this->doUpload($berkas);
-
       if (!$uploadResult['status']) {
         return $this->response->setJSON([
           'res' => 'error_custom',
@@ -166,47 +200,66 @@ class Berkas extends BaseController
       $data['berkas'] = $uploadResult['filename'];
       $data['title'] = $uploadResult['title'];
     }
-    // 🔹 Kalau TIDAK upload file baru tapi ubah nama
-    else {
+
+    // 🔹 Kalau rename file tanpa upload baru
+    else if ($isEdit) {
       $newTitleInput = $this->request->getPost('titleFile');
+      $newNoDocInput = $this->request->getPost('nomor_dokumen');
+
       if ($newTitleInput) {
         $oldData = $model->getDataById($this->id, $this->encrypter->decrypt(hex2bin($idenc)));
-        $oldFile = $oldData->berkas;
-        $oldPath = $path . '/' . $oldFile;
+        $ext = pathinfo($oldData->berkas, PATHINFO_EXTENSION);
 
-        $ext = pathinfo($oldFile, PATHINFO_EXTENSION);
         $safeTitle = preg_replace('/[^A-Za-z0-9_\- .]/', '', $newTitleInput);
-
-
         $safeTitle = trim($safeTitle) ?: 'file_' . time();
 
-        // 🔹 Pastikan gak dobel ekstensi
-        if (!preg_match('/\.' . preg_quote($ext, '/') . '$/i', $safeTitle)) {
-          $newFilename = $safeTitle . '.' . $ext;
-        } else {
-          $newFilename = $safeTitle;
+        $newTitle = $safeTitle . '.' . $ext;
+        $newBerkas = $safeTitle . '_' . uniqid('', true) . '.' . $ext;
+
+        $cekDuplikat = $model->getDataByWhere([
+          'title' => $newTitle,
+          'id_folder' => $id_folder
+        ]);
+
+        $cekNoDok = $model->getDataByWhere([
+          'nomor_dokumen' => $newNoDocInput,
+          'id_folder' => $id_folder
+        ]);
+
+        if (
+          ($cekDuplikat && $cekDuplikat->id_files != $oldData->id_files) ||
+          ($cekNoDok && $cekNoDok->id_files != $oldData->id_files)
+        ) {
+          return $this->response->setJSON([
+            'res' => 'duplicate',
+            'message' => 'File atau nomor dokumen sudah ada di folder ini.',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+          ]);
         }
 
-        // 🔹 Cek nama duplikat (abaikan file lamanya sendiri)
-        $i = 1;
-        while (file_exists($path . '/' . $newFilename) && $newFilename !== $oldFile) {
-          $newFilename = $safeTitle . "_($i)." . $ext;
-          $i++;
-        }
+        // 🔹 Rename file fisik juga biar sinkron
+        $oldPath = $path . '/' . $oldData->berkas;
+        $newPath = $path . '/' . $newBerkas;
 
-        // 🔹 Rename file fisik
+        // kalau nama baru udah ada, tambahin uniqid
+        // if (file_exists($newPath)) {
+        //   $uniqueId = uniqid('', true);
+        //   $newTitle = $safeTitle . '_' . $uniqueId . '.' . $ext;
+        //   $newPath = $path . '/' . $newTitle;
+        // }
+
         if (file_exists($oldPath)) {
-          rename($oldPath, $path . '/' . $newFilename);
+          rename($oldPath, $newPath);
         }
 
-        // 🔹 Simpan ke database
-        $data['title'] = $newFilename;
-        $data['berkas'] = $newFilename;
+        $data['berkas'] = $newBerkas;
+        $data['title'] = $newTitle;
       }
     }
 
     // 🔹 Simpan ke database
-    if (!empty($idenc) && ctype_xdigit($idenc) && strlen($idenc) % 2 === 0) {
+    if ($isEdit) {
       $data['updated_at'] = $now;
       $data['created_at'] = $tanggalUp;
       $id = $this->encrypter->decrypt(hex2bin($idenc));
@@ -218,7 +271,8 @@ class Berkas extends BaseController
       if ($res) {
         $files = $model->getDataByWhere([
           'title' => $data['title'],
-          'nomor_dokumen' => $this->request->getPost('nomor_dokumen'),
+          'nomor_dokumen' => $data['nomor_dokumen'],
+          'id_folder' => $data['id_folder']
         ]);
         $id_file = $files->id_files;
         $roles = array_unique([(int)$role_id->role_id, 8]);
@@ -248,6 +302,8 @@ class Berkas extends BaseController
   }
 
 
+
+  // 🔹 Upload function
   function doUpload($file)
   {
     if (!($file && $file->isValid() && !$file->hasMoved())) {
@@ -272,37 +328,28 @@ class Berkas extends BaseController
       return ['status' => false, 'msg' => 'Ukuran file maksimal 10MB'];
     }
 
-    // 🔹 Ambil title dari input
+
+    // Ambil title dari input
     $titleInput = $this->request->getPost('titleFile');
     $safeTitle = preg_replace('/[^A-Za-z0-9_\- .]/', '', $titleInput);
-    $safeTitle = trim($safeTitle);
-    if ($safeTitle === '') {
-      $safeTitle = 'file_' . time();
-    }
+    $safeTitle = trim($safeTitle) ?: 'file_' . time();
 
-    // 🔹 Nama awal file
-    $filename = $safeTitle . '.' . $ext;
+
+    $uniqueId = uniqid('', true); // contoh: 653ab8f07d25a8.12345678
+    $filename = $safeTitle . '_' . $uniqueId . '.' . $ext;
+
     $path = FCPATH . 'uploads';
 
-    // 🔹 Kalau nama sudah ada, tambah _($i)
-    $i = 1;
-    while (file_exists($path . '/' . $filename)) {
-      $filename = $safeTitle . "_($i)." . $ext;
-      $i++;
-    }
-
-    // 🔹 Pindahkan file
+    // Langsung move tanpa tambah (1) dsb
     $file->move($path, $filename, true);
-
-    // 🔹 Title sama dengan nama file full
-    $finalTitle = $filename;
 
     return [
       'status' => true,
       'filename' => $filename,
-      'title' => $finalTitle
+      'title' => $safeTitle . '.' . $ext
     ];
   }
+
 
 
 
