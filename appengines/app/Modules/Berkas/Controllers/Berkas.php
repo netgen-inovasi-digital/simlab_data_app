@@ -37,12 +37,12 @@ class Berkas extends BaseController
 
     $idencFolder = bin2hex($this->encrypter->encrypt($get->id_folder));
     // 🔹 Olah title agar tampil tanpa ekstensi dan tanpa _(angka)
-    $baseName = pathinfo($get->title, PATHINFO_FILENAME);
-    $baseName = preg_replace('/_\(\d+\)$/', '', $baseName);
+    // $baseName = pathinfo($get->title, PATHINFO_FILENAME);
+    // $baseName = preg_replace('/_\(\d+\)$/', '', $baseName);
 
     $data[csrf_token()] = csrf_hash();
     $data['idFile'] = $id;
-    $data['titleFile'] = $baseName; // ← bersih buat form
+    $data['titleFile'] = $get->title; // ← bersih buat form
     $data['kategori_id'] = $get->categories_id;
     $data['id_folder'] = $idencFolder;
     $data['nomor_dokumen'] = $get->nomor_dokumen;
@@ -142,8 +142,15 @@ class Berkas extends BaseController
     // 🔹 Kalau upload file baru
     if ($berkas && $berkas->getName() !== '') {
       $titleInput = $this->request->getPost('titleFile');
-      $safeTitle = preg_replace('/[^A-Za-z0-9_\- .]/', '', $titleInput);
+
       $ext = strtolower($berkas->getClientExtension());
+
+      // 1️⃣ Hapus ekstensi file yang umum (pdf, doc, docx)
+      $titleWithoutExt = preg_replace('/\.(pdf|docx|doc)/i', '', $titleInput);
+
+      // 2️⃣ (Opsional) Bersihkan karakter ilegal, tapi pertahankan huruf, angka, spasi, dash, underscore, titik, kurung, dll
+      $safeTitle = preg_replace('/[^A-Za-z0-9_\- .()]/', '', $titleWithoutExt);
+
       $filename = trim($safeTitle) . '.' . $ext;
 
       $cekDuplikat = $model->getDataByWhere([
@@ -210,7 +217,11 @@ class Berkas extends BaseController
         $oldData = $model->getDataById($this->id, $this->encrypter->decrypt(hex2bin($idenc)));
         $ext = pathinfo($oldData->berkas, PATHINFO_EXTENSION);
 
-        $safeTitle = preg_replace('/[^A-Za-z0-9_\- .]/', '', $newTitleInput);
+        // 1️⃣ Hapus ekstensi file yang umum (pdf, doc, docx)
+        $titleWithoutExt = preg_replace('/\.(pdf|docx|doc)/i', '', $newTitleInput);
+
+        // 2️⃣ (Opsional) Bersihkan karakter ilegal, tapi pertahankan huruf, angka, spasi, dash, underscore, titik, kurung, dll
+        $safeTitle = preg_replace('/[^A-Za-z0-9_\- .()]/', '', $titleWithoutExt);
         $safeTitle = trim($safeTitle) ?: 'file_' . time();
 
         $newTitle = $safeTitle . '.' . $ext;
@@ -241,13 +252,6 @@ class Berkas extends BaseController
         // 🔹 Rename file fisik juga biar sinkron
         $oldPath = $path . '/' . $oldData->berkas;
         $newPath = $path . '/' . $newBerkas;
-
-        // kalau nama baru udah ada, tambahin uniqid
-        // if (file_exists($newPath)) {
-        //   $uniqueId = uniqid('', true);
-        //   $newTitle = $safeTitle . '_' . $uniqueId . '.' . $ext;
-        //   $newPath = $path . '/' . $newTitle;
-        // }
 
         if (file_exists($oldPath)) {
           rename($oldPath, $newPath);
@@ -331,7 +335,11 @@ class Berkas extends BaseController
 
     // Ambil title dari input
     $titleInput = $this->request->getPost('titleFile');
-    $safeTitle = preg_replace('/[^A-Za-z0-9_\- .]/', '', $titleInput);
+    // 1️⃣ Hapus ekstensi file yang umum (pdf, doc, docx)
+    $titleWithoutExt = preg_replace('/\.(pdf|docx|doc)/i', '', $titleInput);
+
+    // 2️⃣ (Opsional) Bersihkan karakter ilegal, tapi pertahankan huruf, angka, spasi, dash, underscore, titik, kurung, dll
+    $safeTitle = preg_replace('/[^A-Za-z0-9_\- .()]/', '', $titleWithoutExt);
     $safeTitle = trim($safeTitle) ?: 'file_' . time();
 
 
