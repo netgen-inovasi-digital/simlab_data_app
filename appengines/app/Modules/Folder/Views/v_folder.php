@@ -112,7 +112,9 @@
                 <label class="m-0 fw-medium">Role</label>
                 <select id="role" name="role" class="form-select" required>
                   <option value="">-- pilih role --</option>
-                  <?php foreach ($role as $i => $row) { ?>
+                  <?php foreach ($role as $i => $row) {
+                    if ($row->id_role == 8) continue;
+                  ?>
                     <option value="<?= $row->id_role ?>">
                       <?= $row->nama_role ?>
                     </option>
@@ -274,7 +276,7 @@
             renderTree($tree, 0, null, $user);
           } else {
             echo '<div class="col-12 text-center p-5" id="noDataMessage">
-            <h4 class="text-muted">Document Not Available</h4>
+            <h4 class="text-muted">Dokumen tidak ditemukan</h4>
             </div>';
           }
           ?>
@@ -1844,8 +1846,12 @@
       }
       contentArea.innerHTML =
         `<div class="row g-4"><div class="col-md-4 d-flex flex-column align-items-center">${filePreviewHtml}<div class="d-flex mt-3"><a href="${fileUrl}" target="_blank" class="btn btn-secondary">View</a></div></div><div class="col-md-8"><table class="biodata-table"><tr><td>Nama File</td><td>:</td><td>${data.title || '-'}</td></tr><tr><td>No. Dokumen</td><td>:</td><td>${data.nomor_dokumen || '-'}</td></tr><tr><td>Revisi</td><td>:</td><td>${data.revisi || '-'}</td></tr><tr><td>Tanggal Upload</td><td>:</td><td>${formatTanggal(data.created_at)}</td></tr><tr><td>Author</td><td>:</td><td>${data.author || '-'}</td></tr><tr><td>Kategori</td><td>:</td><td>${data.kategori || '-'}</td></tr></table></div></div>`;
-      modalAksiContainer.innerHTML =
-        `<div id="${id}" class="d-flex gap-2"><button class="btn btn-warning" onclick="editItemFile(event)">Edit</button><button class="btn btn-danger" onclick="deleteItemFile(event)"><i class="bi bi-trash"></i> Hapus</button></div>`;
+      <?php if ($user->username == 'superadmin' || $user->username == 'admin') { ?>
+        modalAksiContainer.innerHTML =
+          `<button type="button" class="btn btn-primary me-2" onclick="editItemFile(event)"><i class="bi bi-pencil-square me-1"></i> Edit</button><button type="button" class="btn btn-danger" onclick="deleteItemFile(event)"><i class="bi bi-trash me-1"></i> Hapus</button>`;
+      <?php } else { ?>
+        modalAksiContainer.innerHTML = '';
+      <?php } ?>
     }).catch(error => {
       console.error('Error fetching file details:', error);
       contentArea.innerHTML = '<p class="text-center text-danger">Gagal memuat data. ' + error.message +
