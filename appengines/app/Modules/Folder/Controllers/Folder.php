@@ -236,6 +236,10 @@ class Folder extends BaseController
       $data = (array) $get;
       $data[csrf_token()] = csrf_hash();
 
+      $getOtorisasi = new MyModel('otoritas_file');
+      $data['otoritas'] = $getOtorisasi->getAllDataByWhere(['id_file' => $id, 'id_role' => session()->get('role_id')]);
+
+
       return $this->response->setJSON($data);
     } catch (\Exception $e) {
       log_message('error', '[FolderController] ' . $e->getMessage());
