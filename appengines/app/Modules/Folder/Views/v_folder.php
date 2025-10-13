@@ -1802,50 +1802,69 @@
     if (!itemDiv) return;
     const id = itemDiv.id;
     const contentArea = document.getElementById('detail-file-content');
-    const modalAksiContainer = document.getElementById('modal-aksi-file-container');
     const detailFileModal = new bootstrap.Modal(document.getElementById('detailFileModal'));
+    const modalAksiContainer = document.querySelector('.modal-aksi-file-container');
+    modalAksiContainer.id = id;
     contentArea.innerHTML =
       '<div class="text-center p-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
     modalAksiContainer.innerHTML = '';
     detailFileModal.show();
     fetch(`<?= site_url('folder/detail-file/') ?>${id}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-    }).then(response => {
-      if (!response.ok) {
-        throw new Error('Data tidak ditemukan');
-      }
-      return response.json();
-    }).then(data => {
-      if (data.error) throw new Error(data.error);
-      const fileUrl = data.berkas ? `<?= base_url('uploads/') ?>${data.berkas}` : '#';
-      const fileExt = data.berkas ? data.berkas.split('.').pop().toLowerCase() : '';
-      let filePreviewHtml = '';
-      if (fileExt === 'pdf') {
-        filePreviewHtml =
-          `<iframe src="${fileUrl}" width="150" height="200" style="border: 1px solid #dee2e6; border-radius: 0.25rem;"><p>Browser Anda tidak mendukung pratinjau PDF. <a href="${fileUrl}" target="_blank">Unduh PDF</a></p></iframe>`;
-      } else {
-        let iconClass = 'bi-file-earmark-text';
-        if (['doc', 'docx'].includes(fileExt)) iconClass = 'bi-file-earmark-word';
-        filePreviewHtml =
-          `<div class="text-center mb-3" style="width: 150px; height: 200px; background-color: #e9ecef; border: 1px solid #dee2e6; display: flex; align-items: center; justify-content: center; border-radius: 0.25rem;"><i class="bi ${iconClass}" style="font-size: 4rem; color: #adb5bd;"></i></div>`;
-      }
-      contentArea.innerHTML =
-        `<div class="row g-4"><div class="col-md-4 d-flex flex-column align-items-center">${filePreviewHtml}<div class="d-flex mt-3"><a href="${fileUrl}" target="_blank" class="btn btn-secondary">View</a></div></div><div class="col-md-8"><table class="biodata-table"><tr><td>Nama File</td><td>:</td><td>${data.title || '-'}</td></tr><tr><td>No. Dokumen</td><td>:</td><td>${data.nomor_dokumen || '-'}</td></tr><tr><td>Revisi</td><td>:</td><td>${data.revisi || '-'}</td></tr><tr><td>Tanggal Upload</td><td>:</td><td>${formatTanggal(data.created_at)}</td></tr><tr><td>Author</td><td>:</td><td>${data.author || '-'}</td></tr><tr><td>Kategori</td><td>:</td><td>${data.kategori || '-'}</td></tr></table></div></div>`;
-      <?php if ($user->username == 'superadmin' || $user->username == 'admin') { ?>
-        modalAksiContainer.innerHTML =
-          `<button type="button" class="btn btn-primary me-2" onclick="editItemFile(event)"><i class="bi bi-pencil-square me-1"></i> Edit</button><button type="button" class="btn btn-danger" onclick="deleteItemFile(event)"><i class="bi bi-trash me-1"></i> Hapus</button>`;
-      <?php } else { ?>
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      }).then(response => {
+        if (!response.ok) {
+          throw new Error('Data tidak ditemukan');
+        }
+        return response.json();
+      }).then(data => {
+        if (data.error) throw new Error(data.error);
+        const fileUrl = data.berkas ? `<?= base_url('uploads/') ?>${data.berkas}` : '#';
+        const fileExt = data.berkas ? data.berkas.split('.').pop().toLowerCase() : '';
+        let filePreviewHtml = '';
+        if (fileExt === 'pdf') {
+          filePreviewHtml =
+            `<iframe src="${fileUrl}" width="150" height="200" style="border: 1px solid #dee2e6; border-radius: 0.25rem;"><p>Browser Anda tidak mendukung pratinjau PDF. <a href="${fileUrl}" target="_blank">Unduh PDF</a></p></iframe>`;
+        } else {
+          let iconClass = 'bi-file-earmark-text';
+          if (['doc', 'docx'].includes(fileExt)) iconClass = 'bi-file-earmark-word';
+          filePreviewHtml =
+            `<div class="text-center mb-3" style="width: 150px; height: 200px; background-color: #e9ecef; border: 1px solid #dee2e6; display: flex; align-items: center; justify-content: center; border-radius: 0.25rem;"><i class="bi ${iconClass}" style="font-size: 4rem; color: #adb5bd;"></i></div>`;
+        }
+        contentArea.innerHTML =
+          `<div class="row g-4"><div class="col-md-4 d-flex flex-column align-items-center">${filePreviewHtml}<div class="d-flex mt-3"><a href="${fileUrl}" target="_blank" class="btn btn-secondary">View</a></div></div><div class="col-md-8"><table class="biodata-table"><tr><td>Nama File</td><td>:</td><td>${data.title || '-'}</td></tr><tr><td>No. Dokumen</td><td>:</td><td>${data.nomor_dokumen || '-'}</td></tr><tr><td>Revisi</td><td>:</td><td>${data.revisi || '-'}</td></tr><tr><td>Tanggal Upload</td><td>:</td><td>${formatTanggal(data.created_at)}</td></tr><tr><td>Author</td><td>:</td><td>${data.author || '-'}</td></tr><tr><td>Kategori</td><td>:</td><td>${data.kategori || '-'}</td></tr></table></div></div>`;
+
+        // --- Gunakan otorisasi untuk tombol modal ---
         modalAksiContainer.innerHTML = '';
-      <?php } ?>
-    }).catch(error => {
-      console.error('Error fetching file details:', error);
-      contentArea.innerHTML = '<p class="text-center text-danger">Gagal memuat data. ' + error.message +
-        '</p>';
-    });
+
+        if (data.otoritas && Array.isArray(data.otoritas)) {
+          let canCrud = false;
+          data.otoritas.forEach(o => {
+            if (Number(o.can_crud) === 1) canCrud = true;
+
+          });
+          if (canCrud) {
+            modalAksiContainer.innerHTML = `
+            <button type="button" class="btn btn-primary me-2" onclick="editItemFile(event)">
+              <i class="bi bi-pencil-square me-1"></i> Edit
+            </button>
+            <button type="button" class="btn btn-danger" onclick="deleteItemFile(event)">
+              <i class="bi bi-trash me-1"></i> Hapus
+            </button>
+          `;
+          } else {
+            modalAksiContainer.innerHTML = '';
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching file details:', error);
+        contentArea.innerHTML = `<p class="text-center text-danger">Gagal memuat data. ${error.message}</p>`;
+        modalAksiContainer.innerHTML = '';
+      });
   }
 
   function formatTanggal(tanggal) {
@@ -2134,7 +2153,7 @@
         </div>
       </div>
       <div class="modal-footer justify-content-between">
-        <div id="modal-aksi-file-container">
+        <div class="modal-aksi-file-container">
           <!-- Hapus button will be here -->
         </div>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
