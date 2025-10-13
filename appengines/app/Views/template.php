@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIMLAB Arsip Akreditasi</title>
+    <title>Arsip Akreditasi</title>
     <link rel="stylesheet" href="<?php echo base_url('assets/css/bootstrap.min.css') ?>">
     <!-- [BARU] Menambahkan Favicon -->
     <link rel="icon" href="<?= base_url('assets/img/ULM.png') ?>" type="image/png">
