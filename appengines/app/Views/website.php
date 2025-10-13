@@ -56,7 +56,8 @@
   <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
     <div class="container">
       <a class="navbar-brand fw-bold" href="<?php echo base_url('') ?>">
-        <img src="https://placehold.co/150" alt="Logo Ecomel" style="width: 100px; height:90px; object-fit: cover;" class="img-fluid" />
+        <img src="https://placehold.co/150" alt="Logo Ecomel"
+          style="width: 100px; height:90px; object-fit: cover;" class="img-fluid" />
       </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup"
         aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
@@ -72,7 +73,8 @@
                 $currentUrl = rtrim(current_url(), '/');
                 $isActive = $currentUrl === $menuUrl;
                 ?>
-                <a class="nav-link  <?= $isActive ? 'active fw-semibold text-primary' : '' ?>" href="<?= $menu['link'] ?>">
+                <a class="nav-link  <?= $isActive ? 'active fw-semibold text-primary' : '' ?>"
+                  href="<?= $menu['link'] ?>">
                   <?= esc($menu['nama'])  ?>
                 </a>
 
@@ -91,13 +93,15 @@
               }
               ?>
               <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle <?= $activeChild ? 'active fw-semibold text-primary' : '' ?>" href="#" role="button" data-bs-toggle="dropdown">
+                <a class="nav-link dropdown-toggle <?= $activeChild ? 'active fw-semibold text-primary' : '' ?>"
+                  href="#" role="button" data-bs-toggle="dropdown">
                   <?= esc($menu['nama']) ?>
                 </a>
                 <ul class="dropdown-menu">
                   <?php foreach ($menu['children'] as $child): ?>
                     <li>
-                      <a class="dropdown-item <?= current_url() == rtrim($child['link'], '/') ? 'active fw-semibold text-primary' : '' ?>" href="<?= $child['link'] ?>">
+                      <a class="dropdown-item <?= current_url() == rtrim($child['link'], '/') ? 'active fw-semibold text-primary' : '' ?>"
+                        href="<?= $child['link'] ?>">
                         <?= esc($child['nama']) ?>
                       </a>
                     </li>
@@ -142,7 +146,8 @@
           LIHAT PETA
         </button>
         <h4 class="highlight mt-3">Informasi Kontak</h4>
-        <p>Email: <strong> <a style="color: inherit; text-decoration: none;" href="mailto:<?= $getInformasi->email ?>" "><?= $getInformasi->email ?></a></strong></p>
+        <p>Email: <strong> <a style="color: inherit; text-decoration: none;"
+              href="mailto:<?= $getInformasi->email ?>" "><?= $getInformasi->email ?></a></strong></p>
                 <?php
                 $nomorWA = $getInformasi->telepon;
                 // Hapus karakter non-digit
@@ -154,7 +159,8 @@
                 ?>
                 <h4 class=" highlight">Telepon/ WA</h4>
               <p>
-                <a href="https://wa.me/<?= $nomorWA ?>" target="_blank" style="color: inherit; text-decoration: none;"><?= $getInformasi->telepon ?></a>
+                <a href="https://wa.me/<?= $nomorWA ?>" target="_blank"
+                  style="color: inherit; text-decoration: none;"><?= $getInformasi->telepon ?></a>
               </p>
       </div>
       <div class="footer-col">
@@ -164,7 +170,8 @@
         <p><span class="stat-label">Total</span><br /><?= $viewsAllTime ?? 0 ?> Orang</p>
         <div class="social-icons mt-4">
           <?php foreach ($getSosmed as $sosmed) : ?>
-            <a href="<?= $sosmed->link ?>" class="social-icon-link btn btn-outline"><i class="bi <?= $sosmed->icon ?>"></i></a>
+            <a href="<?= $sosmed->link ?>" class="social-icon-link btn btn-outline"><i
+                class="bi <?= $sosmed->icon ?>"></i></a>
           <?php endforeach; ?>
         </div>
       </div>
