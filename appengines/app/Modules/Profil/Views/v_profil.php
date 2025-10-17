@@ -41,8 +41,13 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Ubah Password</label>
-                            <input type="password" min="8" class="form-control" name="ubahpass" placeholder="Ubah Password">
+                            <label class="form-label">Password baru</label>
+                            <input type="password" min="8" class="form-control" name="ubahpass" placeholder="Ubah password">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Ketik ulang password baru</label>
+                            <input type="password" min="8" class="form-control" name="ulangubahpass" placeholder="Ketik ulang password">
                         </div>
 
                         <div class="text-end">
