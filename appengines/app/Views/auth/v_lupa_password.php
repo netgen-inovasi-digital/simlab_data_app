@@ -37,9 +37,10 @@ Lupa Password
     </div>
   </div>
 
-  <!-- Logo Section -->
+    <!-- Logo Section -->
   <div class="col-md-6 bg-light-gray d-flex flex-column justify-content-center align-items-center p-5">
-    <img src="https://placehold.co/250x100?text=Logo+Template" alt="Logo Template" style="width: 250px;" class="img-fluid" />
+    <img src="<?= base_url('assets/img/logo_Lab_ULM_transfaran.png') ?>" alt="Logo Laboratorium Terpadu ULM"
+      style="width: 100%; max-width: 350px;">
   </div>
 
 </div>

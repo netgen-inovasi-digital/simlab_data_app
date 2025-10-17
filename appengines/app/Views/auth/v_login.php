@@ -5,6 +5,25 @@ Login
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
+
+<style>
+  /* default: di bawah 1400px */
+  .toggle-eye {
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    opacity: 0.7;
+  }
+
+  /* kalau layar di atas 1400px */
+  @media (min-width: 1400px) {
+    .toggle-eye {
+      right: 15%;
+    }
+  }
+</style>
+
 <div class="row g-0">
 
   <!-- Logo Section -->
@@ -36,9 +55,13 @@ Login
       <input name="usr" type="text" class="form-control rounded-pill mx-auto bg-light-gray"
         placeholder="Username" />
     </div>
-    <div class="mb-3">
-      <input name="pwd" type="password" class="form-control rounded-pill mx-auto bg-light-gray"
-        placeholder="Password" />
+    <div class="mb-3 position-relative">
+      <input id="password-field" name="pwd" type="password"
+        class="form-control rounded-pill bg-light-gray pe-5 mx-auto"
+        placeholder="Password"
+        style="padding-right: 45px; height: 45px;" />
+      <i id="togglePassword"
+        class="bi bi-eye position-absolute fs-5 toggle-eye"></i>
     </div>
     <div class="d-grid">
       <button type="submit" class="btn btn-primary rounded-pill mx-auto">MASUK</button>
@@ -46,9 +69,20 @@ Login
     </form>
     <div class="mt-4 text-muted small">
       <p class="text-center">Lupa Sandi? Klik <a href="forgot" class="text-decoration-none">Disini</a>.</p>
-      <p class="text-center">Belum Punya Akun? Daftar <a href="<?php echo base_url('register') ?>"
-          class="text-decoration-none">Disini</a>.</p>
     </div>
   </div>
 </div>
+
+<script>
+  const togglePassword = document.getElementById('togglePassword');
+  const passwordField = document.getElementById('password-field');
+
+  togglePassword.addEventListener('click', () => {
+    const isPassword = passwordField.type === 'password';
+    passwordField.type = isPassword ? 'text' : 'password';
+    togglePassword.classList.toggle('bi-eye');
+    togglePassword.classList.toggle('bi-eye-slash');
+    togglePassword.style.opacity = isPassword ? '1' : '0.7';
+  });
+</script>
 <?= $this->endSection() ?>
