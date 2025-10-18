@@ -195,6 +195,7 @@ class Auth extends Controller
       'token'      => $token,
       'used'       => 0,
       'expired_at' => date('Y-m-d H:i:s', strtotime('+1 hour')),
+      'created_at' => date('Y-m-d H:i:s')
     ];
     $modelResetPassword->insertData($data);
 
