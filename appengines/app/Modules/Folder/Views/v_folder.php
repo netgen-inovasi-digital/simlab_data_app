@@ -213,6 +213,9 @@
           $dataAttrs = 'data-type="' . $node->type . '" data-count="' . $level . '" data-id="' . esc($rawId) . '"';
           if ($node->type === 'folder') {
             $dataAttrs .= ' data-nama="' . esc(strtolower($node->nama)) . '"';
+            if (!empty($node->flag)) {
+              $dataAttrs .= ' data-flag="1"'; // [FIX] Tambahkan data-flag ke elemen folder
+            }
             // [BARU] Jika folder ini memiliki flag=1, set status untuk anak-anaknya
             $is_child_in_personel_folder = $is_in_personel_folder || !empty($node->flag);
           } else { // File
@@ -587,11 +590,13 @@
       var opsiPersonel = document.getElementById('opsiPersonel');
       if (parentFolderContainer) parentFolderContainer.style.display = 'block';
       if (opsiPembuatan) opsiPembuatan.style.display = 'block';
-      if (tambahSubfolder) tambahSubfolder.style.display = 'inline-block'; // atau 'block' sesuai style asli
+      if (tambahSubfolder) tambahSubfolder.style.display =
+        'inline-block'; // atau 'block' sesuai style asli
       // Pastikan opsi default (buat baru) yang terlihat
       if (opsiBaru) opsiBaru.classList.remove('d-none');
       if (opsiTemplate) opsiTemplate.classList.add('d-none');
-      if (opsiPersonel) opsiPersonel.classList.add('d-none'); // [BARU] Pastikan disembunyikan saat modal ditutup
+      if (opsiPersonel) opsiPersonel.classList.add(
+        'd-none'); // [BARU] Pastikan disembunyikan saat modal ditutup
     });
 
     /**
@@ -1132,7 +1137,21 @@
         }
       } else {
         child.style.display = "flex";
-        child.setAttribute("draggable", "true");
+        // [FIX] Cek apakah item boleh di-drag sebelum mengaktifkannya.
+        // Ini untuk mencegah file di folder personel menjadi draggable setelah expand.
+        let canBeDragged = true;
+        if (child.dataset.type === 'file') {
+          const parentFolder = document.getElementById(child.dataset.parent);
+          // Cek flag folder induk. Jika flag=1, file tidak boleh di-drag.
+          if (parentFolder && parentFolder.dataset.flag === '1') {
+            canBeDragged = false;
+          }
+        }
+        // Hanya set draggable ke true jika diizinkan.
+        if (canBeDragged) {
+          child.setAttribute("draggable", "true");
+        }
+
         if (child.dataset.type === "folder") {
           const caret = child.querySelector(".bi-caret-down");
           if (caret && caret.classList.contains("collapsed")) {
@@ -1162,10 +1181,24 @@
       body: formData
     }).then(response => response.json()).then(data => {
 
+      // [FIX] Cek jika ada pesan error dari backend (misal: duplikasi nama)
+      if (data.res === false && data.message) {
+        sayAlert('errorModal', 'Gagal Memindahkan', data.message, 'warning');
+        // Muat ulang konten untuk mengembalikan ke state yang benar
+        loadContent('folder');
+        return; // Hentikan eksekusi lebih lanjut
+      }
+
       document.querySelectorAll(`input[name="${tokenName}"]`).forEach(el => {
         el.value = data.xhash;
       });
-    }).catch(error => {});
+    }).catch(error => {
+      // [FIX] Tangani error jaringan atau server
+      console.error('Error saving structure:', error);
+      sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat menyimpan struktur. Silakan coba lagi.',
+        'danger');
+      loadContent('folder'); // Muat ulang untuk sinkronisasi
+    });
   }
 
 
@@ -1914,7 +1947,7 @@
             if (Number(o.can_crud) === 1) canCrud = true;
 
           });
-          if (canCrud) {
+          if (canCrud && data.folder_flag != '1') {
             modalAksiContainer.innerHTML = `
             <button type="button" class="btn btn-primary me-2" onclick="editItemFile(event)">
               <i class="bi bi-pencil-square me-1"></i> Edit

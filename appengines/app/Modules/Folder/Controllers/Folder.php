@@ -221,10 +221,11 @@ class Folder extends BaseController
       $id = $this->encrypter->decrypt(hex2bin($id));
 
       $model = new MyModel('files'); // Point to the files table
-      $select = 'files.*, users.nama as author, categories.nama as kategori';
+      $select = 'files.*, users.nama as author, categories.nama as kategori, folder.flag as folder_flag';
       $join = [
         'users' => 'users.id_user = files.user_id',
-        'categories' => 'categories.id_categories = files.categories_id'
+        'categories' => 'categories.id_categories = files.categories_id',
+        'folder' => 'folder.id_folder = files.id_folder'
       ];
       $where = ['id_files' => $id];
       $get = $model->getOneByJoin($join, $where, $select, 'LEFT'); // Menggunakan LEFT JOIN
@@ -944,6 +945,46 @@ class Folder extends BaseController
 
     $db = \Config\Database::connect();
     $db->transStart();
+
+    // [FIX] Validasi duplikasi nama sebelum memproses pemindahan
+    foreach ($items as $item) {
+      if ($item['type'] === 'folder') {
+        $id = $this->encrypter->decrypt(hex2bin($item['id']));
+        $parentId = !empty($item['parent_id'])
+          ? $this->encrypter->decrypt(hex2bin($item['parent_id']))
+          : null;
+
+        // Ambil nama folder yang sedang dipindahkan
+        $movedFolder = $db->table('folder')->select('nama')->where('id_folder', $id)->get()->getRow();
+        if (!$movedFolder) continue; // Lewati jika folder tidak ditemukan
+
+        $folderName = $movedFolder->nama;
+
+        // Query untuk cek duplikasi di lokasi tujuan
+        $builder = $db->table('folder');
+        if ($parentId) {
+          // Cek di dalam parent folder yang spesifik
+          $builder->join('folder_links', 'folder_links.child_id = folder.id_folder')
+            ->where('folder_links.parent_id', $parentId);
+        } else {
+          // Cek di level root
+          $builder->where("NOT EXISTS (SELECT 1 FROM folder_links fl WHERE fl.child_id = folder.id_folder AND fl.parent_id IS NOT NULL)", null, false);
+        }
+        // Pastikan tidak membandingkan dengan dirinya sendiri (meskipun sudah dicegah oleh logika drag-drop)
+        // dan cek nama yang sama
+        $isDuplicate = $builder->where('folder.nama', $folderName)
+          ->where('folder.id_folder !=', $id)
+          ->countAllResults() > 0;
+
+        if ($isDuplicate) {
+          $db->transRollback();
+          return $this->response->setStatusCode(409)->setJSON([ // 409 Conflict
+            'res' => false,
+            'message' => "Gagal memindahkan. Folder dengan nama '{$folderName}' sudah ada di lokasi tujuan."
+          ]);
+        }
+      }
+    }
 
     // 1. Update urutan folder di tabel `folder`
     if (!empty($folderSortData)) {
