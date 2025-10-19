@@ -125,9 +125,6 @@
         <div id="content" class="content p-1 ps-md-4 pe-md-4 pb-5">
             <?php echo view($content) ?>
         </div>
-        <div class="footer bg-light py-2 px-3 position-fixed bottom-0">
-            <div class="fleft position-fixed bottom-0 mb-3 me-3">&copy; Netgen 2025.</div>
-        </div>
     </div>
 
     <script src="<?php echo base_url('assets/js/bootstrap.bundle.min.js') ?>"></script>

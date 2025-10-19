@@ -23,19 +23,6 @@
         <div class="card shadow-lg rounded-4 overflow-hidden">
           <?= $this->renderSection('content') ?>
         </div>
-
-        <!-- Footer -->
-        <footer class="mt-3 small footer">
-          <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
-            <div>&copy; 2025. Netx Template.</div>
-            <div class="mt-2 mt-md-0">
-              <a href="<?= base_url() ?>" class=" mx-2">Ke Beranda</a>
-              <a href="#" class="mx-2">Tentang Aplikasi</a>
-              <a href="#" class="mx-2">Tim Pengembang</a>
-              <a href="#" class="mx-2">Kontak</a>
-            </div>
-          </div>
-        </footer>
       </div>
     </div>
   </div>
