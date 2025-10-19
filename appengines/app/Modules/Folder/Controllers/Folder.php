@@ -976,38 +976,4 @@ class Folder extends BaseController
       'xhash' => csrf_hash()
     ]);
   }
-  private function cascadeMove($folderId, $parentId)
-  {
-    // base case: kalau sudah pernah dikunjungi → stop
-    if (isset($this->visited[$folderId])) {
-      return;
-    }
-    $this->visited[$folderId] = true;
-
-    $db = \Config\Database::connect();
-
-    // File tetap di folderId
-    $db->table('files')
-      ->where('id_folder', $folderId)
-      ->update(['id_folder' => $folderId]);
-
-    // Ambil semua anak folder
-    $children = $db->table('folder_links')
-      ->where('parent_id', $folderId)
-      ->get()->getResultArray();
-
-    foreach ($children as $child) {
-      // kalau parent_id sudah benar, skip
-      if ($child['parent_id'] != $folderId) {
-        $db->table('folder_links')
-          ->where('id', $child['id'])
-          ->update([
-            'parent_id' => $folderId
-          ]);
-      }
-
-      // rekursif ke cucu
-      $this->cascadeMove($child['child_id'], $child['parent_id']);
-    }
-  }
 }
