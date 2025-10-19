@@ -44,7 +44,7 @@ class Profil extends BaseController
     $rePassword = $this->request->getPost('ulangubahpass');
 
     if ($passwordbaru !== $rePassword) {
-      return $this->response->setJSON(array('res' => false, 'xname' => csrf_token(), 'xhash' => csrf_hash()));
+      return $this->response->setJSON(array('res' => 'notmatch', 'message' => 'Password baru dan konfirmasi password tidak cocok', 'xname' => csrf_token(), 'xhash' => csrf_hash()));
     }
 
     $data = array(
@@ -65,8 +65,12 @@ class Profil extends BaseController
       $model = new MyModel($this->table);
       $dataHasil = $model->getDataById($this->id, session()->get('id_user'));
 
-      if ($dataHasil->foto != "") unlink(FCPATH . 'uploads/' . $dataHasil->foto);
-
+      if (!empty($dataHasil->foto)) {
+        $path = FCPATH . 'uploads/' . $dataHasil->foto;
+        if (file_exists($path)) {
+          unlink($path);
+        }
+      }
       if ($filename != "") $data['foto'] = $filename;
     }
 
@@ -93,9 +97,4 @@ class Profil extends BaseController
     }
     return $filename;
   }
-
-  // $file = $this->request->getFile('image');
-  // if ($file->isValid() && in_array($file->getMimeType(), ['image/jpeg', 'image/png', 'application/pdf'])) {
-  // 	// simpan
-  // }
 }
