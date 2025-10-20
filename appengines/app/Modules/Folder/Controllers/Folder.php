@@ -647,7 +647,7 @@ class Folder extends BaseController
         'flag' => 1
       ];
       $folderId = $modelFolder->insertData($folderData, true);
-      $modelLinks->insertData(['child_id' => $folderId, 'parent_id' => $parentId]);
+      $modelLinks->insertData(['child_id' => $folderId, 'parent_id' => $parentId, 'sort_order' => $nextSortOrder]);
 
       // [BARU] Berikan otorisasi untuk folder yang baru dibuat
       foreach ($roles as $r) {
@@ -840,7 +840,7 @@ class Folder extends BaseController
     }
 
     // 3. Hubungkan folder baru ke parent yang ditentukan
-    $modelLinks->insertData(['child_id' => $newFolderId, 'parent_id' => $newParentId]);
+    $modelLinks->insertData(['child_id' => $newFolderId, 'parent_id' => $newParentId, 'sort_order' => $this->lastGlobalSortOrder]);
 
     // 4. Ambil semua file dari folder template yang sedang diproses
     $filesToClone = $modelFiles->getAllDataById(['id_folder' => $templateFolderId]);
