@@ -213,6 +213,9 @@
           $dataAttrs = 'data-type="' . $node->type . '" data-count="' . $level . '" data-id="' . esc($rawId) . '"';
           if ($node->type === 'folder') {
             $dataAttrs .= ' data-nama="' . esc(strtolower($node->nama)) . '"';
+            if (!empty($node->flag)) {
+              $dataAttrs .= ' data-flag="1"'; // [FIX] Tambahkan data-flag ke elemen folder
+            }
             // [BARU] Jika folder ini memiliki flag=1, set status untuk anak-anaknya
             $is_child_in_personel_folder = $is_in_personel_folder || !empty($node->flag);
           } else { // File
@@ -394,6 +397,7 @@
     const addFolderModalEl = document.getElementById('modalForm');
     if (!addFolderModalEl) return;
     const addFolderModal = new bootstrap.Modal(addFolderModalEl);
+    let allTemplateFolders = []; // [BARU] Variabel untuk menyimpan semua data template
     const addFolderButton = document.getElementById('addFolderButton');
 
     /**
@@ -428,6 +432,7 @@
         const parentSelect = document.querySelector('select[name="parent_id"]');
         const templateSelect = document.querySelector('select[name="template_id"]');
         const personelSelect = document.querySelector('select[name="personel_id"]');
+        const parentIdToFilter = parentSelect.value; // [BARU] Ambil nilai parent saat ini
 
         // Helper function to build dropdown options recursively
         function buildOptions(nodes, level = 0) {
@@ -455,6 +460,9 @@
               document.querySelector('[name="<?= csrf_token() ?>"]').value = data.xhash;
             }
 
+            // [BARU] Simpan data template asli untuk pemfilteran nanti
+            allTemplateFolders = data.template_tree || [];
+
             // 1. Update dropdown folder induk
             if (parentSelect && data.folder_tree) {
               parentSelect.innerHTML =
@@ -462,12 +470,8 @@
                 buildOptions(data.folder_tree);
             }
 
-            // 2. Update dropdown template
-            if (templateSelect && data.template_tree) {
-              templateSelect.innerHTML =
-                '<option value="">-- Pilih Template Folder --</option>' +
-                buildOptions(data.template_tree);
-            }
+            // 2. [MODIFIKASI] Update dropdown template dengan data yang sudah difilter
+            updateTemplateDropdown(parentIdToFilter);
 
             // 3. Update dropdown personel
             if (data.personel) {
@@ -578,15 +582,84 @@
      * saat membuka modal untuk mode tambah.
      */
     addFolderModalEl.addEventListener('hidden.bs.modal', function() {
-      document.getElementById('parent-folder-container').style.display = 'block';
-      document.getElementById('opsi-pembuatan-container').style.display = 'block';
-      document.getElementById('tambahSubfolder').style.display =
+      var parentFolderContainer = document.getElementById('parent-folder-container');
+      var opsiPembuatan = document.getElementById('opsi-pembuatan-container');
+      var tambahSubfolder = document.getElementById('tambahSubfolder');
+      var opsiBaru = document.getElementById('opsiBuatBaru');
+      var opsiTemplate = document.getElementById('opsiGunakanTemplate');
+      var opsiPersonel = document.getElementById('opsiPersonel');
+      if (parentFolderContainer) parentFolderContainer.style.display = 'block';
+      if (opsiPembuatan) opsiPembuatan.style.display = 'block';
+      if (tambahSubfolder) tambahSubfolder.style.display =
         'inline-block'; // atau 'block' sesuai style asli
       // Pastikan opsi default (buat baru) yang terlihat
-      document.getElementById('opsiBuatBaru').classList.remove('d-none');
-      document.getElementById('opsiGunakanTemplate').classList.add('d-none');
-      document.getElementById('opsiPersonel').classList.add(
+      if (opsiBaru) opsiBaru.classList.remove('d-none');
+      if (opsiTemplate) opsiTemplate.classList.add('d-none');
+      if (opsiPersonel) opsiPersonel.classList.add(
         'd-none'); // [BARU] Pastikan disembunyikan saat modal ditutup
+    });
+
+    /**
+     * [BARU] Fungsi untuk memfilter dan memperbarui dropdown template.
+     * Mencegah folder induk dan leluhurnya muncul sebagai opsi template.
+     */
+    function updateTemplateDropdown(selectedParentId) {
+      const templateSelect = document.querySelector('select[name="template_id"]');
+      if (!templateSelect) return;
+
+      // Helper function to build dropdown options recursively
+      function buildOptions(nodes, level = 0) {
+        let html = '';
+        nodes.forEach(node => {
+          if (node.type === 'folder' || !node.type) { // Handle both types
+            const indent = '&nbsp;&nbsp;&nbsp;'.repeat(level);
+            html += `<option value="${node.id_folder}">${indent}${node.nama}</option>`;
+            if (node.children && node.children.length > 0) {
+              html += buildOptions(node.children, level + 1);
+            }
+          }
+        });
+        return html;
+      }
+
+      let filteredTemplates = allTemplateFolders;
+
+      if (selectedParentId) {
+        const ancestorIds = new Set();
+        let currentId = selectedParentId;
+
+        const findParent = (nodes, childId) => {
+          for (const node of nodes) {
+            if (node.children.some(child => child.id_folder == childId)) return node;
+            const parent = findParent(node.children, childId);
+            if (parent) return parent;
+          }
+          return null;
+        };
+
+        while (currentId) {
+          ancestorIds.add(String(currentId));
+          const parentNode = findParent(allTemplateFolders, currentId);
+          currentId = parentNode ? parentNode.id_folder : null;
+        }
+
+        const filterRecursively = (nodes) => nodes.filter(node => !ancestorIds.has(String(node.id_folder))).map(
+          node => ({
+            ...node,
+            children: filterRecursively(node.children)
+          }));
+        filteredTemplates = filterRecursively(allTemplateFolders);
+      }
+      templateSelect.innerHTML = '<option value="">-- Pilih Template Folder --</option>' + buildOptions(
+        filteredTemplates);
+    }
+
+    /**
+     * [BARU] Tambahkan event listener ke dropdown parent folder
+     * untuk memfilter ulang template setiap kali pilihan berubah.
+     */
+    document.querySelector('select[name="parent_id"]').addEventListener('change', (e) => {
+      updateTemplateDropdown(e.target.value);
     });
 
     const searchInput = document.getElementById('search');
@@ -1064,7 +1137,21 @@
         }
       } else {
         child.style.display = "flex";
-        child.setAttribute("draggable", "true");
+        // [FIX] Cek apakah item boleh di-drag sebelum mengaktifkannya.
+        // Ini untuk mencegah file di folder personel menjadi draggable setelah expand.
+        let canBeDragged = true;
+        if (child.dataset.type === 'file') {
+          const parentFolder = document.getElementById(child.dataset.parent);
+          // Cek flag folder induk. Jika flag=1, file tidak boleh di-drag.
+          if (parentFolder && parentFolder.dataset.flag === '1') {
+            canBeDragged = false;
+          }
+        }
+        // Hanya set draggable ke true jika diizinkan.
+        if (canBeDragged) {
+          child.setAttribute("draggable", "true");
+        }
+
         if (child.dataset.type === "folder") {
           const caret = child.querySelector(".bi-caret-down");
           if (caret && caret.classList.contains("collapsed")) {
@@ -1094,10 +1181,24 @@
       body: formData
     }).then(response => response.json()).then(data => {
 
+      // [FIX] Cek jika ada pesan error dari backend (misal: duplikasi nama)
+      if (data.res === false && data.message) {
+        sayAlert('errorModal', 'Gagal Memindahkan', data.message, 'warning');
+        // Muat ulang konten untuk mengembalikan ke state yang benar
+        loadContent('folder');
+        return; // Hentikan eksekusi lebih lanjut
+      }
+
       document.querySelectorAll(`input[name="${tokenName}"]`).forEach(el => {
         el.value = data.xhash;
       });
-    }).catch(error => {});
+    }).catch(error => {
+      // [FIX] Tangani error jaringan atau server
+      console.error('Error saving structure:', error);
+      sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat menyimpan struktur. Silakan coba lagi.',
+        'danger');
+      loadContent('folder'); // Muat ulang untuk sinkronisasi
+    });
   }
 
 
@@ -1846,7 +1947,7 @@
             if (Number(o.can_crud) === 1) canCrud = true;
 
           });
-          if (canCrud) {
+          if (canCrud && data.folder_flag != '1') {
             modalAksiContainer.innerHTML = `
             <button type="button" class="btn btn-primary me-2" onclick="editItemFile(event)">
               <i class="bi bi-pencil-square me-1"></i> Edit

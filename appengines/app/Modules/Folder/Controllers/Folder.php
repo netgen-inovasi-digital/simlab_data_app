@@ -221,10 +221,11 @@ class Folder extends BaseController
       $id = $this->encrypter->decrypt(hex2bin($id));
 
       $model = new MyModel('files'); // Point to the files table
-      $select = 'files.*, users.nama as author, categories.nama as kategori';
+      $select = 'files.*, users.nama as author, categories.nama as kategori, folder.flag as folder_flag';
       $join = [
         'users' => 'users.id_user = files.user_id',
-        'categories' => 'categories.id_categories = files.categories_id'
+        'categories' => 'categories.id_categories = files.categories_id',
+        'folder' => 'folder.id_folder = files.id_folder'
       ];
       $where = ['id_files' => $id];
       $get = $model->getOneByJoin($join, $where, $select, 'LEFT'); // Menggunakan LEFT JOIN
@@ -646,7 +647,7 @@ class Folder extends BaseController
         'flag' => 1
       ];
       $folderId = $modelFolder->insertData($folderData, true);
-      $modelLinks->insertData(['child_id' => $folderId, 'parent_id' => $parentId]);
+      $modelLinks->insertData(['child_id' => $folderId, 'parent_id' => $parentId, 'sort_order' => $nextSortOrder]);
 
       // [BARU] Berikan otorisasi untuk folder yang baru dibuat
       foreach ($roles as $r) {
@@ -839,7 +840,7 @@ class Folder extends BaseController
     }
 
     // 3. Hubungkan folder baru ke parent yang ditentukan
-    $modelLinks->insertData(['child_id' => $newFolderId, 'parent_id' => $newParentId]);
+    $modelLinks->insertData(['child_id' => $newFolderId, 'parent_id' => $newParentId, 'sort_order' => $this->lastGlobalSortOrder]);
 
     // 4. Ambil semua file dari folder template yang sedang diproses
     $filesToClone = $modelFiles->getAllDataById(['id_folder' => $templateFolderId]);
@@ -945,6 +946,46 @@ class Folder extends BaseController
     $db = \Config\Database::connect();
     $db->transStart();
 
+    // [FIX] Validasi duplikasi nama sebelum memproses pemindahan
+    foreach ($items as $item) {
+      if ($item['type'] === 'folder') {
+        $id = $this->encrypter->decrypt(hex2bin($item['id']));
+        $parentId = !empty($item['parent_id'])
+          ? $this->encrypter->decrypt(hex2bin($item['parent_id']))
+          : null;
+
+        // Ambil nama folder yang sedang dipindahkan
+        $movedFolder = $db->table('folder')->select('nama')->where('id_folder', $id)->get()->getRow();
+        if (!$movedFolder) continue; // Lewati jika folder tidak ditemukan
+
+        $folderName = $movedFolder->nama;
+
+        // Query untuk cek duplikasi di lokasi tujuan
+        $builder = $db->table('folder');
+        if ($parentId) {
+          // Cek di dalam parent folder yang spesifik
+          $builder->join('folder_links', 'folder_links.child_id = folder.id_folder')
+            ->where('folder_links.parent_id', $parentId);
+        } else {
+          // Cek di level root
+          $builder->where("NOT EXISTS (SELECT 1 FROM folder_links fl WHERE fl.child_id = folder.id_folder AND fl.parent_id IS NOT NULL)", null, false);
+        }
+        // Pastikan tidak membandingkan dengan dirinya sendiri (meskipun sudah dicegah oleh logika drag-drop)
+        // dan cek nama yang sama
+        $isDuplicate = $builder->where('folder.nama', $folderName)
+          ->where('folder.id_folder !=', $id)
+          ->countAllResults() > 0;
+
+        if ($isDuplicate) {
+          $db->transRollback();
+          return $this->response->setStatusCode(409)->setJSON([ // 409 Conflict
+            'res' => false,
+            'message' => "Gagal memindahkan. Folder dengan nama '{$folderName}' sudah ada di lokasi tujuan."
+          ]);
+        }
+      }
+    }
+
     // 1. Update urutan folder di tabel `folder`
     if (!empty($folderSortData)) {
       $db->table('folder')->updateBatch($folderSortData, 'id_folder');
@@ -975,39 +1016,5 @@ class Folder extends BaseController
       'res'   => true,
       'xhash' => csrf_hash()
     ]);
-  }
-  private function cascadeMove($folderId, $parentId)
-  {
-    // base case: kalau sudah pernah dikunjungi → stop
-    if (isset($this->visited[$folderId])) {
-      return;
-    }
-    $this->visited[$folderId] = true;
-
-    $db = \Config\Database::connect();
-
-    // File tetap di folderId
-    $db->table('files')
-      ->where('id_folder', $folderId)
-      ->update(['id_folder' => $folderId]);
-
-    // Ambil semua anak folder
-    $children = $db->table('folder_links')
-      ->where('parent_id', $folderId)
-      ->get()->getResultArray();
-
-    foreach ($children as $child) {
-      // kalau parent_id sudah benar, skip
-      if ($child['parent_id'] != $folderId) {
-        $db->table('folder_links')
-          ->where('id', $child['id'])
-          ->update([
-            'parent_id' => $folderId
-          ]);
-      }
-
-      // rekursif ke cucu
-      $this->cascadeMove($child['child_id'], $child['parent_id']);
-    }
   }
 }

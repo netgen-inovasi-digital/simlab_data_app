@@ -1,3 +1,6 @@
+<?= $this->extend('auth/auth_layout') ?>
+
+
 <style>
   .textarea-pill {
     border: none !important;
@@ -22,7 +25,7 @@ Register
 
   <!-- Logo Section -->
   <div class="col-md-6 bg-light-gray d-flex flex-column justify-content-center align-items-center p-5">
-    <img src="<?= base_url('assets/img/logo-lab-terpadu.png') ?>" alt="Logo Laboratorium Terpadu ULM"
+    <img src="<?= base_url('assets/img/logo_Lab_ULM_transfaran.png') ?>" alt="Logo Laboratorium Terpadu ULM"
       style="width: 100%; max-width: 350px;">
   </div>
 

@@ -17,21 +17,23 @@ class CreateOtoritasFolder extends Migration
       'id_role' => [
         'type' => 'INT',
         'constraint' => 11,
-        'null' => false
+        'null' => true
       ],
       'id_folder' => [
         'type' => 'INT',
         'constraint' => 11,
-        'null' => false
+        'null' => true
       ],
       'can_view' => [
         'type' => 'TINYINT',
         'constraint' => 1,
+        'null' => true,
         'default' => 0
       ],
       'can_crud' => [
         'type' => 'TINYINT',
         'constraint' => 1,
+        'null' => true,
         'default' => 0
       ],
     ]);

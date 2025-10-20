@@ -145,8 +145,8 @@
 
 /* [DIUBAH] Mengganti background dari hijau ke kuning */
 body.bg-custom-green {
-    background: #FFCA28;
-    /* Warna kuning baru */
+    background: #f8f9fa;
+    /* [DIUBAH] Warna putih ke abu-abuan */
     min-height: 100vh;
     font-family: 'Quicksand', sans-serif;
 }
