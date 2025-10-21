@@ -619,7 +619,12 @@ class Folder extends BaseController
       $isDuplicate = $builder->where('folder.nama', $namaFolder)->countAllResults() > 0;
 
       if ($isDuplicate) {
-        return $this->response->setJSON(['res' => 'error', 'message' => "Folder dengan nama '{$namaFolder}' sudah ada di lokasi ini."]);
+        return $this->response->setJSON([
+          'res' => 'error',
+          'message' => "Folder dengan nama '{$namaFolder}' sudah ada di lokasi ini.",
+          'xname' => csrf_token(),
+          'xhash' => csrf_hash()
+        ]);
       }
 
       $db->transStart();

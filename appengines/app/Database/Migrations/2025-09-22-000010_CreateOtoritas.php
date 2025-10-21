@@ -17,18 +17,19 @@ class CreateOtoritas extends Migration
             'role_id' => [
                 'type' => 'INT',
                 'constraint' => 11,
-                'null' => false
+                'null' => true,
+                'default' => 0
             ],
             'kode_menu' => [
                 'type' => 'VARCHAR',
-                'constraint' => 50,
-                'null' => false
+                'constraint' => 5,
+                'null' => true
             ],
             'status_otoritas' => [
                 'type' => 'TINYINT',
                 'constraint' => 1,
-                'default' => 1,
-                'comment' => '1 = aktif, 0 = nonaktif'
+                'null' => true,
+                'default' => 1
             ]
         ]);
 
@@ -37,9 +38,6 @@ class CreateOtoritas extends Migration
 
         // Foreign Key ke roles
         $this->forge->addForeignKey('role_id', 'roles', 'id_role', 'CASCADE', 'CASCADE');
-
-        // Foreign Key ke menus
-        $this->forge->addForeignKey('kode_menu', 'menus', 'kode_menu', 'CASCADE', 'CASCADE');
 
         // Buat tabel
         $this->forge->createTable('otoritas');

@@ -18,7 +18,7 @@ class RolesSeeder extends Seeder
     $data = [
       ['id_role' => 1, 'nama_role' => 'Admin', 'grup' => 'admin', 'status_role' => 1],
       ['id_role' => 2, 'nama_role' => 'User', 'grup' => 'author', 'status_role' => 1],
-      ['id_role' => 8, 'nama_role' => 'Super Admin', 'grup' => null, 'status_role' => 1],
+      ['id_role' => 8, 'nama_role' => 'Super Admin', 'grup' => 'admin', 'status_role' => 1],
     ];
 
     // Insert batch

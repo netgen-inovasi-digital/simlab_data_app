@@ -24,7 +24,7 @@ class CreatePersonel extends Migration
         'null'       => true,
       ],
       'penempatan' => [
-        'type' => "ENUM('Lab Terpadu','Mutu dan Administrasi','Lab Kimia','Lab Biologi','Lab Fisika')",
+        'type' => "ENUM('Lab Terpadu','Mutu dan Administrasi','Lab Tanah','Lab Kualitas Air','Lab Udara(PPLH)','Lab Struktur dan Material')",
         'null' => true,
       ],
       'foto' => [
@@ -98,6 +98,7 @@ class CreatePersonel extends Migration
       ],
     ]);
     $this->forge->addKey('id_personel', true);
+    $this->forge->addUniqueKey('email');
     $this->forge->createTable('personel');
   }
 
