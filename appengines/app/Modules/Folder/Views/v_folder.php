@@ -865,6 +865,13 @@
     let originalLevel = 0;
 
     item.addEventListener("dragstart", (e) => {
+      // [FIX] Pemeriksaan keamanan untuk mencegah drag pada item yang tidak seharusnya.
+      // Ini menutup celah di mana menyeleksi teks bisa memicu drag.
+      if (item.getAttribute('draggable') === 'false') {
+        e.preventDefault();
+        return;
+      }
+
       draggedItem = item;
       dragStartX = e.clientX;
 

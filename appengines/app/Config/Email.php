@@ -7,8 +7,8 @@ use CodeIgniter\Config\BaseConfig;
 class Email extends BaseConfig
 {
 
-    public string $fromEmail  = 'netgen.id@gmail.com';
-    public string $fromName   = 'Klinik Medikidz';
+    public string $fromEmail  = 'ulmsimlab@gmail.com';
+    public string $fromName   = 'Simlab ULM';
 
     public string $recipients = '';
 
@@ -36,13 +36,13 @@ class Email extends BaseConfig
      * SMTP Username
      */
 
-    public string $SMTPUser = 'netgen.id@gmail.com';
+    public string $SMTPUser = 'ulmsimlab@gmail.com';
 
     /**
      * SMTP Password
      */
 
-    public string $SMTPPass = 'fdhx lotb yumf xpwm';
+    public string $SMTPPass = 'getd doii pnyo vsgl';
 
 
     /**
