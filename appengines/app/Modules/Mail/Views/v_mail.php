@@ -24,4 +24,41 @@
 
 <script>
   $('#myForm').submit();
+
+  function save(form) {
+    showLoading();
+    const formData = new FormData(form);
+    const url = form.getAttribute('action');
+    fetch(url, {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        $('[name=' + data.xname + ']').val(data.xhash);
+        if (data.res == true) {
+          if (table) table.fetchData({
+            reload: true
+          });
+          sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+        } else if (data.res == 'reload') {
+          sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+        } else if (data.res == 'refresh') {
+          loadContent(data.link);
+          sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+        } else if (data.res == 'redirect') {
+          window.location.href = data.link;
+        } else if (data.res == 'check') {
+          sayAlert('errorModal', 'Error', data.link, 'warning');
+        } else if (data.res == 'empty') {
+          sayAlert('errorModal', 'Error', data.message, 'warning');
+          loadContent(data.link);
+        } else sayAlert('errorModal', 'Error', 'Data gagal disimpan.', 'warning');
+      })
+      .catch(error => {
+        sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
+      }).finally(() => {
+        hideLoading();
+      });
+  }
 </script>

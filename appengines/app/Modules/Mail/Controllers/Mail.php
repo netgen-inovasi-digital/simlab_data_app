@@ -37,7 +37,7 @@ class Mail extends BaseController
     $email = $this->request->getPost('email');
 
     if (empty($email)) {
-      return $this->response->setJSON(array('res' => false, 'xname' => csrf_token(), 'xhash' => csrf_hash()));
+      return $this->response->setJSON(array('res' => 'empty', 'message' => 'Email tidak boleh kosong', 'link' => 'mail', 'xname' => csrf_token(), 'xhash' => csrf_hash()));
     }
 
     $data = array(
