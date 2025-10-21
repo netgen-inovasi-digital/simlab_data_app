@@ -9,7 +9,7 @@
   <link rel="icon" href="<?= base_url('assets/img/ULM.png') ?>" type="image/png">
   <link rel="stylesheet" href="<?= base_url('assets/css/bootstrap.min.css') ?>">
   <link rel="stylesheet" href="<?= base_url('assets/css/bootstrap-icons.min.css') ?>">
-  <link rel="stylesheet" href="<?= base_url('assets/css/auth.css?v=0.20') ?>">
+  <link rel="stylesheet" href="<?= base_url('assets/css/auth.css?v=0.22') ?>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">

@@ -12,25 +12,11 @@ class DatabaseSeeder extends Seeder
     $this->call('RolesSeeder');
     $this->call('UsersSeeder');
 
-    // // 2. Category dan Folder
-    // $this->call('CategoriesSeeder');
-    // $this->call('FolderSeeder');
-    // $this->call('FilesSeeder');
-    // $this->call('FolderLinksSeeder');
-
-    // 3. Menu dan Otoritas
+    // 3. Menu
     $this->call('MenusSeeder');
-    // $this->call('OtoritasFileSeeder');
-    // $this->call('OtoritasFolderSeeder');
     
     // 4. Data tanpa FK
     $this->call('KonfigurasiSeeder');
-    
-    // $this->call('PersonelSeeder');
-    
-    // 8. Password Reset
-    // $this->call('PasswordResetsSeeder');
-    // $this->call('DokumenSeeder');
     $this->call('OtoritasSeeder');
   }
 }
