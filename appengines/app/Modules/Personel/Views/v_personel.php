@@ -232,46 +232,53 @@
         <hr class="my-3">
         <!-- Kontainer Personel -->
         <div id="personel-container" class="row g-4">
-          <?php
-          $encrypter = \Config\Services::encrypter();
-          foreach ($getPersonel as $row) {
-            $id = bin2hex($encrypter->encrypt($row->id_personel));
-          ?>
-            <!-- [PERBAIKAN] Atribut draggable hanya aktif jika pengguna memiliki izin -->
-            <div id="<?= $id ?>" class="col-12 col-sm-6 col-md-4 col-lg-3 personel-item"
-              draggable="<?= $can_add ? 'true' : 'false' ?>" data-code="<?= $row->urutan ?>"
-              data-nama="<?= esc(strtolower($row->nama)) ?>"
-              data-jabatan="<?= esc(strtolower($row->jabatan)) ?>"
-              data-penempatan="<?= esc($row->penempatan) ?>" onclick="showBiodata(event)">
-              <div class="card h-100 text-center shadow-sm">
-                <img src="<?= $row->foto ? base_url('uploads/' . $row->foto) : 'https://placehold.co/200x300?text=Foto+2x3' ?>"
-                  class="card-img-top" alt="<?= esc($row->nama) ?>">
-                <div class="card-body">
-                  <h6 class="card-title fw-bold"><?= esc($row->nama) ?></h6>
-                  <p class="card-text text-muted"><?= esc($row->jabatan) ?></p>
-                  <hr class="my-2">
-                  <!-- [PERBAIKAN] Mengganti fungsi aksi() dengan pengecekan izin langsung -->
-                  <div id="<?= $id ?>" class="d-flex justify-content-center gap-3">
-                    <?php if (isset($row->can_edit)) : ?>
-                      <span class="text-secondary" role="button" title="Ubah"
-                        onclick="event.stopPropagation(); editPersonel(event)"><i
-                          class="bi bi-pencil-square"></i> Edit</span>
-                    <?php endif; ?>
-                    <?php if (isset($row->can_manage_docs)) : ?>
-                      <span class="text-info" role="button" title="Dokumen"
-                        onclick="event.stopPropagation(); manageDokumen(event)"><i
-                          class="bi bi-file-earmark-text"></i> Dokumen</span>
-                    <?php endif; ?>
-                    <?php if (isset($row->can_delete)) : ?>
-                      <span class="text-danger" role="button" title="Hapus"
-                        onclick="event.stopPropagation(); deleteItemPersonel(event)"><i class="bi bi-trash"></i>
-                        Hapus</span>
-                    <?php endif; ?>
+          <?php if (!empty($getPersonel)) : ?>
+            <?php
+            $encrypter = \Config\Services::encrypter();
+            foreach ($getPersonel as $row) {
+              $id = bin2hex($encrypter->encrypt($row->id_personel));
+            ?>
+              <!-- [PERBAIKAN] Atribut draggable hanya aktif jika pengguna memiliki izin -->
+              <div id="<?= $id ?>" class="col-12 col-sm-6 col-md-4 col-lg-3 personel-item"
+                draggable="<?= $can_add ? 'true' : 'false' ?>" data-code="<?= $row->urutan ?>"
+                data-nama="<?= esc(strtolower($row->nama)) ?>"
+                data-jabatan="<?= esc(strtolower($row->jabatan)) ?>"
+                data-penempatan="<?= esc($row->penempatan) ?>" onclick="showBiodata(event)">
+                <div class="card h-100 text-center shadow-sm">
+                  <img src="<?= $row->foto ? base_url('uploads/' . $row->foto) : 'https://placehold.co/200x300?text=Foto+2x3' ?>"
+                    class="card-img-top" alt="<?= esc($row->nama) ?>">
+                  <div class="card-body">
+                    <h6 class="card-title fw-bold"><?= esc($row->nama) ?></h6>
+                    <p class="card-text text-muted"><?= esc($row->jabatan) ?></p>
+                    <hr class="my-2">
+                    <!-- [PERBAIKAN] Mengganti fungsi aksi() dengan pengecekan izin langsung -->
+                    <div id="<?= $id ?>" class="d-flex justify-content-center gap-3">
+                      <?php if (isset($row->can_edit)) : ?>
+                        <span class="text-secondary" role="button" title="Ubah"
+                          onclick="event.stopPropagation(); editPersonel(event)"><i
+                            class="bi bi-pencil-square"></i> Edit</span>
+                      <?php endif; ?>
+                      <?php if (isset($row->can_manage_docs)) : ?>
+                        <span class="text-info" role="button" title="Dokumen"
+                          onclick="event.stopPropagation(); manageDokumen(event)"><i
+                            class="bi bi-file-earmark-text"></i> Dokumen</span>
+                      <?php endif; ?>
+                      <?php if (isset($row->can_delete)) : ?>
+                        <span class="text-danger" role="button" title="Hapus"
+                          onclick="event.stopPropagation(); deleteItemPersonel(event)"><i
+                            class="bi bi-trash"></i>
+                          Hapus</span>
+                      <?php endif; ?>
+                    </div>
                   </div>
                 </div>
               </div>
+            <?php } ?>
+          <?php else : ?>
+            <div id="noDataMessage" class="col-12 text-center p-5">
+              <h4 class="text-muted">Personel belum ditambahkan</h4>
             </div>
-          <?php } ?>
+          <?php endif; ?>
 
           <div id="noResultsMessage" class="col-12 text-center p-5" style="display: none;">
             <h4 class="text-muted">Data Tidak Ditemukan</h4>
@@ -783,13 +790,21 @@
      * Menerapkan filter dan pencarian pada daftar personel, menampilkan/menyembunyikan item yang sesuai.
      */
     function applyFiltersAndSearch() {
+      // [BARU] Ambil elemen pesan
       const searchInput = document.getElementById('searchInput');
       const filterPenempatan = document.getElementById('filterPenempatan');
       const noResultsMessage = document.getElementById('noResultsMessage');
+      const noDataMessage = document.getElementById('noDataMessage'); // Pesan "belum ditambahkan"
       const searchTerm = searchInput.value.toLowerCase();
       const filterValue = filterPenempatan.value;
       const items = document.querySelectorAll('.personel-item');
       let visibleCount = 0;
+
+      // [BARU] Sembunyikan pesan "belum ditambahkan" setiap kali filter dijalankan
+      if (noDataMessage) {
+        noDataMessage.style.display = 'none';
+      }
+
       items.forEach(item => {
         const nama = item.dataset.nama;
         const jabatan = item.dataset.jabatan;
@@ -803,7 +818,16 @@
           item.style.display = 'none';
         }
       });
-      noResultsMessage.style.display = visibleCount === 0 ? 'block' : 'none';
+
+      // [PERBAIKAN] Logika untuk menampilkan pesan yang tepat
+      const isFilterActive = searchTerm !== '' || filterValue !== 'Semua';
+
+      if (visibleCount === 0 && isFilterActive) {
+        // Jika tidak ada hasil DAN filter/pencarian aktif, tampilkan "Tidak Ditemukan"
+        noResultsMessage.style.display = 'block';
+      } else {
+        noResultsMessage.style.display = 'none';
+      }
     }
 
     /**
