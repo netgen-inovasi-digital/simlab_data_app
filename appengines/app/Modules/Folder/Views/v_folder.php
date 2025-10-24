@@ -1738,8 +1738,6 @@
           formEdit.style.display = 'none';
           perbaruiTombol();
           sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-        } else {
-          alert('Gagal mengubah kategori');
         }
       }
     });
@@ -1767,7 +1765,7 @@
         data: {
           id
         },
-        onSuccess: () => {
+        onSuccess: (json) => {
           const option = select.querySelector(`option[value="${id}"]`);
           if (option) option.remove();
 
@@ -1789,11 +1787,24 @@
   }) {
     showLoading();
 
+    // Ambil semua input CSRF di halaman (misalnya di banyak form)
+    const csrfInputs = document.querySelectorAll('input[type="hidden"][name^="csrf_"]');
+    let csrfName = null;
+    let csrfValue = null;
+
+    if (csrfInputs.length > 0) {
+      // Ambil dari input pertama (CodeIgniter selalu pakai nama yang sama di semua input CSRF)
+      csrfName = csrfInputs[0].name;
+      csrfValue = csrfInputs[0].value;
+    }
+
     fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('[name="<?= csrf_token() ?>"]').value
+          ...(csrfName && {
+            'X-CSRF-TOKEN': csrfValue
+          })
         },
         body: JSON.stringify(data)
       })
@@ -1801,13 +1812,13 @@
       .then(json => {
         // Update CSRF
         if (json.xname && json.xhash) {
-          const input = document.querySelector(`[name="${json.xname}"]`);
-          if (input) input.value = json.xhash;
+          document.querySelectorAll(`input[name="${json.xname}"]`).forEach(input => {
+            input.value = json.xhash;
+          });
         }
 
         if (json.success || json.res === true) {
           if (typeof onSuccess === 'function') onSuccess(json);
-
         } else {
           if (typeof onError === 'function') onError(json);
           else sayAlert('errorModal', 'Error', 'Data gagal dihapus.', 'warning');
@@ -1829,9 +1840,6 @@
     onSuccess,
     onError,
   }) {
-    // [FIX] Gunakan try-catch untuk memanggil showLoading.
-    // Ini mencegah error jika elemen loading overlay tidak ditemukan di DOM,
-    // dan memastikan proses fetch untuk menyimpan data tetap berjalan.
     try {
       showLoading();
     } catch (e) {

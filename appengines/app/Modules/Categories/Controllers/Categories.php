@@ -19,14 +19,13 @@ class Categories extends BaseController
   }
 
   function edit($id)
-  {
-    $idenc = $id;
+  {;
     $id = $this->encrypter->decrypt(hex2bin($id));
     $model = new MyModel($this->table);
     $get = $model->getDataById($this->id, $id);
 
     $data[csrf_token()] = csrf_hash();
-    $data['id'] = $idenc;
+    $data['id'] = $id;
     $data['nama'] = $get->nama;
     $data['slug'] = $get->slug;
 
@@ -39,7 +38,19 @@ class Categories extends BaseController
     $id = $json->id ?? null;
 
     if ($id) {
-      // $id = $this->encrypter->decrypt(hex2bin($idenc));
+
+      // Coba deteksi apakah id berbentuk hex terenkripsi
+      if (ctype_xdigit($id)) {
+        try {
+          // hex2bin butuh panjang genap
+          if (strlen($id) % 2 === 0) {
+            $decoded = hex2bin($id);
+            $id = $this->encrypter->decrypt($decoded);
+          }
+        } catch (\Exception $e) {
+        }
+      }
+
       $model = new MyModel($this->table);
       $res = $model->deleteData($this->id, $id);
 
@@ -60,10 +71,31 @@ class Categories extends BaseController
 
   public function submit()
   {
-
     $id = $this->request->getPost('id');
     $nama = $this->request->getPost('nama');
     $slug = url_title($nama, '-', true);
+
+    $model = new MyModel($this->table);
+    if ($nama != "") {
+      $namaKecil = strtolower($nama);
+      $builder = $model->where('LOWER(nama)', $namaKecil);
+      // Jika sedang update, kecualikan record dengan ID yang sama
+      if (!empty($id)) {
+        $builder->where("{$this->id} !=", $id);
+      }
+
+      $existing = $builder->countAllResults(false);
+
+      if ($existing > 0) {
+        return $this->response->setJSON([
+          'res' => 'duplicate',
+          'message' => 'Kategori dengan nama yang sama sudah ada.',
+          'xname' => csrf_token(),
+          'xhash' => csrf_hash()
+        ]);
+      }
+    }
+
     $data = array(
       'nama' => $nama,
       'slug' => $slug,
@@ -109,7 +141,7 @@ class Categories extends BaseController
 			<span class="text-secondary btn-action" title="Ubah" onclick="editItem(event)">
 				<i class="bi bi-pencil-square"></i></span> 
 			<label class="divider">|</label>
-			<span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event)">
+			<span class="text-danger btn-action" title="Hapus" onclick="deleteItemCategory(event)">
 				<i class="bi bi-trash"></i></span>
 		</div>';
   }
