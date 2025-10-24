@@ -4,7 +4,6 @@ namespace Modules\Berkas\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\MyModel;
-use BcMath\Number;
 
 class Berkas extends BaseController
 {
@@ -36,9 +35,6 @@ class Berkas extends BaseController
     $get = $model->getDataById($this->id, $idenc);
 
     $idencFolder = bin2hex($this->encrypter->encrypt($get->id_folder));
-    // 🔹 Olah title agar tampil tanpa ekstensi dan tanpa _(angka)
-    // $baseName = pathinfo($get->title, PATHINFO_FILENAME);
-    // $baseName = preg_replace('/_\(\d+\)$/', '', $baseName);
 
     $data[csrf_token()] = csrf_hash();
     $data['idFile'] = $id;
@@ -356,5 +352,62 @@ class Berkas extends BaseController
       'filename' => $filename,
       'title' => $safeTitle . '.' . $ext
     ];
+  }
+
+
+  public function dataList()
+  {
+    $model = new MyModel($this->table);
+    $data = array();
+
+    // ambil kolom yang dibutuhkan
+    $select = 'users.id_user, users.nama AS nama_user, files.*, categories.nama AS nama_kategori';
+
+    // definisikan relasi antar tabel
+    $join = [
+      'users' => 'users.id_user = files.user_id',
+      'categories' => 'categories.id_categories = files.categories_id'
+    ];
+
+    $where = [];
+    $orderBy = ['files.created_at' => 'ASC'];
+
+    // ambil data pakai LEFT JOIN
+    $list = $model->getAllDataByJoinWithOrder($join, $where, $orderBy, $select, 'left');
+
+    // jika data ditemukan
+    foreach ($list as $row) {
+      $titleBlock = '
+      <div class="d-flex flex-column">
+        ' . esc($row->title) . '
+      </div>
+    ';
+
+      $id = bin2hex($this->encrypter->encrypt($row->id_files));
+      $fileUrl = base_url('uploads/' . $row->berkas);
+
+      $response = array();
+      $response[] = '<div>' . esc($row->nomor_dokumen) . '</div>';
+      $response[] = $titleBlock;
+      $response[] = $row->nama_kategori ?? 'Tidak Berkategori';
+      $response[] = $this->aksi($id, $fileUrl);
+      $data[] = $response;
+    }
+    $output = array("items" => $data);
+    return $this->response->setJSON($output);
+  }
+
+  function aksi($id, $fileUrl = null)
+  {
+    return '<div id="' . $id . '" class="float-end">
+    <span class="text-secondary btn-action" title="Lihat" onclick="showItem(event, \'' . $fileUrl . '\')">
+				<i class="bi bi-eye"></i></span>
+      <label class="divider">|</label>
+			<span class="text-secondary btn-action" title="Ubah" onclick="editItem(event)">
+				<i class="bi bi-pencil-square"></i></span> 
+			<label class="divider">|</label>
+			<span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event)">
+				<i class="bi bi-trash"></i></span>
+		</div>';
   }
 }
