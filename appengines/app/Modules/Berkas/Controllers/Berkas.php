@@ -301,6 +301,7 @@ class Berkas extends BaseController
   //   ]);
   // }
 
+
   public function submit()
   {
     $idenc = $this->request->getPost('idFile');
@@ -488,6 +489,101 @@ class Berkas extends BaseController
   }
 
 
+  public function submitLinks()
+  {
+    $model = new MyModel('file_links');
+    $modelOtorisasiFile = new MyModel('otoritas_file');
+
+    $id_folder = $this->request->getPost('id_folder');
+    $idRawFolder = $this->encrypter->decrypt(hex2bin($id_folder));
+
+    $data = [
+      'parent_folder' => $idRawFolder,
+      'child_file' => $this->request->getPost('file_id'),
+    ];
+
+    $count = $model->getAllData();
+    $data['sort_order'] = count($count) + 1;
+
+    $res = $model->insertData($data);
+
+    if ($res) {
+      $id_file = $data['child_file'];
+      $role_id = $this->request->getPost('user_role');
+
+      $otorFiles = $modelOtorisasiFile->getDataByWhere([
+        'id_file' => $id_file,
+        'id_role' => $role_id
+      ]);
+      if ($otorFiles) {
+        return $this->response->setJSON([
+          'res' => 'refresh',
+          'link' => 'folder',
+          'xname' => csrf_token(),
+          'xhash' => csrf_hash()
+        ]);
+      }
+
+
+      $roles = array_unique([(int)$role_id, 8]);
+      foreach ($roles as $r) {
+        $otor = [
+          'id_file' => (int)$id_file,
+          'id_role' => (int)$r,
+          'can_view' => 1,
+          'can_crud' => 1,
+        ];
+        $modelOtorisasiFile->insertData($otor);
+      }
+    }
+
+    if ($res) {
+      $res = 'refresh';
+      $link = 'folder';
+    }
+
+    return $this->response->setJSON([
+      'res' => $res,
+      'link' => $link ?? '',
+      'xname' => csrf_token(),
+      'xhash' => csrf_hash()
+    ]);
+  }
+
+  public function deleteLinks($id)
+  {
+    $model = new MyModel('file_links');
+    $modelOtorisasiFile = new MyModel('otoritas_file');
+
+    $json = $this->request->getJSON();
+    $idFolder = $json->idFolder ?? null;
+
+    $id = $this->encrypter->decrypt(hex2bin($id));
+    $get = $model->getDataByWhere(['child_file' => $id, 'parent_folder' => $idFolder]);
+
+    $res = false;
+
+    if ($get) {
+      $res = $model->deleteData('id', $get->id);
+
+      $result = $model->getDataById('child_file', $id);
+      if ($result == null) {
+        $res = $modelOtorisasiFile->deleteData('id_file', $get->child_file);
+      }
+    }
+
+    if ($res) {
+      $res = 'refresh';
+      $link = 'folder';
+    }
+
+    return $this->response->setJSON([
+      'res' => $res,
+      'link' => $link ?? '',
+      'xname' => csrf_token(),
+      'xhash' => csrf_hash()
+    ]);
+  }
 
   // 🔹 Upload function
   function doUpload($file)
@@ -589,7 +685,7 @@ class Berkas extends BaseController
     <span class="text-secondary btn-action" title="Lihat" onclick="showItem(event, \'' . $fileUrl . '\')">
 				<i class="bi bi-door-open"></i></span>
         <label class="divider">|</label>
-    <span class="text-secondary btn-action" title="Lihat" onclick="showFileDetails(event)">
+    <span class="text-secondary btn-action" title="Lihat" onclick="showDetailFile(event)">
 				<i class="bi bi-eye"></i></span>
       <label class="divider">|</label>
 			<span class="text-secondary btn-action" title="Ubah" onclick="editItemFile(event)">

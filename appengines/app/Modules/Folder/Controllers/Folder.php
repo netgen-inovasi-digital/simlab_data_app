@@ -142,6 +142,7 @@ class Folder extends BaseController
       $file->can_view = $permsFile[$file->id_files]->can_view ?? 0;
       $file->can_crud = $permsFile[$file->id_files]->can_crud ?? 0;
       $file->sort_order = $sortOrder;
+      $file->parent_folder_id = $folderId; // <<< simpan parent
 
       // kalau folder parent-nya punya nama personel → file gak bisa crud
       $parentFolder = $map['folder_' . $folderId] ?? null;
@@ -214,6 +215,7 @@ class Folder extends BaseController
       'tree'        => $tree,
       'folder_tree' => $folder_tree,
       'all_folders' => $folders,
+      'files'  => $modelFiles->getAllData(),
       'categories'  => $modelCategories->getAllData(),
       'user'        => $user,
       'role'        => $modelRoles->getAllData(),
