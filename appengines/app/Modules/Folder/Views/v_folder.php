@@ -297,10 +297,10 @@
       {
         $btnFile = ($node->type === 'file') ? '
         <span class="aksi-text me-1" style="display: none;">Bisa Lihat</span>
-
-        <span class="text-dark action-btn" role="button" title="Lihat Detail" onclick="showFileDetails(event)">
+        
+        <a href="' . base_url('uploads/' . $node->berkas) . '" target="_blank" class="text-dark action-btn" role="button" title="Lihat File Langsung" onclick="event.stopPropagation()">
                       <i class="bi bi-eye"></i>
-                  </span>
+        </a>
         <input class="form-check-otorisasi checkbox-otorisasi-folder" type="checkbox" 
                data-type="file" data-id="' . esc($id) . '"data-perm="view"
                onClick="event.stopPropagation()" style="display:none;">
@@ -838,13 +838,9 @@
     item.addEventListener("click", function(e) {
       if (e.target.closest(".action-btn")) return;
 
-      const fileItem = e.target.closest(".file-item");
-      if (!fileItem) return;
-
-      const url = fileItem.dataset.url;
-      if (url) {
-        window.open(url, "_blank");
-      }
+      // Panggil fungsi untuk menampilkan detail file di modal
+      // Event object (e) sudah secara implisit dilewatkan
+      showFileDetails(e);
     });
   });
 
@@ -1906,7 +1902,7 @@
   })
 
   function showFileDetails(event) {
-    const itemDiv = event.currentTarget.closest('div[id]');
+    const itemDiv = event.currentTarget.closest('.file-item');
     if (!itemDiv) return;
     const id = itemDiv.id;
     const contentArea = document.getElementById('detail-file-content');
@@ -2174,7 +2170,7 @@
               placeholder="Masukkan nomor dokumen" required>
           </div>
           <div class="col">
-            <label class="col-md-3 col-form-label">Revisi</label>
+            <label class="col-md-3 col-form-label">Revisi Ke-</label>
             <input name="revisi" type="number" class="form-control bg-light" placeholder="Masukkan revisi"
               required>
           </div>
@@ -2183,11 +2179,12 @@
           <div class="col">
             <label class="col-md-6 col-form-label">File</label>
             <input id="berkas" name="berkas" type="file" class="form-control" accept=".pdf,.doc,.docx">
-            <small class="text-muted" id="ketBerkas" style="font-size: 11px;">Upload maks. 100MB</small>
+            <small class="text-muted" id="ketBerkas" style="font-size: 11px;">Upload maks. 100MB (File:
+              .pdf, .doc, .docx.)</small>
             <small class="text-danger d-none" id="errorMsg">Hanya file docs/pdf yang diperbolehkan!</small>
           </div>
           <div class="col">
-            <label class="col-md-3 col-form-label">Tanggal</label>
+            <label class="col-md-4 col-form-label">Tanggal Terbit</label>
             <input name="tanggal" id="tanggal-input" type="date" class="form-control"
               value="<?= esc(date('Y-m-d')) ?>" required>
           </div>
