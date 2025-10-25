@@ -3,7 +3,7 @@
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
         <label class="card-title mb-0"><?php echo $title ?></label>
-        <button id="add" class="btn btn-primary">
+        <button id="addFile" class="btn btn-primary">
           <i class="bi bi-plus-circle-dotted"></i> Tambah
         </button>
       </div>
@@ -32,7 +32,8 @@
   table = createTable({
     apiUrl: '<?php echo site_url("berkas/datalist") ?>',
   });
-  addAction();
+  // addAction();
+  tambahItemFile();
 
   // ===== validasi gambar ===== //
   document.querySelector('#berkas').addEventListener('change', function() {
@@ -65,7 +66,7 @@
   });
 
   // ===== nama dan slug ===== //
-  var namaInput = document.querySelector('input[name="title"]');
+  var namaInput = document.querySelector('input[name="titleFile"]');
   var slugInput = document.querySelector('input[name="slug"]');
 
   if (namaInput && slugInput) {
@@ -402,41 +403,306 @@
       window.open(fileUrl, "_blank"); // fallback
     }
   }
+
+  function editItemFile(event) {
+    const closest = event.target.closest('div');
+    if (closest) {
+      showLoading();
+      const id = closest.getAttribute('id');
+      const url = "<?= base_url('berkas/edit') ?>/" + id;
+      fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data) {
+            var detailModalEl = document.getElementById('detailFileModal');
+            var detailModal = bootstrap.Modal.getInstance(detailModalEl);
+            if (detailModal && detailModalEl.classList.contains('show')) detailModal.hide();
+            $('.modal-title-file').text('Ubah Data');
+            $('#modalFormFile').modal('show');
+            Object.entries(data).forEach(([key, value]) => {
+              const elements = document.querySelectorAll(`[name="${key}"],[name="${key}[]"]`);
+              if (elements.length > 0) {
+                elements.forEach(el => {
+                  if (el.type === "checkbox" || el.type === "radio") {
+                    if (el.type === "checkbox") {
+                      if (Array.isArray(value)) {
+                        el.checked = value.includes(el.value);
+                      } else el.checked = value === "true" || value === "1" ||
+                        value === true || value === el.value;
+                    } else if (el.type === "radio") el.checked = el.value === value;
+                  } else if (el.tagName === "SELECT") {
+                    el.value = value || "";
+                    const wrapper = el.parentElement.querySelector('.selected');
+                    if (wrapper) {
+                      const option = Array.from(el.options).find(opt => opt
+                        .value === value);
+                      wrapper.textContent = option ? option.text :
+                        "-- pilih data --";
+                    }
+                  } else el.value = value || "";
+                });
+              }
+              perbaruiTombol();
+            });
+          }
+        }).catch(error => {
+          sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
+        }).finally(() => {
+          setTimeout(() => {
+            hideLoading();
+          }, 300);
+        });
+    }
+  }
+
+  function deleteItemFile(event, msg = "") {
+    const closest = event.target.closest('div');
+    if (msg != "") msg = '<br><strong>' + msg + '</strong>';
+    if (closest) {
+      sayAlert('confirmModal', 'Confirm!', 'Apakah yakin menghapus data ini?' + msg, 'danger', true, () => {
+        showLoading();
+        const id = closest.getAttribute('id');
+        const url = "<?= base_url('berkas/delete') ?>/" + id;
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'X-CSRF-TOKEN': document.querySelector('[name="<?= csrf_token() ?>"]').value
+            },
+          })
+          .then(response => response.json())
+          .then(data => {
+            // [FIX] Selalu update CSRF token, bahkan saat error
+            if (data.xhash) {
+              document.querySelector('[name="<?= csrf_token() ?>"]').value = data.xhash;
+            }
+
+            if (data.res == 'refresh') {
+              var detailModalEl = document.getElementById('detailFileModal');
+              var detailModal = bootstrap.Modal.getInstance(detailModalEl);
+              if (detailModal && detailModalEl.classList.contains('show')) detailModal.hide();
+              loadContent(data.link);
+              sayAlert('successModal', 'Success', 'Data berhasil dihapus.', 'success');
+            } else if (data.res == true) {
+              table.fetchData({
+                reload: true
+              });
+              $('[name=' + data.xname + ']').val(data.xhash);
+              sayAlert('successModal', 'Success', 'Data berhasil dihapus.', 'success');
+            } else {
+              // [FIX] Tampilkan pesan error dari server
+              sayAlert('errorModal', 'Error', data.message || 'Data gagal dihapus.', 'warning');
+            }
+          })
+          .catch(error => {
+            sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.' + error.message,
+              'warning');
+          })
+          .finally(() => {
+            hideLoading();
+          });
+      });
+    }
+  }
+
+  function tambahItemFile() {
+    $('#addFile').on('click', () => {
+      console.log('Tombol tambah diklik'); // cek apakah ini muncul
+      var form = document.getElementById('myFileForm');
+      var errorDivs = form.querySelectorAll('.error');
+      errorDivs.forEach(errorDiv => {
+        errorDiv.remove();
+      });
+      form.reset();
+      // Kosongkan input file (jika ada)
+      var fileInputs = document.querySelectorAll('input[type="file"]');
+      fileInputs.forEach(fileInput => fileInput.value = '');
+      // Kosongkan selectSearch (jika ada)
+      document.querySelectorAll('#kategori_id').forEach(el => {
+        if (el.id != "items-per-page") el.value = "";
+        var wrapper = el.parentElement.querySelector('.selected');
+        if (wrapper) wrapper.textContent = "-- pilih data --";
+      });
+      document.querySelector('input[name="idFile"]').value = '';
+      $('.modal-title-file').text('Tambah File');
+      $('#modalFormFile').modal('show');
+      perbaruiTombol();
+    })
+
+    $('#myFileForm').submit();
+  }
+
+
+  function save(form) {
+    showLoading();
+    const formData = new FormData(form);
+    const url = form.getAttribute('action');
+    fetch(url, {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        $('[name=' + data.xname + ']').val(data.xhash);
+        if ($('#modalFormFile').hasClass('show')) $('#modalFormFile').modal('hide');
+
+        if (data.res == true) {
+          if (table) table.fetchData({
+            reload: true
+          });
+          sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+        } else if (data.res == 'reload') {
+          sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+        } else if (data.res == 'refresh') {
+          loadContent(data.link);
+          sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+        } else if (data.res == 'redirect') {
+          window.location.href = data.link;
+        } else if (data.res == 'check') {
+          sayAlert('errorModal', 'Error', data.link, 'warning');
+        } else if (data.res == 'duplicate') {
+          sayAlert('errorModal', 'Error', data.message, 'warning');
+        } else if (data.res == 'refresh-print') {
+          loadContent(data.link);
+          window.open(data.print, "_blank");
+        } else {
+          sayAlert('errorModal', 'Error', 'Data gagal disimpan.', 'warning');
+        }
+      })
+      .catch(error => {
+        sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
+      }).finally(() => {
+        hideLoading();
+      });
+  }
+
+  function showFileDetails(event) {
+    const itemDiv = event.currentTarget.closest('div[id]');
+    if (!itemDiv) return;
+    const id = itemDiv.id;
+    const contentArea = document.getElementById('detail-file-content');
+    const detailFileModal = new bootstrap.Modal(document.getElementById('detailFileModal'));
+    const modalAksiContainer = document.querySelector('.modal-aksi-file-container');
+    modalAksiContainer.id = id;
+    contentArea.innerHTML =
+      '<div class="text-center p-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+    modalAksiContainer.innerHTML = '';
+    detailFileModal.show();
+    fetch(`<?= site_url('folder/detail-file/') ?>${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      }).then(response => {
+        if (!response.ok) {
+          throw new Error('Data tidak ditemukan');
+        }
+        return response.json();
+      }).then(data => {
+        if (data.error) throw new Error(data.error);
+        const fileUrl = data.berkas ? `<?= base_url('uploads/') ?>${data.berkas}` : '#';
+        const fileExt = data.berkas ? data.berkas.split('.').pop().toLowerCase() : '';
+        let filePreviewHtml = '';
+        if (fileExt === 'pdf') {
+          filePreviewHtml =
+            `<iframe src="${fileUrl}" width="150" height="200" style="border: 1px solid #dee2e6; border-radius: 0.25rem;"><p>Browser Anda tidak mendukung pratinjau PDF. <a href="${fileUrl}" target="_blank">Unduh PDF</a></p></iframe>`;
+        } else {
+          let iconClass = 'bi-file-earmark-text';
+          if (['doc', 'docx'].includes(fileExt)) iconClass = 'bi-file-earmark-word';
+          filePreviewHtml =
+            `<div class="text-center mb-3" style="width: 150px; height: 200px; background-color: #e9ecef; border: 1px solid #dee2e6; display: flex; align-items: center; justify-content: center; border-radius: 0.25rem;"><i class="bi ${iconClass}" style="font-size: 4rem; color: #adb5bd;"></i></div>`;
+        }
+        contentArea.innerHTML =
+          `<div class="row g-4"><div class="col-md-4 d-flex flex-column align-items-center">${filePreviewHtml}<div class="d-flex mt-3"><a href="${fileUrl}" target="_blank" class="btn btn-secondary">View</a></div></div><div class="col-md-8"><table class="biodata-table"><tr><td>Nama File</td><td>:</td><td>${data.title || '-'}</td></tr><tr><td>No. Dokumen</td><td>:</td><td>${data.nomor_dokumen || '-'}</td></tr><tr><td>Revisi</td><td>:</td><td>${data.revisi || '-'}</td></tr><tr><td>Tanggal Upload</td><td>:</td><td>${formatTanggal(data.created_at)}</td></tr><tr><td>Author</td><td>:</td><td>${data.author || '-'}</td></tr><tr><td>Kategori</td><td>:</td><td>${data.kategori || '-'}</td></tr></table></div></div>`;
+
+        // --- Gunakan otorisasi untuk tombol modal ---
+        modalAksiContainer.innerHTML = '';
+
+        if (data.otoritas && Array.isArray(data.otoritas)) {
+          let canCrud = false;
+          data.otoritas.forEach(o => {
+            if (Number(o.can_crud) === 1) canCrud = true;
+
+          });
+          if (canCrud && data.folder_flag != '1') {
+            modalAksiContainer.innerHTML = `
+            <button type="button" class="btn btn-primary me-2" onclick="editItemFile(event)">
+              <i class="bi bi-pencil-square me-1"></i> Edit
+            </button>
+            <button type="button" class="btn btn-danger" onclick="deleteItemFile(event)">
+              <i class="bi bi-trash me-1"></i> Hapus
+            </button>
+          `;
+          } else {
+            modalAksiContainer.innerHTML = '';
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching file details:', error);
+        contentArea.innerHTML = `<p class="text-center text-danger">Gagal memuat data. ${error.message}</p>`;
+        modalAksiContainer.innerHTML = '';
+      });
+  }
+
+  function formatTanggal(tanggal) {
+    if (!tanggal || tanggal === '0000-00-00 00:00:00' || tanggal.trim() === '') return '-';
+    try {
+      return new Date(tanggal).toLocaleDateString('id-ID', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (e) {
+      return tanggal;
+    }
+  }
 </script>
 
-
-<div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+<!-- Modal File -->
+<div class="modal fade" id="modalFormFile" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+  aria-labelledby="staticBackdropLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg" role="document" style="margin: 2% auto">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Modal title</h5>
+        <h5 class="modal-title-file">Modal title</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
         </button>
       </div>
-      <?php echo form_open('berkas/submit', array('id' => 'myform', 'novalidate' => '')) ?>
+      <?php echo form_open('berkas/submit', array('id' => 'myFileForm', 'novalidate' => '')) ?>
       <div class="modal-body">
-        <input type="hidden" value="" name="id" />
+        <input type="hidden" value="" name="idFile" />
         <input name="slug" type="text" class="form-control bg-light" value="" hidden>
 
         <div class="row mb-2">
           <div class="col">
             <label class="col-md-3 col-form-label">Judul Berkas</label>
-            <input name="title" type="text" class="form-control" required placeholder="Masukkan judul berita">
+            <input name="titleFile" type="text" class="form-control" required
+              placeholder="Masukkan judul file">
           </div>
         </div>
         <div class="row mb-2">
           <div class="col">
-            <label class="col-md-6 col-form-label">No. Dokumen</label>
-            <input name="nomor_dokumen" type="text" class="form-control bg-light" placeholder="Masukkan nomor dokumen" required>
+            <label class="col-md-7 col-form-label">No. Dokumen</label>
+            <input name="nomor_dokumen" type="text" class="form-control bg-light"
+              placeholder="Masukkan nomor dokumen" required>
           </div>
           <div class="col">
             <label class="col-md-3 col-form-label">Revisi</label>
-            <input name="revisi" type="number" class="form-control bg-light" placeholder="Masukkan revisi" required>
+            <input name="revisi" type="number" class="form-control bg-light" placeholder="Masukkan revisi"
+              required>
           </div>
         </div>
         <div class="row mb-2">
           <div class="col">
-            <label class="col-md-3 col-form-label">File</label>
+            <label class="col-md-6 col-form-label">File</label>
             <input id="berkas" name="berkas" type="file" class="form-control" accept=".pdf,.doc,.docx">
             <small class="text-muted" id="ketBerkas" style="font-size: 11px;">Upload maks. 100MB</small>
             <small class="text-danger d-none" id="errorMsg">Hanya file docs/pdf yang diperbolehkan!</small>
@@ -446,18 +712,15 @@
             <input name="tanggal" id="tanggal-input" type="date" class="form-control"
               value="<?= esc(date('Y-m-d')) ?>" required>
           </div>
-          <div class="col">
-            <label class="col-md-3 col-form-label">Author</label>
-            <input name="nama" type="text" value="<?= $user->nama ?>" class="form-control bg-light" required readonly>
-            <input name="user_id" type="text" value="<?= $user->id_user ?>" class="form-control" required hidden>
-          </div>
+
         </div>
 
         <div class="row mb-2">
           <div class="col">
-            <label class="col-md col-form-label">Kategori</label>
+            <label class="col-md-5 col-form-label">Kategori</label>
             <div class="d-flex gap-2 align-items-start">
-              <select id="kategori_id" name="kategori_id" class="form-select" required style="max-width: 150px;">
+              <select id="kategori_id" name="kategori_id" class="form-select" required
+                style="max-width: 150px;">
                 <option value="">-- pilih data --</option>
                 <?php foreach ($categories as $kategori): ?>
                   <option value="<?= $kategori->id_categories ?>">
@@ -465,41 +728,65 @@
                   </option>
                 <?php endforeach; ?>
               </select>
-              <button type="button" class="btn btn-outline-secondary" id="btn-kategori-aksi">Tambah</button>
+              <button type="button" class="btn btn-outline-secondary"
+                id="btn-kategori-aksi">Tambah</button>
             </div>
             <!-- Form tambah kategori akan muncul di sini -->
             <div id="form-kategori-baru" class="mt-2 d-none">
               <div class="input-group" style="max-width: 400px;">
-                <input type="text" class="form-control" id="input-kategori-baru" placeholder="Nama kategori baru">
-                <button class="btn btn-success ms-2" type="button" id="btn-simpan-kategori">Simpan</button>
+                <input type="text" class="form-control" id="input-kategori-baru"
+                  placeholder="Nama kategori baru">
+                <button class="btn btn-success ms-2" type="button"
+                  id="btn-simpan-kategori">Simpan</button>
                 <button class="btn btn-danger ms-2" type="button" id="btn-batal-kategori">Batal</button>
               </div>
             </div>
             <div class="d-flex gap-2 align-items-start mt-2" id="form-edit-kategori" style="display: none;">
-              <input type="text" class="form-control" id="input-edit-kategori" style="max-width: 200px;" placeholder="Edit nama kategori">
+              <input type="text" class="form-control" id="input-edit-kategori" style="max-width: 200px;"
+                placeholder="Edit nama kategori">
               <button type="button" class="btn btn-success" id="btn-update-kategori">Update</button>
               <button type="button" class="btn btn-danger" id="btn-delete-kategori">Hapus</button>
             </div>
           </div>
           <div class="col">
-            <div class="mb-3">
-              <label class="form-label d-block">Status</label>
-              <div class="btn-group" role="group" aria-label="Status pilihan">
-                <input type="radio" class="btn-check" name="status" id="status-draft" value="draft" autocomplete="off" checked>
-                <label class="btn btn-outline-secondary me-1" for="status-draft">Draft</label>
-
-                <input type="radio" class="btn-check" name="status" id="status-publish" value="publish" autocomplete="off">
-                <label class="btn btn-outline-success" for="status-publish">Publish</label>
-              </div>
-            </div>
+            <label class="col-md-3 col-form-label">Author</label>
+            <input name="nama" type="text" value="<?= $user->nama ?>" class="form-control bg-light" required
+              readonly>
+            <input name="user_id" type="text" value="<?= $user->id_user ?>" class="form-control" required
+              hidden>
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Batal</button>
-        <button class="btn btn-success" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
+        <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>
+          Batal</button>
+        <button class="btn btn-success" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i>
+          Simpan</button>
       </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Detail File -->
+<div class="modal fade" id="detailFileModal" tabindex="-1" aria-labelledby="detailFileModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="detailFileModalLabel">Detail File</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="detail-file-content">
+          <!-- Content will be loaded here by JavaScript -->
+        </div>
+      </div>
+      <div class="modal-footer justify-content-between">
+        <div class="modal-aksi-file-container">
+          <!-- Hapus button will be here -->
+        </div>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+      </div>
     </div>
   </div>
 </div>

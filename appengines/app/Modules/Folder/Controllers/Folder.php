@@ -9,7 +9,6 @@ class Folder extends BaseController
 {
   private $table = 'folder';
   private $id = 'id_folder';
-  private $visited = [];
 
   public function index()
   {
@@ -20,6 +19,7 @@ class Folder extends BaseController
     $modelUser        = new MyModel('users');
     $modelFolder      = new MyModel('folder');
     $modelFolderLink  = new MyModel('folder_links');
+    $modelFileLink    = new MyModel('file_links'); // ✅ baru
     $modelFiles       = new MyModel('files');
     $modelRoles       = new MyModel('roles');
     $modelOtorFolder  = new MyModel('otoritas_folder');
@@ -40,7 +40,7 @@ class Folder extends BaseController
         $fileOrderDirection = 'desc';
         break;
       case 'created_desc':
-        $folderOrderColumn = 'id_folder'; // Asumsi id_folder auto-increment
+        $folderOrderColumn = 'id_folder';
         $folderOrderDirection = 'desc';
         $fileOrderColumn = 'created_at';
         $fileOrderDirection = 'desc';
@@ -48,29 +48,30 @@ class Folder extends BaseController
     }
 
     // ambil data user + role
-    $user    = $modelUser->getDataById('id_user', $user_id);
+    $user = $modelUser->getDataById('id_user', $user_id);
 
-    // [MODIFIKASI] Ambil data dengan sorting dinamis
+    // ambil data utama
     $folders = $modelFolder->getAllData($folderOrderColumn, $folderOrderDirection);
-    $links   = $modelFolderLink->getAllData(); // Sorting link tidak relevan, struktur pohon yang menentukan
+    $links   = $modelFolderLink->getAllData();
     $files   = $modelFiles->getAllData($fileOrderColumn, $fileOrderDirection);
+    $fileLinks = $modelFileLink->getAllData(); // ✅ baru
 
     // ambil otoritas sesuai role
     $otorFolder = $modelOtorFolder->getAllDataByWhere(['id_role' => $user->role_id]);
     $otorFile   = $modelOtorFile->getAllDataByWhere(['id_role' => $user->role_id]);
 
-    // [BARU] Ambil semua nama personel untuk filtering template
+    // ambil semua nama personel
     $db = \Config\Database::connect();
     $personelNamesQuery = $db->table('personel')->select('nama')->get()->getResultArray();
     $personelNames = array_column($personelNamesQuery, 'nama');
 
-    // [BARU] Filter folder yang namanya sama dengan nama personel
+    // filter folder yang bukan personel
     $templateFolders = array_filter($folders, function ($folder) use ($personelNames) {
       return !in_array($folder->nama, $personelNames);
     });
+
     // mapping otoritas folder
     $permsFolder = [];
-
     foreach ($otorFolder as $o) {
       $permsFolder[$o->id_folder] = (object)[
         'can_view' => $o->can_view,
@@ -89,75 +90,82 @@ class Folder extends BaseController
 
     // bikin map folder
     $map = [];
-    // [UBAH] Gunakan $templateFolders untuk membangun pohon template
     foreach ($templateFolders as $f) {
       $f->type     = 'folder';
       $f->children = [];
       $f->can_view = $permsFolder[$f->id_folder]->can_view ?? 0;
-      $f->flag     = $f->flag ?? 0; // [MODIFIKASI] Pastikan properti flag ada
+      $f->flag     = $f->flag ?? 0;
       $f->can_crud = $permsFolder[$f->id_folder]->can_crud ?? 0;
       $map['folder_' . $f->id_folder] = $f;
     }
+
+    // bangun folder_tree
     $folder_tree = [];
-    // [UBAH] Bangun pohon template dari map yang sudah difilter
     foreach ($links as $link) {
       $childKey  = 'folder_' . $link->child_id;
       $parentKey = $link->parent_id ? 'folder_' . $link->parent_id : null;
 
-      if (isset($map[$childKey])) { // Hanya proses jika folder ada di map (belum terfilter)
+      if (isset($map[$childKey])) {
         if ($parentKey === null) $folder_tree[] = $map[$childKey];
-        else if (isset($map[$parentKey])) array_push($map[$parentKey]->children, $map[$childKey]);
+        else if (isset($map[$parentKey])) $map[$parentKey]->children[] = $map[$childKey];
       }
     }
 
-    // [UBAH] Reset map dan bangun ulang untuk pohon utama (yang berisi semua folder)
+    // [RESET] map untuk tree utama
     $map = [];
     foreach ($folders as $f) {
       $f->type     = 'folder';
       $f->children = [];
       $f->can_view = $permsFolder[$f->id_folder]->can_view ?? 0;
-      $f->flag     = $f->flag ?? 0; // [MODIFIKASI] Pastikan properti flag ada
+      $f->flag     = $f->flag ?? 0;
       $f->can_crud = $permsFolder[$f->id_folder]->can_crud ?? 0;
       $map['folder_' . $f->id_folder] = $f;
     }
 
-    // masukkan file ke folder setelah folder anak
-    // [UBAH] Reset $tree di sini sebelum memasukkan file
-    $tree = [];
+    // [OPTIMASI] cache file
+    $allFiles = [];
+    foreach ($files as $f) {
+      $allFiles[$f->id_files] = $f;
+    }
 
-    foreach ($files as $file) {
+    // masukkan file ke folder via file_links ✅
+    foreach ($fileLinks as $link) {
+      $fileId = $link->child_file;
+      $folderId = $link->parent_folder;
+      $sortOrder = $link->sort_order ?? null;
+
+      $file = $allFiles[$fileId] ?? null;
+      if (!$file) continue;
+
       $file->type     = 'file';
       $file->children = [];
       $file->can_view = $permsFile[$file->id_files]->can_view ?? 0;
       $file->can_crud = $permsFile[$file->id_files]->can_crud ?? 0;
+      $file->sort_order = $sortOrder;
 
-      // [FIX] Logika keamanan tambahan: Paksa can_crud menjadi 0 jika file ada di folder personel
-      $parentFolder = $map['folder_' . $file->id_folder] ?? null;
+      // kalau folder parent-nya punya nama personel → file gak bisa crud
+      $parentFolder = $map['folder_' . $folderId] ?? null;
       if ($parentFolder && in_array($parentFolder->nama, $personelNames)) {
         $file->can_crud = 0;
       }
 
-      if (isset($map['folder_' . $file->id_folder])) {
-        $map['folder_' . $file->id_folder]->children[] = $file;
+      if (isset($map['folder_' . $folderId])) {
+        $map['folder_' . $folderId]->children[] = $file;
       }
     }
 
-    // [PERBAIKAN] Kembalikan logika pembangunan pohon utama di sini, setelah $map lengkap
+    // bangun tree folder utama
     foreach ($links as $link) {
       $childKey  = 'folder_' . $link->child_id;
       $parentKey = $link->parent_id ? 'folder_' . $link->parent_id : null;
 
-      // Pastikan child ada di map (belum terfilter oleh otorisasi)
       if (isset($map[$childKey])) {
-        if ($parentKey === null) {
-          // Ini adalah root folder, tambahkan langsung ke $tree
-        } else if (isset($map[$parentKey])) { // Pastikan parent juga ada di map
-          array_push($map[$parentKey]->children, $map[$childKey]);
-        }
+        if ($parentKey === null) continue;
+        else if (isset($map[$parentKey])) array_push($map[$parentKey]->children, $map[$childKey]);
       }
     }
 
-    // cari root
+    // cari root folder
     $roots = [];
     foreach ($map as $key => $node) {
       $isRoot = true;
@@ -172,6 +180,7 @@ class Folder extends BaseController
       }
     }
 
+    // filter folder berdasarkan hak akses
     $filter = function ($node) use (&$filter) {
       if (isset($node->can_view) && $node->can_view == 0) {
         return null;
@@ -186,13 +195,13 @@ class Folder extends BaseController
       return $node;
     };
 
+    $tree = [];
     foreach ($roots as $root) {
       $n = $filter($root);
       if ($n !== null) $tree[] = $n;
     }
 
-    // [BARU] Ambil daftar personel yang punya dokumen untuk dropdown
-    $db = \Config\Database::connect();
+    // ambil daftar personel dengan dokumen
     $personelWithDocs = $db->table('personel as p')
       ->select('p.id_personel, p.nama')
       ->where('EXISTS (SELECT 1 FROM dokumen d WHERE d.id_personel = p.id_personel)')
@@ -201,15 +210,15 @@ class Folder extends BaseController
       ->getResult();
 
     $data = [
-      'title'      => 'Dokumen Akreditasi',
-      'tree'       => $tree,
-      'folder_tree' => $folder_tree, // Kirim data pohon folder ke view
+      'title'       => 'Dokumen Akreditasi',
+      'tree'        => $tree,
+      'folder_tree' => $folder_tree,
       'all_folders' => $folders,
-      'categories' => $modelCategories->getAllData(),
-      'user'       => $user,
-      'role'       => $modelRoles->getAllData(),
-      'current_sort' => $sortBy, // Kirim state sorting saat ini ke view
-      'personel_with_docs' => $personelWithDocs, // [BARU] Kirim data personel ke view
+      'categories'  => $modelCategories->getAllData(),
+      'user'        => $user,
+      'role'        => $modelRoles->getAllData(),
+      'current_sort' => $sortBy,
+      'personel_with_docs' => $personelWithDocs,
     ];
 
     return view('Modules\Folder\Views\v_folder', $data);
@@ -221,15 +230,14 @@ class Folder extends BaseController
       $id = $this->encrypter->decrypt(hex2bin($id));
 
       $model = new MyModel('files'); // Point to the files table
-      $select = 'files.*, users.nama as author, categories.nama as kategori, folder.flag as folder_flag';
+      $select = 'files.*, users.nama as author, categories.nama as kategori'; // awalnya ada folder.flag as folder_flag, jdi nnti rombak dikit ya
       $join = [
         'users' => 'users.id_user = files.user_id',
         'categories' => 'categories.id_categories = files.categories_id',
-        'folder' => 'folder.id_folder = files.id_folder'
+        // 'folder' => 'folder.id_folder = files.id_folder'
       ];
       $where = ['id_files' => $id];
       $get = $model->getOneByJoin($join, $where, $select, 'LEFT'); // Menggunakan LEFT JOIN
-
       if (!$get) {
         return $this->response->setStatusCode(404)->setJSON(['error' => 'File tidak ditemukan']);
       }
