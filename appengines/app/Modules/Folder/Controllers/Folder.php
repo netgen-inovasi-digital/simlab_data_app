@@ -134,7 +134,8 @@ class Folder extends BaseController
       $folderId = $link->parent_folder;
       $sortOrder = $link->sort_order ?? null;
 
-      $file = $allFiles[$fileId] ?? null;
+      $file = isset($allFiles[$fileId]) ? clone $allFiles[$fileId] : null;
+
       if (!$file) continue;
 
       $file->type     = 'file';
