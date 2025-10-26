@@ -209,6 +209,8 @@
           $rawId = $node->type === 'folder' ? $node->id_folder : $node->id_files;
           $encId = bin2hex($encrypter->encrypt($rawId));
 
+          $parentFolderId = $node->parent_folder_id ?? null;
+
           // Menambahkan data atribut untuk filtering
           $dataAttrs = 'data-type="' . $node->type . '" data-count="' . $level . '" data-id="' . esc($rawId) . '"';
           if ($node->type === 'folder') {
@@ -222,6 +224,7 @@
             $dataAttrs .= ' data-nama="' . esc(strtolower($node->title)) . '"';
             $dataAttrs .= ' data-filename="' . esc($node->berkas) . '"';
             $dataAttrs .= ' data-user-id="' . esc($node->user_id) . '"';
+            $dataAttrs .= ' data-folid="' . esc($parentFolderId) . '"';
             $dataAttrs .= ' data-date="' . ($node->created_at ? date('Y-m-d', strtotime($node->created_at)) : '') . '"';
             $dataAttrs .= ' data-category-id="' . esc($node->categories_id) . '"';
             $dataAttrs .= ' data-url="' . base_url('uploads/' . $node->berkas) . '"';
@@ -868,7 +871,7 @@
       draggedItem = item;
       dragStartX = e.clientX;
 
-      // ✅ Simpan parent lama atau level lama (buat referensi saat drop gagal)
+      // Simpan parent lama atau level lama (buat referensi saat drop gagal)
       item.dataset.oldCount = item.dataset.count;
       item.dataset.prevId = item.previousElementSibling ? item.previousElementSibling.id : 'none';
 
@@ -947,7 +950,7 @@
 
       // [PERBAIKAN] 1. Pindahkan ke posisi sebelumnya apabila tidak ada induk
       if (!parentFolder && draggedItem.dataset.type === "file") {
-        // 🧩 Kembalikan ke posisi DOM semula
+        // Kembalikan ke posisi DOM semula
         item.dataset.count = item.dataset.oldCount || 0;
         item.style.marginLeft = (item.dataset.count * 30) + "px";
 
@@ -1572,7 +1575,7 @@
     const detailFileModal = new bootstrap.Modal(document.getElementById('detailFileModal'));
     const modalAksiContainer = document.querySelector('.modal-aksi-file-container');
     modalAksiContainer.id = id;
-    modalAksiContainer.dataset.parfolder = itemDiv.dataset.id;
+    modalAksiContainer.dataset.parfolder = itemDiv.dataset.folid
 
     contentArea.innerHTML =
       '<div class="text-center p-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
@@ -1828,8 +1831,7 @@
                   </option>
                 <?php endforeach; ?>
               </select>
-              <button type="button" class="btn btn-outline-secondary"
-                id="btn-kategori-aksi">
+              <button type="button" class="btn btn-outline-secondary" id="btn-kategori-aksi">
                 Tambah file lain
               </button>
             </div>
