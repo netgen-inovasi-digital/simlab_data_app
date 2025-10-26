@@ -38,7 +38,6 @@ class Categories extends BaseController
     $id = $json->id ?? null;
 
     if ($id) {
-
       // Coba deteksi apakah id berbentuk hex terenkripsi
       if (ctype_xdigit($id)) {
         try {

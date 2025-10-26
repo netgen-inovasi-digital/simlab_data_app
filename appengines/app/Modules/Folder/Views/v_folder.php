@@ -295,6 +295,8 @@
       <?php
       function aksi($encId, $id, $node)
       {
+        $parentFolderId = $node->parent_folder_id ?? null;
+
         $btnFile = ($node->type === 'file') ? '
         <span class="aksi-text me-1" style="display: none;">Bisa Lihat</span>
         
@@ -309,11 +311,7 @@
         <label class="divider divider-crud">|</label>
 
         <span class="aksi-text ms-2 me-1" style="display: none;" >Bisa Aksi</span>
-
-        <span class="action-btn text-dark" role="button" title="Ubah" onclick="editItemFile(event)">
-            <i class="bi bi-pencil-square"></i></span>
-        <label class="divider">|</label>
-        <span class="action-btn text-danger" role="button" title="Hapus" onclick="deleteItemFile(event)">
+        <span class="action-btn text-danger" role="button" title="Hapus" onclick="deleteFileLinks(event)">
             <i class="bi bi-x-circle"></i></span>
             <input class="form-check-otorisasi checkbox-otorisasi-file" type="checkbox" 
                data-type="file" data-id=' . esc($id) . ' data-perm="crud"
@@ -357,9 +355,8 @@
 
         return '<div id="' . $encId . '" data-nama="' .
           ($node->type === 'folder'
-            ? esc($node->nama)
-            : (isset($node->title) ? esc($node->title) : '')
-          ) . '">
+            ? esc($node->nama) : (isset($node->title) ? esc($node->title) : '')
+          ) . '" data-parfolder="' . $parentFolderId . '">
     ' . $btnFile . $btnFolder . '        
 </div>';
       }
@@ -1294,20 +1291,16 @@
         .then(data => {
           data.forEach(item => {
             // checkbox view
-            const cbView = document.querySelector(
+            const cbView = document.querySelectorAll(
               `.form-check-otorisasi[data-type="${item.type}"][data-id="${item.id}"][data-perm="view"]`
             );
-            if (cbView) {
-              cbView.checked = item.can_view;
-            }
+            cbView.forEach(cb => cb.checked = item.can_view);
 
             // checkbox crud
-            const cbCrud = document.querySelector(
+            const cbCrud = document.querySelectorAll(
               `.form-check-otorisasi[data-type="${item.type}"][data-id="${item.id}"][data-perm="crud"]`
             );
-            if (cbCrud) {
-              cbCrud.checked = item.can_crud;
-            }
+            cbCrud.forEach(cb => cb.checked = item.can_crud);
           });
         })
         .catch({});
@@ -1349,72 +1342,16 @@
     });
   });
 
-
-
-  function editItemFile(event) {
-    const closest = event.target.closest('div');
-    if (closest) {
-      showLoading();
-      const id = closest.getAttribute('id');
-      const url = "<?= base_url('berkas/edit') ?>/" + id;
-      fetch(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data) {
-            var detailModalEl = document.getElementById('detailFileModal');
-            var detailModal = bootstrap.Modal.getInstance(detailModalEl);
-            if (detailModal && detailModalEl.classList.contains('show')) detailModal.hide();
-            $('.modal-title-file').text('Ubah Data');
-            $('#modalFormFile').modal('show');
-            Object.entries(data).forEach(([key, value]) => {
-              const elements = document.querySelectorAll(`[name="${key}"],[name="${key}[]"]`);
-              if (elements.length > 0) {
-                elements.forEach(el => {
-                  if (el.type === "checkbox" || el.type === "radio") {
-                    if (el.type === "checkbox") {
-                      if (Array.isArray(value)) {
-                        el.checked = value.includes(el.value);
-                      } else el.checked = value === "true" || value === "1" ||
-                        value === true || value === el.value;
-                    } else if (el.type === "radio") el.checked = el.value === value;
-                  } else if (el.tagName === "SELECT") {
-                    el.value = value || "";
-                    const wrapper = el.parentElement.querySelector('.selected');
-                    if (wrapper) {
-                      const option = Array.from(el.options).find(opt => opt
-                        .value === value);
-                      wrapper.textContent = option ? option.text :
-                        "-- pilih data --";
-                    }
-                  } else el.value = value || "";
-                });
-              }
-              perbaruiTombol();
-            });
-          }
-        }).catch(error => {
-          sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
-        }).finally(() => {
-          setTimeout(() => {
-            hideLoading();
-          }, 300);
-        });
-    }
-  }
-
-  function deleteItemFile(event, msg = "") {
+  function deleteFileLinks(event, msg = "") {
     const closest = event.target.closest('div');
     if (msg != "") msg = '<br><strong>' + msg + '</strong>';
     if (closest) {
       sayAlert('confirmModal', 'Confirm!', 'Apakah yakin menghapus data ini?' + msg, 'danger', true, () => {
         showLoading();
         const id = closest.getAttribute('id');
-        const url = "<?= base_url('berkas/delete') ?>/" + id;
+        const url = "<?= base_url('berkas/deleteLinks') ?>/" + id;
+        const idFolder = closest.dataset.parfolder;
+        console.log(idFolder)
 
         fetch(url, {
             method: 'POST',
@@ -1422,6 +1359,9 @@
               'Content-Type': 'application/x-www-form-urlencoded',
               'X-CSRF-TOKEN': document.querySelector('[name="<?= csrf_token() ?>"]').value
             },
+            body: JSON.stringify({
+              idFolder
+            })
           })
           .then(response => response.json())
           .then(data => {
@@ -1470,17 +1410,16 @@
     // Kosongkan input file (jika ada)
     var fileInputs = document.querySelectorAll('input[type="file"]');
     fileInputs.forEach(fileInput => fileInput.value = '');
-    // Kosongkan selectSearch (jika ada)
-    document.querySelectorAll('#kategori_id').forEach(el => {
+
+    document.querySelectorAll('#file_id').forEach(el => {
       if (el.id != "items-per-page") el.value = "";
       var wrapper = el.parentElement.querySelector('.selected');
       if (wrapper) wrapper.textContent = "-- pilih data --";
     });
-    document.querySelector('input[name="idFile"]').value = '';
+    // document.querySelector('input[name="idFile"]').value = '';
     document.querySelector('input[name="id_folder"]').value = id;
     $('.modal-title-file').text('Tambah File - Folder ' + item.dataset.nama);
     $('#modalFormFile').modal('show');
-    perbaruiTombol();
   }
   $('#myFileForm').submit();
 
@@ -1528,36 +1467,6 @@
       });
   }
 
-  // ===== validasi file ===== //
-  document.querySelector('#berkas').addEventListener('change', function() {
-    var file = this.files[0];
-    var errorMsg = document.querySelector('#errorMsg');
-    var ketBerkas = document.querySelector('#ketBerkas');
-    if (file) {
-      var allowedTypes = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      ];
-      var maxSizeMB = 10;
-      if (!allowedTypes.includes(file.type)) {
-        errorMsg.textContent = 'Hanya file PDF, DOC, atau DOCX yang diperbolehkan.';
-        errorMsg.classList.remove('d-none');
-        ketBerkas.classList.add('d-none');
-        this.value = '';
-      } else if (file.size > maxSizeMB * 1024 * 1024) {
-        errorMsg.textContent = 'Ukuran file maksimal ' + maxSizeMB + 'MB.';
-        errorMsg.classList.remove('d-none');
-        errorMsg.style.removeProperty('font-size');
-        ketBerkas.classList.add('d-none');
-        this.value = '';
-      } else {
-        errorMsg.classList.add('d-none');
-        ketBerkas.classList.remove('d-none');
-      }
-    }
-  });
-
 
   // ===== nama dan slug ===== //
   var namaInput = document.querySelector('input[name="titleFile"]');
@@ -1573,260 +1482,6 @@
         .replace(/-+/g, '-');
       slugInput.value = slug;
     });
-  }
-
-  // ===== Tambah Kategori Baru ===== // 
-  var select = document.getElementById('kategori_id');
-  var btnAksi = document.getElementById('btn-kategori-aksi');
-  var formBaru = document.getElementById('form-kategori-baru');
-  var inputBaru = document.getElementById('input-kategori-baru');
-  var formEdit = document.getElementById('form-edit-kategori');
-  var inputEdit = document.getElementById('input-edit-kategori');
-  var btnSimpan = document.getElementById('btn-simpan-kategori');
-  var btnBatal = document.getElementById('btn-batal-kategori');
-  var btnUpdate = document.getElementById('btn-update-kategori');
-  var btnDelete = document.getElementById('btn-delete-kategori');
-  // ===== function perbarui Tombol ===== //
-  function perbaruiTombol() {
-    var selectedValue = select.value;
-    if (selectedValue === "") {
-      btnAksi.innerText = 'Tambah';
-      btnAksi.classList.remove('btn-primary');
-      btnAksi.classList.add('btn-outline-secondary');
-      btnAksi.setAttribute('data-mode', 'tambah');
-      btnUpdate.classList.add('d-none');
-      btnDelete.classList.add('d-none');
-      inputEdit.classList.add('d-none');
-      inputBaru.classList.remove('d-none');
-      btnSimpan.classList.remove('d-none');
-      btnBatal.classList.remove('d-none');
-      formEdit.style.display = 'none';
-    } else {
-      btnAksi.innerText = 'Edit / Hapus';
-      btnAksi.classList.remove('btn-outline-secondary');
-      btnAksi.classList.add('btn-primary');
-      btnAksi.setAttribute('data-mode', 'edit');
-      inputBaru.classList.add('d-none');
-      btnSimpan.classList.add('d-none');
-      btnBatal.classList.add('d-none');
-      inputEdit.value = select.options[select.selectedIndex].text;
-    }
-  }
-
-  select.addEventListener('change', perbaruiTombol);
-  perbaruiTombol();
-
-  btnAksi.addEventListener('click', () => {
-    const mode = btnAksi.getAttribute('data-mode');
-
-    if (mode === 'tambah') {
-      const isShown = !formBaru.classList.contains('d-none');
-
-      // Toggle tampilan
-      if (isShown) {
-        formBaru.classList.add('d-none');
-      } else {
-        formBaru.classList.remove('d-none');
-        formEdit.style.display = 'none';
-        inputBaru.focus();
-      }
-
-    } else if (mode === 'edit') {
-      const isShown = formEdit.style.display === 'flex';
-
-      // Toggle tampilan
-      if (isShown) {
-        formEdit.style.display = 'none';
-        inputEdit.classList.add('d-none');
-        btnUpdate.classList.add('d-none');
-        btnDelete.classList.add('d-none');
-      } else {
-        formBaru.classList.add('d-none');
-        formEdit.style.display = 'flex';
-        inputEdit.classList.remove('d-none');
-        btnUpdate.classList.remove('d-none');
-        btnDelete.classList.remove('d-none');
-        inputEdit.focus();
-      }
-    }
-  });
-
-  // ===== button batal kategori ===== //
-  document.getElementById('btn-batal-kategori').addEventListener('click', () => {
-    formBaru.classList.add('d-none');
-    inputBaru.value = '';
-  });
-
-  // ===== button simpan kategori ===== //
-  document.getElementById('btn-simpan-kategori').addEventListener('click', () => {
-    var nama = inputBaru.value.trim();
-    if (!nama) return;
-
-    if (isKategoriDuplikat(nama)) {
-      sayAlert('errorModal', 'Error', 'Kategori dengan nama yang sama sudah ada.', 'warning');
-      return;
-    }
-
-    var formData = new FormData();
-    formData.append('nama', nama);
-
-    saveData({
-      url: '<?= base_url("categories/submit") ?>',
-      formData: formData,
-      onSuccess: (json) => {
-        if (json && json.id) {
-          var option = document.createElement('option');
-          option.value = json.id;
-          option.text = json.nama;
-          option.selected = true;
-          select.appendChild(option);
-
-          inputBaru.value = '';
-          formBaru.classList.add('d-none');
-          perbaruiTombol();
-          sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-        } else {
-          alert('Gagal menambahkan kategori');
-        }
-      }
-    });
-  });
-
-  // ===== button update kategori ===== //
-  btnUpdate.addEventListener('click', () => {
-    var id = select.value;
-    var namaBaru = inputEdit.value.trim();
-    if (!id || !namaBaru) return;
-
-    // Cek apakah namaBaru sudah ada di kategori lain
-    const namaBaruLower = namaBaru.toLowerCase();
-    let duplikat = false;
-
-    Array.from(select.options).forEach(opt => {
-      if (
-        opt.value !== "" &&
-        opt.value !== id &&
-        opt.text.trim().toLowerCase() === namaBaruLower
-      ) {
-        duplikat = true;
-      }
-    });
-
-    if (duplikat) {
-      sayAlert('errorModal', 'Error', 'Kategori dengan nama yang sama sudah ada.', 'warning');
-      return;
-    }
-
-    var formData = new FormData();
-    formData.append('id', id);
-    formData.append('nama', namaBaru);
-
-    saveData({
-      url: '<?= base_url("categories/submit") ?>',
-      formData: formData,
-      onSuccess: (json) => {
-        if (json && json.id) {
-          const option = select.querySelector(`option[value="${id}"]`);
-          if (option) {
-            option.text = json.nama;
-            option.selected = true;
-          }
-          formEdit.style.display = 'none';
-          perbaruiTombol();
-          sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-        }
-      }
-    });
-  });
-
-  function isKategoriDuplikat(nama) {
-    nama = nama.trim().toLowerCase();
-    const options = select.options;
-    for (let i = 0; i < options.length; i++) {
-      if (options[i].value !== "" && options[i].text.trim().toLowerCase() === nama) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-
-  // ===== button hapus kategori ===== //
-  btnDelete.addEventListener('click', () => {
-    var id = select.value;
-    if (!id) return;
-    sayAlert('confirmModal', 'Hapus Kategori', 'Yakin ingin menghapus kategori ini?', 'danger', true, () => {
-      deleteData({
-        url: '<?= base_url("categories/delete") ?>',
-        data: {
-          id
-        },
-        onSuccess: (json) => {
-          const option = select.querySelector(`option[value="${id}"]`);
-          if (option) option.remove();
-
-          select.value = "";
-          formEdit.style.display = 'none';
-          perbaruiTombol();
-          sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-        }
-      });
-    });
-  });
-
-
-  function deleteData({
-    url,
-    data,
-    onSuccess,
-    onError
-  }) {
-    showLoading();
-
-    // Ambil semua input CSRF di halaman (misalnya di banyak form)
-    const csrfInputs = document.querySelectorAll('input[type="hidden"][name^="csrf_"]');
-    let csrfName = null;
-    let csrfValue = null;
-
-    if (csrfInputs.length > 0) {
-      // Ambil dari input pertama (CodeIgniter selalu pakai nama yang sama di semua input CSRF)
-      csrfName = csrfInputs[0].name;
-      csrfValue = csrfInputs[0].value;
-    }
-
-    fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(csrfName && {
-            'X-CSRF-TOKEN': csrfValue
-          })
-        },
-        body: JSON.stringify(data)
-      })
-      .then(res => res.json())
-      .then(json => {
-        // Update CSRF
-        if (json.xname && json.xhash) {
-          document.querySelectorAll(`input[name="${json.xname}"]`).forEach(input => {
-            input.value = json.xhash;
-          });
-        }
-
-        if (json.success || json.res === true) {
-          if (typeof onSuccess === 'function') onSuccess(json);
-        } else {
-          if (typeof onError === 'function') onError(json);
-          else sayAlert('errorModal', 'Error', 'Data gagal dihapus.', 'warning');
-        }
-      })
-      .catch(error => {
-        console.error(error);
-        sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
-      })
-      .finally(() => {
-        hideLoading();
-      });
   }
 
   // ===== function simpan data ===== //
@@ -1917,6 +1572,8 @@
     const detailFileModal = new bootstrap.Modal(document.getElementById('detailFileModal'));
     const modalAksiContainer = document.querySelector('.modal-aksi-file-container');
     modalAksiContainer.id = id;
+    modalAksiContainer.dataset.parfolder = itemDiv.dataset.id;
+
     contentArea.innerHTML =
       '<div class="text-center p-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
     modalAksiContainer.innerHTML = '';
@@ -1960,10 +1617,7 @@
           });
           if (canCrud && data.folder_flag != '1') {
             modalAksiContainer.innerHTML = `
-            <button type="button" class="btn btn-primary me-2" onclick="editItemFile(event)">
-              <i class="bi bi-pencil-square me-1"></i> Edit
-            </button>
-            <button type="button" class="btn btn-danger" onclick="deleteItemFile(event)">
+            <button type="button" class="btn btn-danger" onclick="deleteFileLinks(event)">
               <i class="bi bi-trash me-1"></i> Hapus
             </button>
           `;
@@ -2158,86 +1812,27 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
         </button>
       </div>
-      <?php echo form_open('berkas/submit', array('id' => 'myFileForm', 'novalidate' => '')) ?>
+      <?php echo form_open('berkas/submitLinks', array('id' => 'myFileForm', 'novalidate' => '')) ?>
       <div class="modal-body">
-        <input type="hidden" value="" name="idFile" />
+        <input type="hidden" value="<?= $user->role_id ?>" name="user_role" />
         <input type="hidden" name="id_folder">
-        <input name="slug" type="text" class="form-control bg-light" value="" hidden>
-
-        <div class="row mb-2">
-          <div class="col">
-            <label class="col-md-3 col-form-label">Judul Berkas</label>
-            <input name="titleFile" type="text" class="form-control" required
-              placeholder="Masukkan judul file">
-          </div>
-        </div>
-        <div class="row mb-2">
-          <div class="col">
-            <label class="col-md-7 col-form-label">No. Dokumen</label>
-            <input name="nomor_dokumen" type="text" class="form-control bg-light"
-              placeholder="Masukkan nomor dokumen" required>
-          </div>
-          <div class="col">
-            <label class="col-md-3 col-form-label">Revisi Ke-</label>
-            <input name="revisi" type="number" class="form-control bg-light" placeholder="Masukkan revisi"
-              required>
-          </div>
-        </div>
-        <div class="row mb-2">
-          <div class="col">
-            <label class="col-md-6 col-form-label">File</label>
-            <input id="berkas" name="berkas" type="file" class="form-control" accept=".pdf,.doc,.docx">
-            <small class="text-muted" id="ketBerkas" style="font-size: 11px;">Upload maks. 100MB (File:
-              .pdf, .doc, .docx.)</small>
-            <small class="text-danger d-none" id="errorMsg">Hanya file docs/pdf yang diperbolehkan!</small>
-          </div>
-          <div class="col">
-            <label class="col-md-4 col-form-label">Tanggal Terbit</label>
-            <input name="tanggal" id="tanggal-input" type="date" class="form-control"
-              value="<?= esc(date('Y-m-d')) ?>" required>
-          </div>
-
-        </div>
-
-        <div class="row mb-2">
-          <div class="col">
-            <label class="col-md-5 col-form-label">Kategori</label>
-            <div class="d-flex gap-2 align-items-start">
-              <select id="kategori_id" name="kategori_id" class="form-select" required
-                style="max-width: 150px;">
+        <div class="row mb-2 d-flex justify-content-center align-items-center">
+          <div class="col-11">
+            <label class="col-md-5 col-form-label">File Akreditasi</label>
+            <div class="d-flex gap-2 align-items-start justify-content-between">
+              <select id="file_id" name="file_id" class="form-select" required style="max-width: 540px;">
                 <option value="">-- pilih data --</option>
-                <?php foreach ($categories as $kategori): ?>
-                  <option value="<?= $kategori->id_categories ?>">
-                    <?= esc($kategori->nama) ?>
+                <?php foreach ($files as $file): ?>
+                  <option value="<?= $file->id_files ?>">
+                    <?= esc($file->title) ?>
                   </option>
                 <?php endforeach; ?>
               </select>
               <button type="button" class="btn btn-outline-secondary"
-                id="btn-kategori-aksi">Tambah</button>
+                id="btn-kategori-aksi">
+                Tambah file lain
+              </button>
             </div>
-            <!-- Form tambah kategori akan muncul di sini -->
-            <div id="form-kategori-baru" class="mt-2 d-none">
-              <div class="input-group" style="max-width: 400px;">
-                <input type="text" class="form-control" id="input-kategori-baru"
-                  placeholder="Nama kategori baru">
-                <button class="btn btn-success ms-2" type="button"
-                  id="btn-simpan-kategori">Simpan</button>
-                <button class="btn btn-danger ms-2" type="button" id="btn-batal-kategori">Batal</button>
-              </div>
-            </div>
-            <div class="d-flex gap-2 align-items-start mt-2" id="form-edit-kategori" style="display: none;">
-              <input type="text" class="form-control" id="input-edit-kategori" style="max-width: 200px;"
-                placeholder="Edit nama kategori">
-              <button type="button" class="btn btn-success" id="btn-update-kategori">Update</button>
-              <button type="button" class="btn btn-danger" id="btn-delete-kategori">Hapus</button>
-            </div>
-          </div>
-          <div class="col">
-            <label class="col-md-3 col-form-label">Author</label>
-            <input name="nama" type="text" value="<?= $user->nama ?>" class="form-control bg-light" required
-              readonly>
-            <input name="user_id" type="text" value="<?= $user->id_user ?>" class="form-control" required
-              hidden>
           </div>
         </div>
       </div>
