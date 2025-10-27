@@ -19,7 +19,7 @@ class Folder extends BaseController
     $modelUser        = new MyModel('users');
     $modelFolder      = new MyModel('folder');
     $modelFolderLink  = new MyModel('folder_links');
-    $modelFileLink    = new MyModel('file_links'); // ✅ baru
+    $modelFileLink    = new MyModel('file_links');
     $modelFiles       = new MyModel('files');
     $modelRoles       = new MyModel('roles');
     $modelOtorFolder  = new MyModel('otoritas_folder');
@@ -54,7 +54,7 @@ class Folder extends BaseController
     $folders = $modelFolder->getAllData($folderOrderColumn, $folderOrderDirection);
     $links   = $modelFolderLink->getAllData();
     $files   = $modelFiles->getAllData($fileOrderColumn, $fileOrderDirection);
-    $fileLinks = $modelFileLink->getAllData(); // ✅ baru
+    $fileLinks = $modelFileLink->getAllData();
 
     // ambil otoritas sesuai role
     $otorFolder = $modelOtorFolder->getAllDataByWhere(['id_role' => $user->role_id]);
@@ -128,14 +128,13 @@ class Folder extends BaseController
       $allFiles[$f->id_files] = $f;
     }
 
-    // masukkan file ke folder via file_links ✅
+    // masukkan file ke folder via file_links 
     foreach ($fileLinks as $link) {
       $fileId = $link->child_file;
       $folderId = $link->parent_folder;
       $sortOrder = $link->sort_order ?? null;
 
       $file = isset($allFiles[$fileId]) ? clone $allFiles[$fileId] : null;
-
       if (!$file) continue;
 
       $file->type     = 'file';
@@ -355,7 +354,6 @@ class Folder extends BaseController
     } catch (\Exception $e) {
       $db->transRollback();
       // [FIX] Reset status transaksi yang gagal agar query berikutnya bisa jalan
-      $db->transFailure = false;
       return $this->response->setStatusCode(500)->setJSON([
         'res' => 'error',
         'message' => $e->getMessage(),
@@ -377,6 +375,7 @@ class Folder extends BaseController
   private function _deleteFolderRecursive($folderId, $isPersonelFolder = false)
   {
     $linkModel = new MyModel('folder_links');
+    $fileLinkModel = new MyModel('file_links'); // [BARU]
     $folderModel = new MyModel('folder');
     $fileModel = new MyModel('files');
 
@@ -389,23 +388,18 @@ class Folder extends BaseController
 
     // 2. Hapus semua file di dalam folder ini
     if (!$isPersonelFolder) {
-      // HANYA HAPUS FILE FISIK & RECORD DB JIKA BUKAN FOLDER PERSONEL
-      $filesInFolder = $fileModel->getAllDataByWhere(['id_folder' => $folderId]);
-      foreach ($filesInFolder as $file) {
-        if (!empty($file->berkas) && file_exists(FCPATH . 'uploads/' . $file->berkas)) {
-          $trashPath = FCPATH . 'uploads/trash/';
-          if (!is_dir($trashPath)) {
-            mkdir($trashPath, 0777, true);
-          }
-          $newFilePath = $trashPath . uniqid() . '_' . basename($file->berkas);
-          rename(FCPATH . 'uploads/' . $file->berkas, $newFilePath);
-        }
+      // [PERBAIKAN] Cek apakah ada file yang tertaut ke folder ini.
+      $fileIdsToDelete = $fileLinkModel->builder()->select('child_file')->where('parent_folder', $folderId)->get()->getResultArray();
+      $fileIdsToDelete = array_column($fileIdsToDelete, 'child_file');
+
+      if (!empty($fileIdsToDelete)) {
+        // [PERBAIKAN] Hanya hapus relasi dari tabel file_links. JANGAN sentuh file fisik atau data di tabel `files`.
+        $fileLinkModel->deleteData('parent_folder', $folderId);
       }
-      $fileModel->deleteData('id_folder', $folderId);
     }
 
     // 3. Hapus relasi folder dari folder_links
-    $linkModel->deleteData('child_id', $folderId);
+    $linkModel->deleteData('child_id', $folderId); // Hapus folder sebagai anak
 
     // 4. Hapus folder itu sendiri dari tabel folder
     $folderModel->deleteData('id_folder', $folderId);
@@ -644,6 +638,7 @@ class Folder extends BaseController
       $modelFolder = new MyModel('folder');
       $modelLinks = new MyModel('folder_links');
       $modelFiles = new MyModel('files');
+      $modelFileLinks = new MyModel('file_links'); // [BARU]
       $modelOtorFolder = new MyModel('otoritas_folder'); // [BARU]
       $modelOtorFile = new MyModel('otoritas_file'); // [BARU]
 
@@ -683,8 +678,7 @@ class Folder extends BaseController
       foreach ($dokumenPersonel as $doc) {
         $newFileData = [
           'title'         => $doc->nama_asli_file,
-          'slug'          => url_title($doc->nama_asli_file, '-', true) . '-' . uniqid(),
-          'id_folder'     => $folderId,
+          'slug'          => url_title($doc->nama_asli_file, '-', true) . '-' . uniqid(), // 'id_folder' dihapus
           'user_id'       => $user_id,
           'berkas'        => basename($doc->path_file), // [FIX] Ambil hanya nama file dari path
           'created_at'    => date('Y-m-d H:i:s'),
@@ -694,6 +688,13 @@ class Folder extends BaseController
 
         // [BARU] Berikan otorisasi untuk setiap file yang baru dibuat
         if ($newFileId) {
+          // [BARU] Buat link antara file baru dan folder personel
+          $modelFileLinks->insertData([
+            'parent_folder' => $folderId,
+            'child_file'    => $newFileId,
+            // 'sort_order' bisa ditambahkan jika diperlukan
+          ]);
+
           foreach ($roles as $r) {
             $modelOtorFile->insertData([
               'id_file' => $newFileId,
@@ -781,6 +782,7 @@ class Folder extends BaseController
   private function _cloneFolderStructure($templateFolderId, $newParentId)
   {
     $modelFolder = new MyModel('folder');
+    $modelFileLinks = new MyModel('file_links'); // [BARU]
     $modelLinks  = new MyModel('folder_links');
     $modelFiles  = new MyModel('files');
     $modelOtorFolder = new MyModel('otoritas_folder');
@@ -859,47 +861,30 @@ class Folder extends BaseController
     $modelLinks->insertData(['child_id' => $newFolderId, 'parent_id' => $newParentId, 'sort_order' => $this->lastGlobalSortOrder]);
 
     // 4. Ambil semua file dari folder template yang sedang diproses
-    $filesToClone = $modelFiles->getAllDataById(['id_folder' => $templateFolderId]);
+    // [REVISI] Ambil file menggunakan tabel pivot `file_links`
+    $filesToClone = $modelFiles->getAllDataByJoin(
+      ['file_links' => 'file_links.child_file = files.id_files'],
+      ['file_links.parent_folder' => $templateFolderId]
+    );
 
     // Periksa jika ada file yang perlu dikloning
     if (!empty($filesToClone)) {
+      // [REVISI] Jangan buat file baru, cukup tautkan file yang sudah ada ke folder baru.
       foreach ($filesToClone as $file) {
-        $newFileName = null;
+        $existingFileId = $file->id_files;
 
-        // Salin file fisik jika ada
-        if (!empty($file->berkas) && file_exists(FCPATH . 'uploads/' . $file->berkas)) {
-          $path_info = pathinfo($file->berkas);
-          $newFileName = $path_info['filename'] . '_' . uniqid() . '.' . $path_info['extension'];
+        // Buat link antara file yang SUDAH ADA dan folder yang di-clone
+        $modelFileLinks->insertData([
+          'parent_folder' => $newFolderId,
+          'child_file'    => $existingFileId,
+        ]);
 
-          if (!copy(FCPATH . 'uploads/' . $file->berkas, FCPATH . 'uploads/' . $newFileName)) {
-            throw new \Exception("Gagal menyalin file fisik: {$file->berkas}. Periksa izin folder 'uploads'.");
-          }
-        }
-
-        // 5. Siapkan data file baru dengan kolom yang relevan
-        $newFileData = [
-          'title'         => ($file->title ?? 'File') . $fileBaseName,
-          'slug'          => ($file->slug ?? 'salinan-file') . '-' . uniqid(),
-          'nomor_dokumen' => $file->nomor_dokumen ?? null,
-          'revisi'        => $file->revisi ?? 0,
-          'categories_id' => $file->categories_id ?? null,
-          'id_folder'     => $newFolderId,
-          'user_id'       => session()->get('id_user'), // Set user saat ini sebagai pemilik
-          'created_at'    => date('Y-m-d H:i:s'),
-          'updated_at'    => date('Y-m-d H:i:s'),
-          'berkas'        => $newFileName, // Gunakan nama file fisik yang baru disalin (atau null)
-        ];
-
-        // 6. Masukkan data file baru ke database
-        $newFileId = $modelFiles->insertData($newFileData, true);
-        if (!$newFileId) {
-          throw new \Exception("Gagal memasukkan data file '{$newFileData['title']}' ke database. Periksa struktur tabel 'files'.");
-        }
-
-        // [FIX] Tambahkan otorisasi untuk file yang baru di-clone
+        // Tambahkan otorisasi untuk file yang ditautkan agar role saat ini bisa mengakses.
+        // Ini mencegah kasus di mana file ada tetapi tidak bisa dilihat karena otorisasi.
         foreach ($roles as $r) {
-          $modelOtorFile->insertData([
-            'id_file' => $newFileId,
+          // Gunakan `ignore()` untuk menghindari error duplikat jika otorisasi sudah ada.
+          $db->table('otoritas_file')->ignore(true)->insert([
+            'id_file' => $existingFileId,
             'id_role' => $r,
             'can_view' => 1,
             'can_crud' => 1,
@@ -929,7 +914,7 @@ class Folder extends BaseController
 
     $folderSortData = [];
     $folderLinkData = [];
-    $fileData = [];
+    $fileLinkData = []; // [UBAH] Mengganti $fileData menjadi $fileLinkData
 
     foreach ($items as $item) {
       $type = $item['type'];
@@ -952,10 +937,11 @@ class Folder extends BaseController
           'sort_order' => $sortOrder
         ];
       } elseif ($type === 'file') {
-        $fileData[] = [
-          'id_files' => $id,
-          'id_folder' => $parentId,
-        ];
+        // [UBAH] Data untuk memperbarui relasi di tabel `file_links`
+        $fileLinkData[] = [
+          'child_file'    => $id,
+          'parent_folder' => $parentId,
+        ]; // 'sort_order' bisa ditambahkan jika diperlukan
       }
     }
 
@@ -1016,10 +1002,44 @@ class Folder extends BaseController
       $db->table('folder_links')->insertBatch($folderLinkData);
     }
 
-    // 3. Update folder untuk file yang dipindahkan
-    if (!empty($fileData)) {
-      $fileModel = new MyModel('files');
-      $fileModel->updateDataBatch($fileData, 'id_files');
+    // 3. [REVISI] Update relasi untuk file yang dipindahkan menggunakan tabel `file_links`
+    if (!empty($fileLinkData)) {
+      // Hapus semua link lama untuk file yang dipindahkan
+      $childFileIds = array_column($fileLinkData, 'child_file');
+      $db->table('file_links')->whereIn('child_file', $childFileIds)->delete();
+
+      // Masukkan semua link baru
+      $db->table('file_links')->insertBatch($fileLinkData);
+
+      // [PERBAIKAN] Validasi duplikasi setelah link baru dimasukkan (sebelum commit)
+      foreach ($fileLinkData as $link) {
+        $fileId = $link['child_file'];
+        $parentId = $link['parent_folder'];
+
+        if (!$parentId) continue; // Lewati jika dipindah ke root
+
+        // Ambil nama file yang dipindahkan
+        $movedFile = $db->table('files')->select('title')->where('id_files', $fileId)->get()->getRow();
+        if (!$movedFile) continue;
+
+        $fileName = $movedFile->title;
+
+        // Hitung berapa banyak file dengan nama yang sama di folder tujuan
+        $count = $db->table('files')
+          ->join('file_links', 'file_links.child_file = files.id_files')
+          ->where('file_links.parent_folder', $parentId)
+          ->where('files.title', $fileName)
+          ->countAllResults();
+
+        // Jika ada lebih dari 1, berarti terjadi duplikasi
+        if ($count > 1) {
+          $db->transRollback(); // Batalkan semua operasi dalam transaksi
+          return $this->response->setStatusCode(409)->setJSON([
+            'res' => false,
+            'message' => "Gagal memindahkan. File dengan nama '{$fileName}' sudah ada di folder tujuan."
+          ]);
+        }
+      }
     }
 
     $db->transComplete();

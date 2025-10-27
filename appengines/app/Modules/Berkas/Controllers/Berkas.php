@@ -502,6 +502,22 @@ class Berkas extends BaseController
       'child_file' => $this->request->getPost('file_id'),
     ];
 
+    // [PERBAIKAN] Validasi duplikasi file di folder tujuan
+    $isDuplicate = $model->getDataByWhere([
+      'parent_folder' => $data['parent_folder'],
+      'child_file' => $data['child_file']
+    ]);
+
+    if ($isDuplicate) {
+      return $this->response->setStatusCode(409)->setJSON([ // 409 Conflict
+        'res' => 'duplicate',
+        'message' => 'File ini sudah ada di dalam folder tujuan.',
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash()
+      ]);
+    }
+    // --- Akhir Validasi ---
+
     $res = $model->insertData($data);
 
     if ($res) {

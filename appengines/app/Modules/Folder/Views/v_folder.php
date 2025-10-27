@@ -871,7 +871,7 @@
       draggedItem = item;
       dragStartX = e.clientX;
 
-      // ✅ Simpan parent lama atau level lama (buat referensi saat drop gagal)
+      // Simpan parent lama atau level lama (buat referensi saat drop gagal)
       item.dataset.oldCount = item.dataset.count;
       item.dataset.prevId = item.previousElementSibling ? item.previousElementSibling.id : 'none';
 
@@ -950,7 +950,7 @@
 
       // [PERBAIKAN] 1. Pindahkan ke posisi sebelumnya apabila tidak ada induk
       if (!parentFolder && draggedItem.dataset.type === "file") {
-        // 🧩 Kembalikan ke posisi DOM semula
+        // Kembalikan ke posisi DOM semula
         item.dataset.count = item.dataset.oldCount || 0;
         item.style.marginLeft = (item.dataset.count * 30) + "px";
 
