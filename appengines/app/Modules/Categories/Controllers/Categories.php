@@ -127,6 +127,7 @@ class Categories extends BaseController
       $response = array();
       $response[] = $row->nama;
       $response[] = '<span class="fw-medium">' . $row->slug . '</span>';
+      $response[] = date('d-m-Y', strtotime($row->created_at));
       $response[] = $this->aksi($id);
       $data[] = $response;
     }

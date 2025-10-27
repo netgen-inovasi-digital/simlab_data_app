@@ -1820,10 +1820,23 @@
         <input type="hidden" value="<?= $user->role_id ?>" name="user_role" />
         <input type="hidden" name="id_folder">
         <div class="row mb-2 d-flex justify-content-center align-items-center">
-          <div class="col-11">
+          <div class="col-10 mb-3">
+            <label class="col-md-5 col-form-label">Kategori File</label>
+            <div class="d-flex gap-2 align-items-start justify-content-between">
+              <select id="file_id" name="file_id" class="form-select" required>
+                <option value="">-- pilih data --</option>
+                <?php foreach ($categories as $kategori): ?>
+                  <option value="<?= $kategori->id_categories ?>">
+                    <?= esc($kategori->nama) ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+          </div>
+          <div class="col-10">
             <label class="col-md-5 col-form-label">File Akreditasi</label>
             <div class="d-flex gap-2 align-items-start justify-content-between">
-              <select id="file_id" name="file_id" class="form-select" required style="max-width: 540px;">
+              <select id="file_id" name="file_id" class="form-select" required>
                 <option value="">-- pilih data --</option>
                 <?php foreach ($files as $file): ?>
                   <option value="<?= $file->id_files ?>">
@@ -1831,13 +1844,10 @@
                   </option>
                 <?php endforeach; ?>
               </select>
-              <button type="button" class="btn btn-outline-secondary"
-                id="btn-kategori-aksi">
-                Tambah file lain
-              </button>
             </div>
           </div>
         </div>
+        
       </div>
       <div class="modal-footer">
         <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>

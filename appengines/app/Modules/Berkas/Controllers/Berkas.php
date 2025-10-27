@@ -502,9 +502,6 @@ class Berkas extends BaseController
       'child_file' => $this->request->getPost('file_id'),
     ];
 
-    $count = $model->getAllData();
-    $data['sort_order'] = count($count) + 1;
-
     $res = $model->insertData($data);
 
     if ($res) {
@@ -669,9 +666,10 @@ class Berkas extends BaseController
       $fileUrl = base_url('uploads/' . $row->berkas);
 
       $response = array();
-      $response[] = '<div>' . esc($row->nomor_dokumen) . '</div>';
+      $response[] = esc($row->nomor_dokumen) ?? 'Tidak ada Nomor Dokumen';
       $response[] = $titleBlock;
-      $response[] = $row->nama_kategori ?? 'Tidak Berkategori';
+      $response[] = esc($row->nama_kategori) ?? 'Tidak Berkategori';
+      $response[] = esc($row->created_at != null ? date('d-m-Y', strtotime($row->created_at)) : date('d-m-Y', strtotime($row->updated_at)));
       $response[] = $this->aksi($id, $fileUrl);
       $data[] = $response;
     }
