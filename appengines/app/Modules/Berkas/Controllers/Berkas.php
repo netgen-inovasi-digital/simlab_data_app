@@ -56,6 +56,10 @@ class Berkas extends BaseController
     $model = new MyModel($this->table);
     $file = $model->getDataById($this->id, $idenc);
 
+    // [BARU] Inisialisasi model lain yang dibutuhkan
+    $modelCategories = new MyModel('categories');
+    $modelDokumen = new MyModel('dokumen');
+
     // [BARU] Cek apakah file berada di dalam folder personel
     // if ($file) {
     //   $folderModel = new MyModel('folder');
@@ -75,6 +79,9 @@ class Berkas extends BaseController
     //   // }
     // }
 
+    $db = \Config\Database::connect();
+    $db->transStart();
+
     // [PERBAIKAN] Jangan hapus file fisik, pindahkan ke folder 'sampah'
     if ($file && !empty($file->berkas)) {
       $filePath = FCPATH . 'uploads/' . $file->berkas;
@@ -89,11 +96,31 @@ class Berkas extends BaseController
         // Pindahkan file ke direktori sampah dengan nama unik untuk menghindari tumpukan
         $newFilePath = $trashPath . uniqid() . '_' . basename($filePath);
         rename($filePath, $newFilePath);
+
+        // [BARU] Logika untuk menghapus dari tabel 'dokumen' jika ini adalah file personel
+        if ($file->categories_id) {
+          $category = $modelCategories->getDataById('id_categories', $file->categories_id);
+
+          // Jika kategori file adalah "Personel"
+          if ($category && $category->nama === 'Personel') {
+            // Cari dokumen yang sesuai berdasarkan nama file yang disimpan
+            $dokumenToDelete = $modelDokumen->getDataByWhere(['nama_file_tersimpan' => $file->berkas]);
+
+            if ($dokumenToDelete) {
+              // Hapus record dari tabel 'dokumen'
+              $modelDokumen->deleteData('id_dokumen', $dokumenToDelete->id_dokumen);
+            }
+          }
+        }
       }
     }
 
     $res = $model->deleteData($this->id, $idenc);
 
+    $db->transComplete();
+    if ($db->transStatus() === false) {
+      return $this->response->setStatusCode(500)->setJSON(['res' => 'error', 'message' => 'Gagal menghapus data dari database.']);
+    }
     if ($res) {
       $res = 'refresh';
       $link = 'berkas';
@@ -574,20 +601,31 @@ class Berkas extends BaseController
     $id = $this->encrypter->decrypt(hex2bin($id));
     $get = $model->getDataByWhere(['child_file' => $id, 'parent_folder' => $idFolder]);
 
-    $res = false;
+    $db = \Config\Database::connect();
+    $db->transStart();
 
+    $res = false; // Inisialisasi
     if ($get) {
       $res = $model->deleteData('id', $get->id);
 
-      $result = $model->getDataById('child_file', $id);
-      if ($result == null) {
-        $res = $modelOtorisasiFile->deleteData('id_file', $get->child_file);
+      // [PERBAIKAN] Setelah menghapus link, cek apakah file ini masih punya link lain.
+      $remainingLinks = $model->getCountAll('child_file', $id);
+
+      // Jika sudah tidak ada link yang tersisa, hapus otorisasi file tersebut.
+      if ($remainingLinks == 0) {
+        // Hapus semua otorisasi yang terkait dengan file ini
+        $modelOtorisasiFile->deleteData('id_file', $id);
       }
     }
 
     if ($res) {
       $res = 'refresh';
       $link = 'folder';
+    }
+
+    $db->transComplete();
+    if ($db->transStatus() === false) {
+      return $this->response->setStatusCode(500)->setJSON(['res' => 'error', 'message' => 'Gagal menghapus data dari database.']);
     }
 
     return $this->response->setJSON([
@@ -695,16 +733,16 @@ class Berkas extends BaseController
 
   function aksi($id, $fileUrl = null)
   {
-    return '<div id="' . $id . '" class="float-end">
+    return '<div id="' . $id . '" class="d-flex justify-content-end align-items-center gap-2">
     <span class="text-secondary btn-action" title="Lihat" onclick="showItem(event, \'' . $fileUrl . '\')">
 				<i class="bi-arrow-right-circle"></i></span>
-        <label class="divider">|</label>
+        <span class="text-muted">|</span>
     <span class="text-secondary btn-action" title="Detail File" onclick="showFileDetails(event)">
 				<i class="bi bi-eye"></i></span>
-      <label class="divider">|</label>
+      <span class="text-muted">|</span>
 			<span class="text-secondary btn-action" title="Ubah" onclick="editItemFile(event)">
 				<i class="bi bi-pencil-square"></i></span> 
-			<label class="divider">|</label>
+			<span class="text-muted">|</span>
 			<span class="text-danger btn-action" title="Hapus" onclick="deleteItemFile(event)">
 				<i class="bi bi-trash"></i></span>
 		</div>';

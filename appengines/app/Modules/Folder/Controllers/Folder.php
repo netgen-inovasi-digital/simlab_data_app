@@ -632,6 +632,16 @@ class Folder extends BaseController
         ]);
       }
 
+      // [BARU] Ambil atau buat ID untuk kategori "Personel"
+      $modelCategories = new MyModel('categories');
+      $personelCategory = $modelCategories->getDataByWhere(['nama' => 'Personel']);
+      if ($personelCategory) {
+        $personelCategoryId = $personelCategory->id_categories;
+      } else {
+        // Jika kategori "Personel" tidak ada, buat baru.
+        $personelCategoryId = $modelCategories->insertData(['nama' => 'Personel', 'slug' => 'personel'], true);
+      }
+
       $db->transStart();
 
       // 1. Buat folder baru dengan nama personel
@@ -683,6 +693,7 @@ class Folder extends BaseController
           'berkas'        => basename($doc->path_file), // [FIX] Ambil hanya nama file dari path
           'created_at'    => date('Y-m-d H:i:s'),
           'updated_at'    => date('Y-m-d H:i:s'),
+          'categories_id' => $personelCategoryId, // [MODIFIKASI] Set kategori file
         ];
         $newFileId = $modelFiles->insertData($newFileData, true);
 
@@ -882,13 +893,20 @@ class Folder extends BaseController
         // Tambahkan otorisasi untuk file yang ditautkan agar role saat ini bisa mengakses.
         // Ini mencegah kasus di mana file ada tetapi tidak bisa dilihat karena otorisasi.
         foreach ($roles as $r) {
-          // Gunakan `ignore()` untuk menghindari error duplikat jika otorisasi sudah ada.
-          $db->table('otoritas_file')->ignore(true)->insert([
+          // [PERBAIKAN] Cek apakah otorisasi sudah ada untuk file dan role ini
+          $existingOtor = $modelOtorFile->getDataByWhere([
             'id_file' => $existingFileId,
-            'id_role' => $r,
-            'can_view' => 1,
-            'can_crud' => 1,
+            'id_role' => $r
           ]);
+
+          if (!$existingOtor) {
+            $modelOtorFile->insertData([
+              'id_file' => $existingFileId,
+              'id_role' => $r,
+              'can_view' => 1,
+              'can_crud' => 1,
+            ]);
+          }
         }
       }
     }

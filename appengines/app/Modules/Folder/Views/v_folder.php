@@ -253,8 +253,40 @@
                   <span><?= esc($node->nama) ?></span>
 
                 <?php else: ?>
-                  <i class="bi bi-file-earmark-text-fill" title="File"></i>
-                  <span><?= esc($node->title) ?></span>
+
+                  <?php
+                  // [PERBAIKAN] Logika untuk memilih ikon berdasarkan ekstensi file
+                  $fileExt = strtolower(pathinfo($node->berkas, PATHINFO_EXTENSION));
+                  $iconClass = 'bi-file-earmark-text'; // Ikon default
+                  $iconColor = '#6c757d'; // Warna abu-abu default
+
+                  switch ($fileExt) {
+                    case 'pdf':
+                      $iconClass = 'bi-file-earmark-pdf-fill';
+                      $iconColor = '#e63946'; // Merah
+                      break;
+                    case 'doc':
+                    case 'docx':
+                      $iconClass = 'bi-file-earmark-word-fill';
+                      $iconColor = '#457b9d'; // Biru
+                      break;
+                    case 'xls':
+                    case 'xlsx':
+                      $iconClass = 'bi-file-earmark-excel-fill';
+                      $iconColor = '#2a9d8f'; // Hijau
+                      break;
+                    case 'jpg':
+                    case 'jpeg':
+                    case 'png':
+                    case 'gif':
+                      $iconClass = 'bi-file-earmark-image-fill';
+                      $iconColor = '#9b5de5'; // Ungu
+                      break;
+                  }
+                  ?>
+                  <i class="bi <?= $iconClass ?>" title="File"
+                    style="font-size: 1.3rem; color: <?= $iconColor ?>;"></i>
+                  <span class="ms-1"><?= esc($node->title) ?></span>
                 <?php endif; ?>
 
               </div>
@@ -1617,13 +1649,7 @@
             if (Number(o.can_crud) === 1) canCrud = true;
 
           });
-          if (canCrud && data.folder_flag != '1') {
-            modalAksiContainer.innerHTML = `
-            <button type="button" class="btn btn-danger" onclick="deleteFileLinks(event)">
-              <i class="bi bi-trash me-1"></i> Hapus
-            </button>
-          `;
-          } else {
+          if (canCrud && data.kategori !== 'Personel') {
             modalAksiContainer.innerHTML = '';
           }
         }
