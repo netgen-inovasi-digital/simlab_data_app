@@ -421,7 +421,7 @@ class Folder extends BaseController
     if (!empty($idFolderEdit)) {
       $namaFolder = $this->request->getPost('nama_folder_utama');
       if (empty(trim($namaFolder))) {
-        return $this->response->setJSON(['res' => false, 'message' => 'Nama Folder tidak boleh kosong.']);
+        return $this->response->setJSON(['res' => false, 'message' => 'Nama Folder tidak boleh kosong.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
       }
       try {
         $decryptedId = $this->encrypter->decrypt(hex2bin($idFolderEdit));
@@ -447,7 +447,7 @@ class Folder extends BaseController
         $modelFolder->updateData($dataUpdate, 'id_folder', $decryptedId);
         $db->transComplete();
       } catch (\Exception $e) {
-        return $this->response->setStatusCode(500)->setJSON(['res' => 'error', 'message' => 'Gagal memperbarui folder.']);
+        return $this->response->setStatusCode(500)->setJSON(['res' => 'error', 'message' => 'Gagal memperbarui folder.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
       }
     }
     // Logika untuk TAMBAH folder baru
@@ -456,7 +456,7 @@ class Folder extends BaseController
       $subfolders = $this->request->getPost('subfolder_nama') ?? [];
 
       if (empty(trim($namaFolderUtama))) {
-        return $this->response->setJSON(['res' => false, 'message' => 'Nama Folder Utama tidak boleh kosong.']);
+        return $this->response->setJSON(['res' => false, 'message' => 'Nama Folder Utama tidak boleh kosong.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
       }
 
       // [PERBAIKAN] Logika pengecekan duplikat yang lebih akurat
@@ -568,12 +568,12 @@ class Folder extends BaseController
 
       if ($db->transStatus() === false) {
         $db->transRollback();
-        return $this->response->setStatusCode(500)->setJSON(['res' => 'error', 'message' => 'Gagal menyimpan folder ke database.']);
+        return $this->response->setStatusCode(500)->setJSON(['res' => 'error', 'message' => 'Gagal menyimpan folder ke database.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
       }
     } elseif ($opsi === 'gunakan_template') {
       $templateId = $this->request->getPost('template_id');
       if (empty($templateId)) {
-        return $this->response->setJSON(['res' => false, 'message' => 'Silakan pilih template folder.']);
+        return $this->response->setJSON(['res' => false, 'message' => 'Silakan pilih template folder.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
       }
 
       // [PERBAIKAN] Memulai transaksi
@@ -602,13 +602,13 @@ class Folder extends BaseController
     } elseif ($opsi === 'tambah_folder_personel') {
       $id_personel = $this->request->getPost('personel_id');
       if (empty($id_personel)) {
-        return $this->response->setJSON(['res' => 'error', 'message' => 'Silakan pilih personel.']);
+        return $this->response->setJSON(['res' => 'error', 'message' => 'Silakan pilih personel.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
       }
 
       $modelPersonel = new MyModel('personel');
       $personel = $modelPersonel->getDataById('id_personel', $id_personel);
       if (!$personel) {
-        return $this->response->setJSON(['res' => 'error', 'message' => 'Data personel tidak ditemukan.']);
+        return $this->response->setJSON(['res' => 'error', 'message' => 'Data personel tidak ditemukan.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
       }
 
       $namaFolder = $personel->nama;
@@ -710,7 +710,7 @@ class Folder extends BaseController
 
       if ($db->transStatus() === false) {
         $db->transRollback();
-        return $this->response->setStatusCode(500)->setJSON(['res' => 'error', 'message' => 'Gagal membuat folder personel.']);
+        return $this->response->setStatusCode(500)->setJSON(['res' => 'error', 'message' => 'Gagal membuat folder personel.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
       }
     }
 
@@ -909,7 +909,7 @@ class Folder extends BaseController
   {
     $items = $this->request->getPost('items') ?? [];
     if (empty($items)) {
-      return $this->response->setJSON(['res' => false, 'message' => 'No items to update.']);
+      return $this->response->setJSON(['res' => false, 'message' => 'No items to update.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
     }
 
     $folderSortData = [];
@@ -980,9 +980,11 @@ class Folder extends BaseController
 
         if ($isDuplicate) {
           $db->transRollback();
-          return $this->response->setStatusCode(409)->setJSON([ // 409 Conflict
+          return $this->response->setJSON([
             'res' => false,
-            'message' => "Gagal memindahkan. Folder dengan nama '{$folderName}' sudah ada di lokasi tujuan."
+            'message' => "Gagal memindahkan. Folder dengan nama '{$folderName}' sudah ada di lokasi tujuan.",
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash(),
           ]);
         }
       }
@@ -1034,9 +1036,11 @@ class Folder extends BaseController
         // Jika ada lebih dari 1, berarti terjadi duplikasi
         if ($count > 1) {
           $db->transRollback(); // Batalkan semua operasi dalam transaksi
-          return $this->response->setStatusCode(409)->setJSON([
+          return $this->response->setJSON([
             'res' => false,
-            'message' => "Gagal memindahkan. File dengan nama '{$fileName}' sudah ada di folder tujuan."
+            'message' => "Gagal memindahkan. File dengan nama '{$fileName}' sudah ada di folder tujuan.",
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
           ]);
         }
       }
@@ -1045,7 +1049,7 @@ class Folder extends BaseController
     $db->transComplete();
 
     if ($db->transStatus() === false) {
-      return $this->response->setStatusCode(500)->setJSON(['res' => false, 'message' => 'Database transaction failed.']);
+      return $this->response->setStatusCode(500)->setJSON(['res' => false, 'message' => 'Database transaction failed.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
     }
 
     return $this->response->setJSON([

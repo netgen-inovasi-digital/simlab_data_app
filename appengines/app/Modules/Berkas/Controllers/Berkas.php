@@ -509,7 +509,7 @@ class Berkas extends BaseController
     ]);
 
     if ($isDuplicate) {
-      return $this->response->setStatusCode(409)->setJSON([ // 409 Conflict
+      return $this->response->setJSON([
         'res' => 'duplicate',
         'message' => 'File ini sudah ada di dalam folder tujuan.',
         'xname' => csrf_token(),
@@ -674,7 +674,7 @@ class Berkas extends BaseController
     foreach ($list as $row) {
       $titleBlock = '
       <div class="d-flex flex-column">
-        ' . esc($row->title) . '
+        <span class="fw-medium">' . esc($row->title) . '</span>
       </div>
     ';
 
@@ -697,9 +697,9 @@ class Berkas extends BaseController
   {
     return '<div id="' . $id . '" class="float-end">
     <span class="text-secondary btn-action" title="Lihat" onclick="showItem(event, \'' . $fileUrl . '\')">
-				<i class="bi bi-door-open"></i></span>
+				<i class="bi-arrow-right-circle"></i></span>
         <label class="divider">|</label>
-    <span class="text-secondary btn-action" title="Lihat" onclick="showDetailFile(event)">
+    <span class="text-secondary btn-action" title="Detail File" onclick="showFileDetails(event)">
 				<i class="bi bi-eye"></i></span>
       <label class="divider">|</label>
 			<span class="text-secondary btn-action" title="Ubah" onclick="editItemFile(event)">
