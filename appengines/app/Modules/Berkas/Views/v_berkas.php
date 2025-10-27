@@ -696,7 +696,7 @@
               placeholder="Masukkan nomor dokumen" required>
           </div>
           <div class="col">
-            <label class="col-md-3 col-form-label">Revisi ke</label>
+            <label class="col-md-3 col-form-label">Revisi Ke-</label>
             <input name="revisi" type="number" class="form-control bg-light" placeholder="Masukkan revisi"
               required>
           </div>
@@ -705,11 +705,12 @@
           <div class="col">
             <label class="col-md-6 col-form-label">File</label>
             <input id="berkas" name="berkas" type="file" class="form-control" accept=".pdf,.doc,.docx">
-            <small class="text-muted" id="ketBerkas" style="font-size: 11px;">Upload maks. 100MB</small>
+            <small class="text-muted" id="ketBerkas" style="font-size: 11px;">Upload maks. 100MB (File:
+              .pdf, .doc, .docx.)</small>
             <small class="text-danger d-none" id="errorMsg">Hanya file docs/pdf yang diperbolehkan!</small>
           </div>
           <div class="col">
-            <label class="col-md-3 col-form-label">Tanggal</label>
+            <label class="col-md-4 col-form-label">Tanggal Terbit</label>
             <input name="tanggal" id="tanggal-input" type="date" class="form-control"
               value="<?= esc(date('Y-m-d')) ?>" required>
           </div>
