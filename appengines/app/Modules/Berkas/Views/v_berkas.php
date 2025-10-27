@@ -15,6 +15,7 @@
               <th>No. Dokumen</th>
               <th show>Judul</th>
               <th show>Kategori</th>
+              <th show>Tanggal Upload</th>
               <th show class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
             </tr>
           </thead>
