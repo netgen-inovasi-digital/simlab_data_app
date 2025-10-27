@@ -92,7 +92,7 @@
       <div class="card-header d-flex justify-content-between align-items-center">
         <label class="card-title mb-0"><?= $title ?></label>
         <div class="d-flex align-items-end gap-1">
-          <?= $user->role_id != 2 ? '
+          <?= $user->role_id == 8 || $user->role_id == 10 ? '
           <button id="refresh" class="btn btn-success">
             <i class="bi bi-arrow-clockwise"></i> Refresh
           </button>
@@ -113,7 +113,7 @@
                 <select id="role" name="role" class="form-select" required>
                   <option value="">-- pilih role --</option>
                   <?php foreach ($role as $i => $row) {
-                    if ($row->id_role == 8) continue;
+                    if ($row->id_role == 8 || $row->id_role == 10 || $row->id_role == 1) continue;
                   ?>
                     <option value="<?= $row->id_role ?>">
                       <?= $row->nama_role ?>
@@ -147,7 +147,7 @@
             </div>
           </div>
 
-          <?= $user->role_id == 8 ? '<div class="col-lg-2 col-4 col-md-4 d-flex gap-2 justify-content-center align-items-center">
+          <?= $user->role_id == 8 || $user->role_id == 10 ? '<div class="col-lg-2 col-4 col-md-4 d-flex gap-2 justify-content-center align-items-center">
             <label class="m-0 fw-medium">Mode Otorisasi</label>
             <div class="form-check form-switch m-0">
               <input
@@ -232,11 +232,11 @@
 
           // [BARU] Tentukan apakah item ini bisa di-drag.
           // File tidak bisa di-drag jika berada di dalam folder personel.
-          $is_draggable = ($user->role_id != 2) && !($node->type === 'file' && $is_in_personel_folder);
+          $is_draggable = ($user->role_id != 2 && $user->role_id != 9) && !($node->type === 'file' && $is_in_personel_folder);
 
       ?>
           <div id="<?= $encId ?>" class="<?= $node->type ?>-item flex"
-            style="<?= $user->role_id == 2
+            style="<?= $user->role_id == 2 || $user->role_id == 9
                       ? 'cursor: pointer; margin-left: ' . ($level * 30) . 'px;'
                       : ($is_draggable ? 'cursor: grab; ' : 'cursor: default; ') . 'margin-left: ' . ($level * 30) . 'px;' ?>"
             draggable="<?= $is_draggable ? 'true' : 'false' ?>" <?= $dataAttrs ?>>
@@ -282,7 +282,7 @@
             renderTree($tree, 0, null, $user);
           } else {
             echo '<div class="col-12 text-center p-5" id="noDataMessage">
-            <h4 class="text-muted">Dokumen tidak ditemukan</h4>
+            <h4 class="text-muted">Dokumen belum ditambahkan</h4>
             </div>';
           }
           ?>
@@ -1354,7 +1354,6 @@
         const id = closest.getAttribute('id');
         const url = "<?= base_url('berkas/deleteLinks') ?>/" + id;
         const idFolder = closest.dataset.parfolder;
-        console.log(idFolder)
 
         fetch(url, {
             method: 'POST',
@@ -1607,7 +1606,7 @@
             `<div class="text-center mb-3" style="width: 150px; height: 200px; background-color: #e9ecef; border: 1px solid #dee2e6; display: flex; align-items: center; justify-content: center; border-radius: 0.25rem;"><i class="bi ${iconClass}" style="font-size: 4rem; color: #adb5bd;"></i></div>`;
         }
         contentArea.innerHTML =
-          `<div class="row g-4"><div class="col-md-4 d-flex flex-column align-items-center">${filePreviewHtml}<div class="d-flex mt-3"><a href="${fileUrl}" target="_blank" class="btn btn-secondary">View</a></div></div><div class="col-md-8"><table class="biodata-table"><tr><td>Nama File</td><td>:</td><td>${data.title || '-'}</td></tr><tr><td>No. Dokumen</td><td>:</td><td>${data.nomor_dokumen || '-'}</td></tr><tr><td>Revisi</td><td>:</td><td>${data.revisi || '-'}</td></tr><tr><td>Tanggal Upload</td><td>:</td><td>${formatTanggal(data.created_at)}</td></tr><tr><td>Author</td><td>:</td><td>${data.author || '-'}</td></tr><tr><td>Kategori</td><td>:</td><td>${data.kategori || '-'}</td></tr></table></div></div>`;
+          `<div class="row g-4"><div class="col-md-4 d-flex flex-column align-items-center">${filePreviewHtml}<div class="d-flex mt-3"><a href="${fileUrl}" target="_blank" class="btn btn-secondary">View</a></div></div><div class="col-md-8"><table class="biodata-table"><tr><td>Nama File</td><td>:</td><td>${data.title || '-'}</td></tr><tr><td>No. Dokumen</td><td>:</td><td>${data.nomor_dokumen || '-'}</td></tr><tr><td>Revisi ke</td><td>:</td><td>${data.revisi || '-'}</td></tr><tr><td>Tanggal Upload</td><td>:</td><td>${formatTanggal(data.created_at)}</td></tr><tr><td>Author</td><td>:</td><td>${data.author || '-'}</td></tr><tr><td>Kategori</td><td>:</td><td>${data.kategori || '-'}</td></tr></table></div></div>`;
 
         // --- Gunakan otorisasi untuk tombol modal ---
         modalAksiContainer.innerHTML = '';
@@ -1684,6 +1683,40 @@
       })
     });
   }
+
+  // Modal Add File - Filter Berdasarkan Kategori
+
+  // Ambil data dari PHP
+  allFiles = <?= json_encode($files) ?>;
+  fileSelect = document.getElementById('file_id');
+  kategoriSelect = document.getElementById('kategori_id');
+
+  // 🔧 Fungsi untuk update dropdown file
+  function updateFileDropdown(selectedKategori = '') {
+    // kosongkan isi dropdown file
+    fileSelect.innerHTML = '<option value="">-- pilih file --</option>';
+
+    // kalau kategori kosong → tampilkan semua file
+    const filteredFiles = selectedKategori ?
+      allFiles.filter(f => f.categories_id == selectedKategori) :
+      allFiles;
+
+    // isi ulang dropdown
+    filteredFiles.forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.id_files;
+      opt.textContent = f.title;
+      fileSelect.appendChild(opt);
+    });
+  }
+
+  // Saat kategori berubah
+  kategoriSelect.addEventListener('change', function() {
+    updateFileDropdown(this.value);
+  });
+
+  // ⏩ panggil saat pertama kali halaman dimuat
+  updateFileDropdown();
 </script>
 
 <?php echo form_open('', ['id' => 'myAuthorizationForm', 'novalidate' => '']); ?>
@@ -1820,11 +1853,11 @@
         <input type="hidden" value="<?= $user->role_id ?>" name="user_role" />
         <input type="hidden" name="id_folder">
         <div class="row mb-2 d-flex justify-content-center align-items-center">
-          <div class="col-10 mb-3">
-            <label class="col-md-5 col-form-label">Kategori File</label>
+          <div class="col-11 mb-2">
+            <label class="col-md-5 col-form-label">Pilih kategori file yang ingin dicari</label>
             <div class="d-flex gap-2 align-items-start justify-content-between">
-              <select id="file_id" name="file_id" class="form-select" required>
-                <option value="">-- pilih data --</option>
+              <select id="kategori_id" name="kategori_id" class="form-select">
+                <option value="">-- pilih kategori --</option>
                 <?php foreach ($categories as $kategori): ?>
                   <option value="<?= $kategori->id_categories ?>">
                     <?= esc($kategori->nama) ?>
@@ -1833,21 +1866,16 @@
               </select>
             </div>
           </div>
-          <div class="col-10">
-            <label class="col-md-5 col-form-label">File Akreditasi</label>
+          <div class="col-11">
+            <label class="col-md-5 col-form-label">Pilih file yang ingin diupload</label>
             <div class="d-flex gap-2 align-items-start justify-content-between">
               <select id="file_id" name="file_id" class="form-select" required>
-                <option value="">-- pilih data --</option>
-                <?php foreach ($files as $file): ?>
-                  <option value="<?= $file->id_files ?>">
-                    <?= esc($file->title) ?>
-                  </option>
-                <?php endforeach; ?>
+                <option value="">-- pilih file --</option>
               </select>
             </div>
           </div>
         </div>
-        
+
       </div>
       <div class="modal-footer">
         <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>
