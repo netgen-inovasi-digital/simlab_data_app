@@ -947,21 +947,22 @@
                 if (previewContainer) previewContainer.innerHTML = ''; // Reset container
 
                 if (fileData && fileData.trim() !== '' && previewContainer) {
-                  // [PERBAIKAN] Pastikan JSON.parse hanya dijalankan pada string JSON yang valid
-                  // [UBAH] Data file sekarang selalu dalam format array of objects dari backend
+                  // [PERBAIKAN] Logika untuk menampilkan file dari data yang diambil.
                   let files = [];
                   try {
                     files = JSON.parse(fileData);
                   } catch (e) {
-                    console.error("Gagal parse JSON untuk file:", fileData, e);
+                    console.error(`Gagal parse JSON untuk ${fieldName}:`, fileData, e);
                   }
 
                   if (Array.isArray(files) && files.length > 0) {
                     files.forEach(file => {
-                      const displayName = file.nama_asli_file;
-                      // [UBAH] Menggunakan data-id-dokumen untuk referensi penghapusan
+                      const displayName = file.nama_asli_file ||
+                        'File tidak bernama';
+                      const filePath = file.path_file ?
+                        `<?= base_url() ?>${file.path_file}` : '#';
                       previewContainer.innerHTML +=
-                        `<div class="file-preview-item existing-file-preview"><a href="<?= base_url() ?>${file.path_file}" target="_blank" class="file-preview-name" title="${escapeHtml(displayName)}">${displayName}</a><button type="button" class="btn-remove-file" data-existing-file="true" data-id-dokumen="${file.id_dokumen}" title="Hapus file">×</button></div>`;
+                        `<div class="file-preview-item existing-file-preview"><a href="${filePath}" target="_blank" class="file-preview-name" title="${escapeHtml(displayName)}">${displayName}</a><button type="button" class="btn-remove-file" data-existing-file="true" data-id-dokumen="${file.id_dokumen}" title="Hapus file">×</button></div>`;
                     });
                   }
                 }
