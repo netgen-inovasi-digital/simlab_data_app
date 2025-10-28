@@ -122,10 +122,13 @@
   var btnAksi = document.getElementById('btn-kategori-aksi');
   var formBaru = document.getElementById('form-kategori-baru');
   var inputBaru = document.getElementById('input-kategori-baru');
+
   var formEdit = document.getElementById('form-edit-kategori');
   var inputEdit = document.getElementById('input-edit-kategori');
+
   var btnSimpan = document.getElementById('btn-simpan-kategori');
   var btnBatal = document.getElementById('btn-batal-kategori');
+
   var btnUpdate = document.getElementById('btn-update-kategori');
   var btnDelete = document.getElementById('btn-delete-kategori');
   // ===== function perbarui Tombol ===== //
@@ -275,6 +278,9 @@
             option.selected = true;
           }
           formEdit.style.display = 'none';
+          // inputEdit.classList.add('d-none');
+          // btnUpdate.classList.add('d-none');
+          // btnDelete.classList.add('d-none');
           perbaruiTombol();
           sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
         } else {
@@ -314,6 +320,9 @@
           formEdit.style.display = 'none';
           perbaruiTombol();
           sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+        },
+        onError: () => {
+          sayAlert('errorModal', 'Error', 'Kategori tidak bisa dihapus karena masih digunakan oleh file yang ada.', 'warning');
         }
       });
     });
@@ -572,6 +581,10 @@
     $('#myFileForm').submit();
   }
 
+  $('#modalFormFile').on('hidden.bs.modal', function() {
+    loadContent('berkas'); // refresh isi utama setelah modal ditutup
+  });
+
 
   function save(form) {
     showLoading();
@@ -776,7 +789,7 @@
                 <button class="btn btn-danger ms-2" type="button" id="btn-batal-kategori">Batal</button>
               </div>
             </div>
-            <div class="d-flex gap-2 align-items-start mt-2" id="form-edit-kategori" style="display: none;">
+            <div class="gap-2 align-items-start mt-2" id="form-edit-kategori" style="display: none;">
               <input type="text" class="form-control" id="input-edit-kategori" style="max-width: 200px;"
                 placeholder="Edit nama kategori">
               <button type="button" class="btn btn-success" id="btn-update-kategori">Update</button>

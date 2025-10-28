@@ -40,7 +40,6 @@ class Berkas extends BaseController
     $data['idFile'] = $id;
     $data['titleFile'] = $get->title; // ← bersih buat form
     $data['kategori_id'] = $get->categories_id;
-    // $data['id_folder'] = $idencFolder;
     $data['nomor_dokumen'] = $get->nomor_dokumen;
     $data['slug'] = $get->slug;
     $data['revisi'] = $get->revisi;
@@ -55,25 +54,6 @@ class Berkas extends BaseController
     $idenc = $this->encrypter->decrypt(hex2bin($id));
     $model = new MyModel($this->table);
     $file = $model->getDataById($this->id, $idenc);
-
-    // [BARU] Cek apakah file berada di dalam folder personel
-    // if ($file) {
-    //   $folderModel = new MyModel('folder');
-    //   // $parentFolder = $folderModel->getDataById('id_folder', $file->id_folder);
-
-    //   $personelModel = new MyModel('personel');
-    //   // $isPersonelFolder = $parentFolder && $personelModel->getDataByWhere(['nama' => $parentFolder->nama]);
-
-    //   // if ($isPersonelFolder) {
-    //   //   // Jika ini adalah folder personel, tolak penghapusan dan kirim pesan error
-    //   //   return $this->response->setStatusCode(403)->setJSON([
-    //   //     'res' => 'error',
-    //   //     'message' => 'File di dalam folder personel tidak dapat dihapus. Silakan kelola melalui menu Personel.',
-    //   //     'xname' => csrf_token(),
-    //   //     'xhash' => csrf_hash()
-    //   //   ]);
-    //   // }
-    // }
 
     // [PERBAIKAN] Jangan hapus file fisik, pindahkan ke folder 'sampah'
     if ($file && !empty($file->berkas)) {

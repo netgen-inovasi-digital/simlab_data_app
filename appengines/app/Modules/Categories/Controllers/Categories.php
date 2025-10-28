@@ -53,10 +53,9 @@ class Categories extends BaseController
 
       $cekFileCategory = $modelFiles->where('categories_id', $id)->countAllResults();
 
-      if ($cekFileCategory > 1) {
+      if ($cekFileCategory > 0) {
         return $this->response->setJSON([
           'success' => false,
-          'message' => 'Kategori tidak bisa dihapus karena masih digunakan oleh file.',
           'xname' => csrf_token(),
           'xhash' => csrf_hash()
         ]);
