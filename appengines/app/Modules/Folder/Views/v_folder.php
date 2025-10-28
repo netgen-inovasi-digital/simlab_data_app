@@ -1875,7 +1875,6 @@
             </div>
           </div>
         </div>
-
       </div>
       <div class="modal-footer">
         <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>

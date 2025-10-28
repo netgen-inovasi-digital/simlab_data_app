@@ -655,6 +655,9 @@ class Berkas extends BaseController
     $model = new MyModel($this->table);
     $data = array();
 
+    // ambil parameter kategori dari query string
+    $kategoriId = $this->request->getGet('kategori');
+
     // ambil kolom yang dibutuhkan
     $select = 'users.id_user, users.nama AS nama_user, files.*, categories.nama AS nama_kategori';
 
@@ -664,7 +667,12 @@ class Berkas extends BaseController
       'categories' => 'categories.id_categories = files.categories_id'
     ];
 
+    // kalau kategori dipilih, tambahkan filter
     $where = [];
+    if (!empty($kategoriId)) {
+      $where['files.categories_id'] = $kategoriId;
+    }
+
     $orderBy = ['files.created_at' => 'ASC'];
 
     // ambil data pakai LEFT JOIN

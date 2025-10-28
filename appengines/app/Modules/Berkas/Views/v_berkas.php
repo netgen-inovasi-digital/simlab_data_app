@@ -3,9 +3,17 @@
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
         <label class="card-title mb-0"><?php echo $title ?></label>
-        <button id="addFile" class="btn btn-primary">
-          <i class="bi bi-plus-circle-dotted"></i> Tambah
-        </button>
+        <div class="d-flex">
+          <select id="filterKategori" name="filterKategori" class="form-select fw-bold me-2" style="width: auto;">
+            <option value="">Semua Kategori</option>
+            <?php foreach ($categories as $kategori) { ?>
+              <option value="<?php echo $kategori->id_categories ?>"><?php echo $kategori->nama ?></option>
+            <?php } ?>
+          </select>
+          <button id="addFile" class="btn btn-primary">
+            <i class="bi bi-plus-circle-dotted"></i> Tambah
+          </button>
+        </div>
       </div>
       <div class="card-body">
         <table id="data-table" class="saytable border-top-bottom">
@@ -32,6 +40,32 @@
   // ===== Classic Editor ===== //
   table = createTable({
     apiUrl: '<?php echo site_url("berkas/datalist") ?>',
+  });
+
+  // Elemen dropdown kategori
+  kategoriFilter = document.getElementById('filterKategori');
+
+  // Saat kategori berubah, ubah URL API dan reload tabel
+  kategoriFilter.addEventListener('change', function() {
+    const selectedKategori = this.value;
+
+    // Tentukan URL API (kalau kosong = semua data)
+    const apiUrl = selectedKategori ?
+      '<?php echo site_url("berkas/datalist") ?>?kategori=' + selectedKategori :
+      '<?php echo site_url("berkas/datalist") ?>';
+
+    // reload tabel dengan data baru
+    if (typeof table.update === 'function') {
+      // kalau fungsi update ada di createTable()
+      table.update({
+        apiUrl
+      });
+    } else {
+      // fallback: panggil ulang createTable()
+      table = createTable({
+        apiUrl
+      });
+    }
   });
   // addAction();
   tambahItemFile();
