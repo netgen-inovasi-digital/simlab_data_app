@@ -58,6 +58,8 @@ class Berkas extends BaseController
     // [BARU] Inisialisasi model lain yang dibutuhkan
     $modelCategories = new MyModel('categories');
     $modelDokumen = new MyModel('dokumen');
+    $modelFileLinks = new MyModel('file_links');
+    $modelOtorFile = new MyModel('otoritas_file');
 
     $db = \Config\Database::connect();
     $db->transStart();
@@ -95,6 +97,11 @@ class Berkas extends BaseController
       }
     }
 
+    // [PERBAIKAN] Hapus juga dari tabel file_links dan otoritas_file untuk menjaga kebersihan data
+    $modelFileLinks->deleteData('child_file', $idenc);
+    $modelOtorFile->deleteData('id_file', $idenc);
+
+    // Hapus record dari tabel master 'files'
     $res = $model->deleteData($this->id, $idenc);
 
     $db->transComplete();

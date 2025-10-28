@@ -75,7 +75,7 @@ class Personel extends BaseController
         try {
             // Validasi input ID
             if (empty($id)) {
-                return $this->response->setStatusCode(400)->setJSON(['error' => 'ID tidak valid']);
+                return $this->response->setStatusCode(400)->setJSON(['error' => 'ID tidak valid', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
             }
 
             $idenc = $id;
@@ -84,7 +84,7 @@ class Personel extends BaseController
             try {
                 $id = $this->encrypter->decrypt(hex2bin($idenc));
             } catch (\Exception $e) {
-                return $this->response->setStatusCode(400)->setJSON(['error' => 'ID tidak dapat didekripsi']);
+                return $this->response->setStatusCode(400)->setJSON(['error' => 'ID tidak dapat didekripsi', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
             }
 
             $model = new MyModel($this->table);
@@ -92,12 +92,13 @@ class Personel extends BaseController
             $get = $model->getDataById($this->id, $id);
 
             if (!$get) {
-                return $this->response->setStatusCode(404)->setJSON(['error' => 'Data tidak ditemukan']);
+                return $this->response->setStatusCode(404)->setJSON(['error' => 'Data tidak ditemukan', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
             }
 
-            // Susun data response dengan pengecekan untuk setiap field
-            // [UBAH] Ambil semua dokumen dari tabel 'dokumen'
+            // [PERBAIKAN FINAL] Ambil data HANYA dari tabel 'dokumen'.
+            // Ini adalah cara paling aman karena semua data (lama dan baru) sekarang ada di sini.
             $all_docs = $modelDokumen->getAllDataByWhere(['id_personel' => $id]);
+
             $docs_by_type = [];
             foreach ($all_docs as $doc) {
                 // Kelompokkan dokumen berdasarkan tipenya
@@ -142,7 +143,7 @@ class Personel extends BaseController
         } catch (\Exception $e) {
             // Log error untuk debugging
             log_message('error', 'Error in edit function: ' . $e->getMessage());
-            return $this->response->setStatusCode(500)->setJSON(['error' => 'Terjadi kesalahan pada server: ' . $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setJSON(['error' => 'Terjadi kesalahan pada server: ', 'xname' => csrf_token(), 'xhash' => csrf_hash() . $e->getMessage()]);
         }
     }
 
@@ -151,16 +152,16 @@ class Personel extends BaseController
         try {
             // [PERBAIKAN] Tambahkan pengecekan otorisasi di awal
             if (!$this->_isAuthorized()) {
-                return $this->response->setStatusCode(403)->setJSON(['error' => 'Anda tidak memiliki izin untuk menghapus data ini.']);
+                return $this->response->setStatusCode(403)->setJSON(['error' => 'Anda tidak memiliki izin untuk menghapus data ini.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
             }
 
             if (!$this->request->is('post')) {
-                return $this->response->setStatusCode(405)->setJSON(['error' => 'Metode tidak diizinkan.']);
+                return $this->response->setStatusCode(405)->setJSON(['error' => 'Metode tidak diizinkan.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
             }
 
             $id = $this->request->getPost('id'); // [UBAH] Ambil ID dari POST body
             if (empty($id)) {
-                return $this->response->setStatusCode(400)->setJSON(['error' => 'ID Personel tidak ditemukan.']);
+                return $this->response->setStatusCode(400)->setJSON(['error' => 'ID Personel tidak ditemukan.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
             }
 
             $decryptedId = $this->encrypter->decrypt(hex2bin($id));
@@ -179,7 +180,7 @@ class Personel extends BaseController
             throw new \Exception('Gagal menghapus data dari database.');
         } catch (\Exception $e) {
             log_message('error', '[PERSONEL_DELETE] ' . $e->getMessage());
-            return $this->response->setStatusCode(500)->setJSON(['error' => 'Terjadi kesalahan internal saat mencoba menghapus data.']);
+            return $this->response->setStatusCode(500)->setJSON(['error' => 'Terjadi kesalahan internal saat mencoba menghapus data.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
         }
     }
 
@@ -187,7 +188,7 @@ class Personel extends BaseController
     {
         // [PERBAIKAN] Tambahkan pengecekan otorisasi di awal
         if (!$this->_isAuthorized()) {
-            return $this->response->setStatusCode(403)->setJSON(['error' => 'Anda tidak memiliki izin untuk menyimpan data ini.']);
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Anda tidak memiliki izin untuk menyimpan data ini.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
         }
 
         $idenc = $this->request->getPost('id');
@@ -246,6 +247,10 @@ class Personel extends BaseController
 
         $model = new MyModel($this->table);
         $modelDokumen = new MyModel('dokumen'); // [BARU] Load model dokumen
+        // [PERBAIKAN] Load model yang diperlukan untuk menyimpan ke tabel files
+        $modelFiles = new MyModel('files');
+        $modelOtorFile = new MyModel('otoritas_file');
+        $modelCategories = new MyModel('categories');
         $currentData = null;
 
         // 2. Validasi foto wajib saat TAMBAH data baru (hanya jika ini form personel)
@@ -261,7 +266,7 @@ class Personel extends BaseController
         } else { // Mode Edit
             $currentData = $model->getDataById($this->id, $id);
             if (!$currentData) {
-                return $this->response->setStatusCode(404)->setJSON(['error' => 'Data personel tidak ditemukan.']);
+                return $this->response->setStatusCode(404)->setJSON(['error' => 'Data personel tidak ditemukan.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
             }
         }
 
@@ -287,10 +292,24 @@ class Personel extends BaseController
         if (!empty($id)) {
             $filesToDelete = $this->request->getPost('delete_files');
             if (!empty($filesToDelete)) {
+                // [PERBAIKAN] Load model yang dibutuhkan untuk penghapusan sinkron
+                $modelFiles = new MyModel('files');
+                $modelFileLinks = new MyModel('file_links');
+                $modelOtorFile = new MyModel('otoritas_file');
+
                 foreach ($filesToDelete as $id_dokumen) {
                     $doc = $modelDokumen->getDataById('id_dokumen', $id_dokumen);
                     if ($doc) {
-                        // [PERBAIKAN] Jangan hapus file fisik, pindahkan ke folder 'sampah'
+                        // [PERBAIKAN] Cari file master di tabel 'files' berdasarkan nama file
+                        $fileMaster = $modelFiles->getDataByWhere(['berkas' => $doc->nama_file_tersimpan]);
+
+                        if ($fileMaster) {
+                            // Hapus semua tautan file dari folder manapun
+                            $modelFileLinks->deleteData('child_file', $fileMaster->id_files);
+                            // Hapus semua otorisasi file
+                            $modelOtorFile->deleteData('id_file', $fileMaster->id_files);
+                        }
+
                         $filePath = FCPATH . $doc->path_file;
                         $trashPath = FCPATH . 'uploads/trash/';
 
@@ -305,8 +324,13 @@ class Personel extends BaseController
                             rename($filePath, $newFilePath);
                         }
 
-                        // Hapus record dari DB
+                        // Hapus record dari tabel 'dokumen'
                         $modelDokumen->deleteData('id_dokumen', $id_dokumen);
+
+                        // [PERBAIKAN] Hapus record dari tabel master 'files'
+                        if ($fileMaster) {
+                            $modelFiles->deleteData('id_files', $fileMaster->id_files);
+                        }
 
                         // Jika yang dihapus adalah foto profil, null-kan juga di tabel personel
                         if ($doc->tipe_dokumen == 'foto') {
@@ -317,6 +341,20 @@ class Personel extends BaseController
             }
         }
 
+        // [PERBAIKAN] Ambil atau buat kategori "Personel"
+        $personelCategory = $modelCategories->getDataByWhere(['nama' => 'Personel']);
+        if ($personelCategory) {
+            $personelCategoryId = $personelCategory->id_categories;
+        } else {
+            $personelCategoryId = $modelCategories->insertData(['nama' => 'Personel', 'slug' => 'personel'], true);
+        }
+
+        // [PERBAIKAN] Ambil role user untuk otorisasi
+        $session = session();
+        $user_id = $session->get('id_user');
+        $role_id = $session->get('role_id');
+        $roles = array_unique([(int)$role_id, 8]); // Role user & Super Admin
+
         // [UBAH] Logika Upload File Baru
         $fileFields = [
             'foto' => 'foto',
@@ -324,19 +362,84 @@ class Personel extends BaseController
             'doc_coc' => 'coc',
             'doc_surat_tugas' => 'surat_tugas'
         ];
+
+        $newlyUploadedFiles = []; // Simpan file yang baru diupload untuk mode tambah
+
         foreach ($fileFields as $field => $tipe) {
             $file = $this->request->getFile($field);
             if ($file && $file->isValid() && !$file->hasMoved()) {
-                $uploadResult = $this->doUpload($file); // doUpload sekarang mengembalikan array
-                if ($uploadResult) {
-                    // [PERBAIKAN] Jangan langsung insert jika ID belum ada. Simpan sementara.
+                $uploadResult = $this->doUpload($file, $modelFiles); // Kirim modelFiles untuk cek duplikat
+                if ($uploadResult && $uploadResult['status']) {
+                    $newFileId = $this->saveFileToMaster($uploadResult['data'], $user_id, $personelCategoryId, $roles, $modelFiles, $modelOtorFile);
+
                     if ($id) {
-                        $uploadResult['id_personel'] = $id;
-                        $uploadResult['tipe_dokumen'] = $tipe;
-                        $modelDokumen->insertData($uploadResult);
+                        // [PERBAIKAN BARU] Logika untuk mengganti file lama.
+                        // Hanya berlaku untuk tipe dokumen yang unik per personel (bukan 'lainnya').
+                        if ($tipe !== 'lainnya') {
+                            $oldDocs = $modelDokumen->getAllDataByWhere(['id_personel' => $id, 'tipe_dokumen' => $tipe]);
+                            if (!empty($oldDocs)) {
+                                $modelFileLinks = new MyModel('file_links');
+                                // Logika penghapusan file lama sudah benar, tidak perlu diubah.
+                                foreach ($oldDocs as $oldDoc) {
+                                    // 1. Hapus dari tabel master 'files' dan semua yang terkait
+                                    $fileMaster = $modelFiles->getDataByWhere(['berkas' => $oldDoc->nama_file_tersimpan]);
+                                    if ($fileMaster) {
+                                        $modelFileLinks->deleteData('child_file', $fileMaster->id_files);
+                                        $modelOtorFile->deleteData('id_file', $fileMaster->id_files);
+                                        $modelFiles->deleteData('id_files', $fileMaster->id_files);
+                                    }
+                                    // 2. Pindahkan file fisik ke trash
+                                    $filePath = FCPATH . $oldDoc->path_file;
+                                    if (file_exists($filePath)) {
+                                        $trashPath = FCPATH . 'uploads/trash/';
+                                        if (!is_dir($trashPath)) mkdir($trashPath, 0777, true);
+                                        $newFilePath = $trashPath . basename($filePath);
+                                        rename($filePath, $newFilePath);
+                                    }
+                                    // 3. Hapus dari tabel 'dokumen'
+                                    $modelDokumen->deleteData('id_dokumen', $oldDoc->id_dokumen);
+                                }
+                            }
+                        }
+
+                        // Setelah file lama (jika ada) dihapus, simpan data file baru.
+                        $modelDokumen->insertData([
+                            'id_personel' => $id,
+                            'tipe_dokumen' => $tipe,
+                            'nama_asli_file' => $uploadResult['data']['title'],
+                            'nama_file_tersimpan' => $uploadResult['data']['berkas'],
+                            'path_file' => 'uploads/' . $uploadResult['data']['berkas']
+                        ]);
+
+                        // [PERBAIKAN BARU] Sinkronkan file baru ke Folder Personel jika ada.
+                        $personelData = $model->getDataById($this->id, $id);
+                        if ($personelData) {
+                            $modelFolder = new MyModel('folder');
+                            $personelFolder = $modelFolder->getDataByWhere([
+                                'nama' => $personelData->nama,
+                                'flag' => 1
+                            ]);
+
+                            if ($personelFolder) {
+                                $modelFileLinks = new MyModel('file_links');
+                                $modelFileLinks->insertData([
+                                    'parent_folder' => $personelFolder->id_folder,
+                                    'child_file'    => $newFileId,
+                                ]);
+                            }
+                        }
+                    } else {
+                        // [PERBAIKAN] Simpan data file lengkap untuk mode tambah.
+                        $newlyUploadedFiles[] = [
+                            'tipe_dokumen' => $tipe,
+                            'nama_asli_file' => $uploadResult['data']['title'],
+                            'nama_file_tersimpan' => $uploadResult['data']['berkas'],
+                            'path_file' => 'uploads/' . $uploadResult['data']['berkas']
+                        ];
                     }
+
                     if ($tipe === 'foto') {
-                        $data['foto'] = $uploadResult['nama_file_tersimpan'];
+                        $data['foto'] = $uploadResult['data']['berkas'];
                     }
                 }
             }
@@ -347,13 +450,26 @@ class Personel extends BaseController
         if (isset($other_docs_files['doc_lainnya'])) {
             foreach ($other_docs_files['doc_lainnya'] as $file) {
                 if ($file && $file->isValid() && !$file->hasMoved()) {
-                    $uploadResult = $this->doUpload($file);
-                    if ($uploadResult) {
-                        // [PERBAIKAN] Jangan langsung insert jika ID belum ada.
+                    $uploadResult = $this->doUpload($file, $modelFiles);
+                    if ($uploadResult && $uploadResult['status']) {
+                        $newFileId = $this->saveFileToMaster($uploadResult['data'], $user_id, $personelCategoryId, $roles, $modelFiles, $modelOtorFile);
                         if ($id) {
-                            $uploadResult['id_personel'] = $id;
-                            $uploadResult['tipe_dokumen'] = 'lainnya';
-                            $modelDokumen->insertData($uploadResult);
+                            // [PERBAIKAN] Simpan data file lengkap ke tabel 'dokumen'.
+                            $modelDokumen->insertData([
+                                'id_personel' => $id,
+                                'tipe_dokumen' => 'lainnya',
+                                'nama_asli_file' => $uploadResult['data']['title'],
+                                'nama_file_tersimpan' => $uploadResult['data']['berkas'],
+                                'path_file' => 'uploads/' . $uploadResult['data']['berkas']
+                            ]);
+                        } else {
+                            // [PERBAIKAN] Simpan data file lengkap untuk mode tambah.
+                            $newlyUploadedFiles[] = [
+                                'tipe_dokumen' => 'lainnya',
+                                'nama_asli_file' => $uploadResult['data']['title'],
+                                'nama_file_tersimpan' => $uploadResult['data']['berkas'],
+                                'path_file' => 'uploads/' . $uploadResult['data']['berkas']
+                            ];
                         }
                     }
                 }
@@ -369,22 +485,15 @@ class Personel extends BaseController
             $newPersonelId = $model->insertData($data, true); // Dapatkan ID baru
 
             if ($newPersonelId) {
-                // [BARU] Sekarang proses file yang tertunda menggunakan ID baru
-                $allFiles = $this->request->getFiles();
-                foreach ($allFiles as $fieldName => $files) {
-                    $files = is_array($files) ? $files : [$files];
-                    foreach ($files as $file) {
-                        if ($file && $file->isValid() && !$file->hasMoved()) {
-                            // File yang valid sudah di-handle di atas, kita hanya perlu insert ke DB
-                            $tipe = $fileFields[$fieldName] ?? 'lainnya';
-                            $uploadResult = $this->doUpload($file); // Re-run upload untuk mendapatkan nama file
-                            if ($uploadResult) {
-                                $uploadResult['id_personel'] = $newPersonelId;
-                                $uploadResult['tipe_dokumen'] = $tipe;
-                                $modelDokumen->insertData($uploadResult);
-                            }
-                        }
-                    }
+                // [PERBAIKAN] Insert file yang sudah diupload tadi ke tabel dokumen
+                foreach ($newlyUploadedFiles as $fileInfo) {
+                    $modelDokumen->insertData([
+                        'id_personel' => $newPersonelId,
+                        'tipe_dokumen' => $fileInfo['tipe_dokumen'],
+                        'nama_asli_file' => $fileInfo['nama_asli_file'],
+                        'nama_file_tersimpan' => $fileInfo['nama_file_tersimpan'],
+                        'path_file' => $fileInfo['path_file']
+                    ]);
                 }
                 $res = true; // Anggap berhasil
             }
@@ -412,7 +521,7 @@ class Personel extends BaseController
     {
         // [PERBAIKAN] Tambahkan pengecekan otorisasi di awal
         if (!$this->_isAuthorized()) {
-            return $this->response->setStatusCode(403)->setJSON(['error' => 'Anda tidak memiliki izin untuk mengubah urutan data.']);
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Anda tidak memiliki izin untuk mengubah urutan data.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
         }
 
         $data = [];
@@ -433,33 +542,73 @@ class Personel extends BaseController
         ));
     }
 
-    function doUpload($file)
+    private function saveFileToMaster($fileData, $userId, $categoryId, $roles, $modelFiles, $modelOtorFile)
     {
-        $uploadData = null;
-        if ($file) {
-            if ($file->isValid() && !$file->hasMoved()) {
-                $ext = $file->getClientExtension();
-                $originalName = pathinfo($file->getClientName(), PATHINFO_FILENAME);
-                $safeOriginalName = preg_replace('/[^a-zA-Z0-9\-_ ]/', '_', $originalName); // Sanitasi nama asli (spasi diizinkan)
-                $filename = time() . bin2hex(random_bytes(5)) . '___' . $safeOriginalName . '.' . $ext;
-                $path = 'uploads'; // Path relatif
-                if ($file->move(FCPATH . $path, $filename)) {
-                    $uploadData = [
-                        'nama_asli_file' => $file->getClientName(),
-                        'nama_file_tersimpan' => $filename,
-                        'path_file' => $path . '/' . $filename
-                    ];
-                }
+        $now = date('Y-m-d H:i:s');
+        $dataToInsert = [
+            'title'         => $fileData['title'],
+            'slug'          => url_title($fileData['title'], '-', true) . '-' . uniqid(),
+            'user_id'       => $userId,
+            'berkas'        => $fileData['berkas'],
+            'created_at'    => $now,
+            'updated_at'    => $now,
+            'categories_id' => $categoryId,
+        ];
+
+        $newFileId = $modelFiles->insertData($dataToInsert, true);
+
+        if ($newFileId) {
+            foreach ($roles as $r) {
+                $modelOtorFile->insertData([
+                    'id_file' => $newFileId,
+                    'id_role' => $r,
+                    'can_view' => 1,
+                    'can_crud' => 1,
+                ]);
             }
         }
-        return $uploadData;
+        return $newFileId;
+    }
+
+    function doUpload($file, $modelFiles)
+    {
+        if (!$file || !$file->isValid() || $file->hasMoved()) {
+            return ['status' => false, 'message' => 'File tidak valid.', 'xname' => csrf_token(), 'xhash' => csrf_hash()];
+        }
+
+        $originalName = $file->getClientName();
+        $ext = $file->getClientExtension();
+
+        // Cek duplikasi berdasarkan nama file di tabel `files`
+        $isDuplicate = $modelFiles->getDataByWhere(['title' => $originalName]);
+        if ($isDuplicate) {
+            // Jika duplikat, tambahkan timestamp untuk membuat nama unik
+            $baseName = pathinfo($originalName, PATHINFO_FILENAME);
+            $originalName = $baseName . '_' . time() . '.' . $ext;
+        }
+
+        $safeTitle = preg_replace('/[^a-zA-Z0-9\-_ .()]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
+        $newFileName = $safeTitle . '_' . uniqid() . '.' . $ext;
+
+        $path = 'uploads';
+        if ($file->move(FCPATH . $path, $newFileName)) {
+            return [
+                'status' => true,
+                'data' => [
+                    'title' => $originalName, // Nama asli file untuk ditampilkan
+                    'berkas' => $newFileName, // Nama file yang disimpan di server
+                ]
+            ];
+        }
+
+        return ['status' => false, 'message' => 'Gagal memindahkan file.', 'xname' => csrf_token(), 'xhash' => csrf_hash()];
     }
 
     function toggle()
     {
         // [PERBAIKAN] Tambahkan pengecekan otorisasi di awal
         if (!$this->_isAuthorized()) {
-            return $this->response->setStatusCode(403)->setJSON(['error' => 'Anda tidak memiliki izin untuk mengubah status data.']);
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Anda tidak memiliki izin untuk mengubah status data.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
         }
 
         $idenc = $this->request->getPost('id');
@@ -483,7 +632,7 @@ class Personel extends BaseController
     {
         $roleId = $this->request->getGet('s');
         if (empty($roleId)) {
-            return $this->response->setStatusCode(400)->setJSON(['error' => 'Role ID diperlukan.']);
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'Role ID diperlukan.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
         }
 
         $modelOtor = new MyModel('otoritas_personel');
