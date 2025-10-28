@@ -335,6 +335,13 @@ class Folder extends BaseController
             rename(FCPATH . 'uploads/' . $file->berkas, $newFilePath);
           }
           // Hapus record dari database
+          // [PERBAIKAN] Hapus juga dari tabel file_links dan otoritas_file
+          $fileLinkModel = new MyModel('file_links');
+          $fileLinkModel->deleteData('child_file', $decryptedId);
+
+          $otorFileModel = new MyModel('otoritas_file');
+          $otorFileModel->deleteData('id_file', $decryptedId);
+
           $fileModel->deleteData('id_files', $decryptedId); // Hapus record file dari tabel 'files'
           $message = "File berhasil dihapus.";
         } else {
@@ -377,7 +384,8 @@ class Folder extends BaseController
     $linkModel = new MyModel('folder_links');
     $fileLinkModel = new MyModel('file_links'); // [BARU]
     $folderModel = new MyModel('folder');
-    $fileModel = new MyModel('files');
+    $fileModel = new MyModel('files'); // [BARU]
+    $otorFileModel = new MyModel('otoritas_file'); // [BARU]
 
     // 1. Cari semua child folder dari tabel folder_links dan hapus secara rekursif
     $children = $linkModel->getAllDataByWhere(['parent_id' => $folderId]);
@@ -387,19 +395,31 @@ class Folder extends BaseController
     }
 
     // 2. Hapus semua file di dalam folder ini
-    if (!$isPersonelFolder) {
-      // [PERBAIKAN] Cek apakah ada file yang tertaut ke folder ini.
-      $fileIdsToDelete = $fileLinkModel->builder()->select('child_file')->where('parent_folder', $folderId)->get()->getResultArray();
-      $fileIdsToDelete = array_column($fileIdsToDelete, 'child_file');
+    // [PERBAIKAN] Logika ini sekarang berjalan untuk SEMUA folder, termasuk Folder Personel,
+    // untuk memastikan tautan dan otorisasi selalu bersih.
+    $fileLinksInThisFolder = $fileLinkModel->getAllDataByWhere(['parent_folder' => $folderId]);
 
-      if (!empty($fileIdsToDelete)) {
-        // [PERBAIKAN] Hanya hapus relasi dari tabel file_links. JANGAN sentuh file fisik atau data di tabel `files`.
-        $fileLinkModel->deleteData('parent_folder', $folderId);
+    foreach ($fileLinksInThisFolder as $fileLink) {
+      $childFileId = $fileLink->child_file; // Dapatkan ID file
+
+      // Hapus link file dari folder ini terlebih dahulu.
+      $fileLinkModel->deleteData('id', $fileLink->id);
+
+      // Setelah link dihapus, hitung sisa link untuk file ini.
+      $remainingLinks = $fileLinkModel->getCountAll('child_file', $childFileId);
+
+      // HANYA hapus otorisasi jika file ini sudah tidak tertaut di folder manapun.
+      if ($remainingLinks == 0) {
+        $otorFileModel->deleteData('id_file', $childFileId);
       }
     }
 
     // 3. Hapus relasi folder dari folder_links
     $linkModel->deleteData('child_id', $folderId); // Hapus folder sebagai anak
+
+    // [PERBAIKAN] Hapus otorisasi folder
+    $otorFolderModel = new MyModel('otoritas_folder');
+    $otorFolderModel->deleteData('id_folder', $folderId);
 
     // 4. Hapus folder itu sendiri dari tabel folder
     $folderModel->deleteData('id_folder', $folderId);
@@ -680,39 +700,61 @@ class Folder extends BaseController
         ]);
       }
 
-      // 2. Ambil semua dokumen milik personel dari tabel 'dokumen'
+      // [PERBAIKAN TOTAL] Ambil semua dokumen milik personel dari tabel 'dokumen'.
+      // Ini adalah sumber kebenaran yang menghubungkan personel dengan file-filenya.
       $modelDokumen = new MyModel('dokumen');
       $dokumenPersonel = $modelDokumen->getAllDataByWhere(['id_personel' => $id_personel]);
 
-      // 3. Salin setiap dokumen sebagai 'file' baru di dalam folder yang baru dibuat
+      // 3. [PERBAIKAN] Buat TAUTAN untuk setiap file yang ada, JANGAN buat file baru.
       foreach ($dokumenPersonel as $doc) {
-        $newFileData = [
-          'title'         => $doc->nama_asli_file,
-          'slug'          => url_title($doc->nama_asli_file, '-', true) . '-' . uniqid(), // 'id_folder' dihapus
-          'user_id'       => $user_id,
-          'berkas'        => basename($doc->path_file), // [FIX] Ambil hanya nama file dari path
-          'created_at'    => date('Y-m-d H:i:s'),
-          'updated_at'    => date('Y-m-d H:i:s'),
-          'categories_id' => $personelCategoryId, // [MODIFIKASI] Set kategori file
-        ];
-        $newFileId = $modelFiles->insertData($newFileData, true);
+        // [PERBAIKAN] Lebih robust mencari id_files dengan JOIN ke dokumen
+        // Menggunakan id_dokumen sebagai kunci unik untuk memastikan file master yang benar ditemukan.
+        $fileMasterWithId = $db->table('files')
+          ->select('files.id_files')
+          ->join('dokumen', 'dokumen.nama_file_tersimpan = files.berkas', 'inner')
+          ->where('dokumen.id_dokumen', $doc->id_dokumen)
+          ->get()->getRow();
 
-        // [BARU] Berikan otorisasi untuk setiap file yang baru dibuat
-        if ($newFileId) {
-          // [BARU] Buat link antara file baru dan folder personel
-          $modelFileLinks->insertData([
+        if (!$fileMasterWithId) {
+          // Jika file master tidak ditemukan (misalnya sudah dihapus dari Data File),
+          // lewati iterasi ini untuk mencegah error dan folder kosong.
+          log_message('debug', 'Skipping file for dokumen ID ' . $doc->id_dokumen . ' because master not found via JOIN.');
+          continue;
+        }
+        $fileId = $fileMasterWithId->id_files;
+
+        if ($fileId) {
+          // Cek apakah link sudah ada untuk mencegah duplikasi
+          $isLinkExist = $modelFileLinks->getDataByWhere([
             'parent_folder' => $folderId,
-            'child_file'    => $newFileId,
-            // 'sort_order' bisa ditambahkan jika diperlukan
+            'child_file' => $fileId
           ]);
 
-          foreach ($roles as $r) {
-            $modelOtorFile->insertData([
-              'id_file' => $newFileId,
-              'id_role' => $r,
-              'can_view' => 1,
-              'can_crud' => 1,
+          if (!$isLinkExist) {
+            // Buat link antara file yang SUDAH ADA dan folder personel yang baru dibuat
+            $modelFileLinks->insertData([
+              'parent_folder' => $folderId, // ID folder personel yang baru dibuat
+              'child_file' => $fileId, // [FIX] Gunakan $fileId dari dokumen, bukan $newFileId
+              // 'sort_order' bisa ditambahkan jika diperlukan
             ]);
+
+            // [PERBAIKAN] Pastikan otorisasi untuk file ini ada, terutama untuk Super Admin.
+            // Ini menyelesaikan masalah file tidak muncul setelah folder dihapus dan dibuat ulang.
+            foreach ($roles as $r) {
+              $existingOtor = $modelOtorFile->getDataByWhere([
+                'id_file' => $fileId,
+                'id_role' => $r
+              ]);
+
+              if (!$existingOtor) {
+                $modelOtorFile->insertData([
+                  'id_file' => $fileId,
+                  'id_role' => $r,
+                  'can_view' => 1,
+                  'can_crud' => 1,
+                ]);
+              }
+            }
           }
         }
       }
