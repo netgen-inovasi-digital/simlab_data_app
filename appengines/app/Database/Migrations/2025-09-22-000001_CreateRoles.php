@@ -19,10 +19,6 @@ class CreateRoles extends Migration
                 'constraint' => 20,
                 'null' => true
             ],
-            'grup' => [
-                'type' => "ENUM('admin','author')",
-                'null' => true
-            ],
             'status_role' => [
                 'type' => 'TINYINT',
                 'constraint' => 1,

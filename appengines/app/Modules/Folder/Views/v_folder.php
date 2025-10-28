@@ -1450,11 +1450,14 @@
       var wrapper = el.parentElement.querySelector('.selected');
       if (wrapper) wrapper.textContent = "-- pilih data --";
     });
-    // document.querySelector('input[name="idFile"]').value = '';
+
+    document.getElementById('listFiles').innerHTML = '';
+
     document.querySelector('input[name="id_folder"]').value = id;
     $('.modal-title-file').text('Tambah File - Folder ' + item.dataset.nama);
     $('#modalFormFile').modal('show');
   }
+
   $('#myFileForm').submit();
 
 
@@ -1480,12 +1483,14 @@
           sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
         } else if (data.res == 'refresh') {
           loadContent(data.link);
-          sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+          sayAlert('successModal', 'Success', data.message, 'success');
         } else if (data.res == 'redirect') {
           window.location.href = data.link;
         } else if (data.res == 'check') {
           sayAlert('errorModal', 'Error', data.link, 'warning');
         } else if (data.res == 'duplicate') {
+          sayAlert('errorModal', 'Error', data.message, 'warning');
+        } else if (data.res == 'empty') {
           sayAlert('errorModal', 'Error', data.message, 'warning');
         } else if (data.res == 'refresh-print') {
           loadContent(data.link);
@@ -1715,6 +1720,7 @@
   // Ambil data dari PHP
   allFiles = <?= json_encode($files) ?>;
   fileSelect = document.getElementById('file_id');
+  listFiles = document.getElementById('listFiles');
   kategoriSelect = document.getElementById('kategori_id');
 
   // 🔧 Fungsi untuk update dropdown file
@@ -1743,11 +1749,47 @@
 
   // ⏩ panggil saat pertama kali halaman dimuat
   updateFileDropdown();
+
+  // 🧩 Ketika user pilih file dari dropdown
+  fileSelect.addEventListener('change', function() {
+    const fileId = this.value;
+    const fileText = this.options[this.selectedIndex].text;
+
+    if (!fileId) return;
+
+    // Cegah duplikat di list
+    const existing = document.getElementById('file-' + fileId);
+    if (existing) existing.remove();
+
+    // Buat item list baru
+    const li = document.createElement('li');
+    li.id = 'file-' + fileId;
+    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+    li.innerHTML = `
+      <span><i class="bi bi-file-earmark me-2"></i>${fileText}</span>
+      <div>
+        <input type="hidden" name="files[]" value="${fileId}">
+        <button type="button" class="btn btn-sm btn-danger" onclick="removeFileItem('${fileId}')">
+  <i class="bi bi-x-lg"></i>
+</button>
+      </div>
+    `;
+    listFiles.appendChild(li);
+  });
+
+  function removeFileItem(fileId) {
+    const li = document.getElementById('file-' + fileId);
+    if (li) li.remove();
+
+    const fileSelect = document.getElementById('file_id');
+    if (fileSelect.value == fileId) {
+      fileSelect.value = "";
+    }
+  }
 </script>
 
 <?php echo form_open('', ['id' => 'myAuthorizationForm', 'novalidate' => '']); ?>
 <?php echo form_close(); ?>
-
 
 
 <!-- Modal Tambah Folder Baru -->
@@ -1882,8 +1924,8 @@
           <div class="col-11 mb-2">
             <label class="col-md-5 col-form-label">Pilih kategori file yang ingin dicari</label>
             <div class="d-flex gap-2 align-items-start justify-content-between">
-              <select id="kategori_id" name="kategori_id" class="form-select">
-                <option value="">-- pilih kategori --</option>
+              <select id="kategori_id" class="form-select">
+                <option value="">Semua Kategori</option>
                 <?php foreach ($categories as $kategori): ?>
                   <option value="<?= $kategori->id_categories ?>">
                     <?= esc($kategori->nama) ?>
@@ -1895,13 +1937,13 @@
           <div class="col-11">
             <label class="col-md-5 col-form-label">Pilih file yang ingin diupload</label>
             <div class="d-flex gap-2 align-items-start justify-content-between">
-              <select id="file_id" name="file_id" class="form-select" required>
+              <select id="file_id" class="form-select">
                 <option value="">-- pilih file --</option>
               </select>
             </div>
+            <ul class="list-group mt-2" id="listFiles"></ul>
           </div>
         </div>
-
       </div>
       <div class="modal-footer">
         <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>

@@ -3,9 +3,17 @@
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
         <label class="card-title mb-0"><?php echo $title ?></label>
-        <button id="addFile" class="btn btn-primary">
-          <i class="bi bi-plus-circle-dotted"></i> Tambah
-        </button>
+        <div class="d-flex">
+          <select id="filterKategori" name="filterKategori" class="form-select fw-bold me-2" style="width: auto;">
+            <option value="">Semua Kategori</option>
+            <?php foreach ($categories as $kategori) { ?>
+              <option value="<?php echo $kategori->id_categories ?>"><?php echo $kategori->nama ?></option>
+            <?php } ?>
+          </select>
+          <button id="addFile" class="btn btn-primary">
+            <i class="bi bi-plus-circle-dotted"></i> Tambah
+          </button>
+        </div>
       </div>
       <div class="card-body">
         <table id="data-table" class="saytable border-top-bottom">
@@ -32,6 +40,32 @@
   // ===== Classic Editor ===== //
   table = createTable({
     apiUrl: '<?php echo site_url("berkas/datalist") ?>',
+  });
+
+  // Elemen dropdown kategori
+  kategoriFilter = document.getElementById('filterKategori');
+
+  // Saat kategori berubah, ubah URL API dan reload tabel
+  kategoriFilter.addEventListener('change', function() {
+    const selectedKategori = this.value;
+
+    // Tentukan URL API (kalau kosong = semua data)
+    const apiUrl = selectedKategori ?
+      '<?php echo site_url("berkas/datalist") ?>?kategori=' + selectedKategori :
+      '<?php echo site_url("berkas/datalist") ?>';
+
+    // reload tabel dengan data baru
+    if (typeof table.update === 'function') {
+      // kalau fungsi update ada di createTable()
+      table.update({
+        apiUrl
+      });
+    } else {
+      // fallback: panggil ulang createTable()
+      table = createTable({
+        apiUrl
+      });
+    }
   });
   // addAction();
   tambahItemFile();
@@ -88,10 +122,13 @@
   var btnAksi = document.getElementById('btn-kategori-aksi');
   var formBaru = document.getElementById('form-kategori-baru');
   var inputBaru = document.getElementById('input-kategori-baru');
+
   var formEdit = document.getElementById('form-edit-kategori');
   var inputEdit = document.getElementById('input-edit-kategori');
+
   var btnSimpan = document.getElementById('btn-simpan-kategori');
   var btnBatal = document.getElementById('btn-batal-kategori');
+
   var btnUpdate = document.getElementById('btn-update-kategori');
   var btnDelete = document.getElementById('btn-delete-kategori');
   // ===== function perbarui Tombol ===== //
@@ -241,6 +278,9 @@
             option.selected = true;
           }
           formEdit.style.display = 'none';
+          // inputEdit.classList.add('d-none');
+          // btnUpdate.classList.add('d-none');
+          // btnDelete.classList.add('d-none');
           perbaruiTombol();
           sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
         } else {
@@ -280,6 +320,9 @@
           formEdit.style.display = 'none';
           perbaruiTombol();
           sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+        },
+        onError: () => {
+          sayAlert('errorModal', 'Error', 'Kategori tidak bisa dihapus karena masih digunakan oleh file yang ada.', 'warning');
         }
       });
     });
@@ -514,7 +557,6 @@
 
   function tambahItemFile() {
     $('#addFile').on('click', () => {
-      console.log('Tombol tambah diklik'); // cek apakah ini muncul
       var form = document.getElementById('myFileForm');
       var errorDivs = form.querySelectorAll('.error');
       errorDivs.forEach(errorDiv => {
@@ -538,6 +580,10 @@
 
     $('#myFileForm').submit();
   }
+
+  $('#modalFormFile').on('hidden.bs.modal', function() {
+    loadContent('berkas'); // refresh isi utama setelah modal ditutup
+  });
 
 
   function save(form) {
@@ -696,7 +742,7 @@
               placeholder="Masukkan nomor dokumen" required>
           </div>
           <div class="col">
-            <label class="col-md-3 col-form-label">Revisi ke</label>
+            <label class="col-md-3 col-form-label">Revisi Ke-</label>
             <input name="revisi" type="number" class="form-control bg-light" placeholder="Masukkan revisi"
               required>
           </div>
@@ -705,11 +751,12 @@
           <div class="col">
             <label class="col-md-6 col-form-label">File</label>
             <input id="berkas" name="berkas" type="file" class="form-control" accept=".pdf,.doc,.docx">
-            <small class="text-muted" id="ketBerkas" style="font-size: 11px;">Upload maks. 100MB</small>
+            <small class="text-muted" id="ketBerkas" style="font-size: 11px;">Upload maks. 100MB (File:
+              .pdf, .doc, .docx.)</small>
             <small class="text-danger d-none" id="errorMsg">Hanya file docs/pdf yang diperbolehkan!</small>
           </div>
           <div class="col">
-            <label class="col-md-3 col-form-label">Tanggal</label>
+            <label class="col-md-4 col-form-label">Tanggal Terbit</label>
             <input name="tanggal" id="tanggal-input" type="date" class="form-control"
               value="<?= esc(date('Y-m-d')) ?>" required>
           </div>
@@ -742,7 +789,7 @@
                 <button class="btn btn-danger ms-2" type="button" id="btn-batal-kategori">Batal</button>
               </div>
             </div>
-            <div class="d-flex gap-2 align-items-start mt-2" id="form-edit-kategori" style="display: none;">
+            <div class="gap-2 align-items-start mt-2" id="form-edit-kategori" style="display: none;">
               <input type="text" class="form-control" id="input-edit-kategori" style="max-width: 200px;"
                 placeholder="Edit nama kategori">
               <button type="button" class="btn btn-success" id="btn-update-kategori">Update</button>

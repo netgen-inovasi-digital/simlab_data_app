@@ -40,7 +40,6 @@ class Berkas extends BaseController
     $data['idFile'] = $id;
     $data['titleFile'] = $get->title; // ← bersih buat form
     $data['kategori_id'] = $get->categories_id;
-    // $data['id_folder'] = $idencFolder;
     $data['nomor_dokumen'] = $get->nomor_dokumen;
     $data['slug'] = $get->slug;
     $data['revisi'] = $get->revisi;
@@ -59,25 +58,6 @@ class Berkas extends BaseController
     // [BARU] Inisialisasi model lain yang dibutuhkan
     $modelCategories = new MyModel('categories');
     $modelDokumen = new MyModel('dokumen');
-
-    // [BARU] Cek apakah file berada di dalam folder personel
-    // if ($file) {
-    //   $folderModel = new MyModel('folder');
-    //   // $parentFolder = $folderModel->getDataById('id_folder', $file->id_folder);
-
-    //   $personelModel = new MyModel('personel');
-    //   // $isPersonelFolder = $parentFolder && $personelModel->getDataByWhere(['nama' => $parentFolder->nama]);
-
-    //   // if ($isPersonelFolder) {
-    //   //   // Jika ini adalah folder personel, tolak penghapusan dan kirim pesan error
-    //   //   return $this->response->setStatusCode(403)->setJSON([
-    //   //     'res' => 'error',
-    //   //     'message' => 'File di dalam folder personel tidak dapat dihapus. Silakan kelola melalui menu Personel.',
-    //   //     'xname' => csrf_token(),
-    //   //     'xhash' => csrf_hash()
-    //   //   ]);
-    //   // }
-    // }
 
     $db = \Config\Database::connect();
     $db->transStart();
@@ -523,68 +503,86 @@ class Berkas extends BaseController
 
     $id_folder = $this->request->getPost('id_folder');
     $idRawFolder = $this->encrypter->decrypt(hex2bin($id_folder));
+    $user_role = $this->request->getPost('user_role');
 
-    $data = [
-      'parent_folder' => $idRawFolder,
-      'child_file' => $this->request->getPost('file_id'),
-    ];
+    $files = $this->request->getPost('files');
 
-    // [PERBAIKAN] Validasi duplikasi file di folder tujuan
-    $isDuplicate = $model->getDataByWhere([
-      'parent_folder' => $data['parent_folder'],
-      'child_file' => $data['child_file']
-    ]);
-
-    if ($isDuplicate) {
+    if (empty($files) || !is_array($files)) {
       return $this->response->setJSON([
-        'res' => 'duplicate',
-        'message' => 'File ini sudah ada di dalam folder tujuan.',
+        'res' => 'empty',
+        'message' => 'Tidak ada file yang dipilih.',
         'xname' => csrf_token(),
         'xhash' => csrf_hash()
       ]);
     }
-    // --- Akhir Validasi ---
 
-    $res = $model->insertData($data);
+    $inserted = [];
+    $duplicates = [];
 
-    if ($res) {
-      $id_file = $data['child_file'];
-      $role_id = $this->request->getPost('user_role');
+    foreach ($files as $fileId) {
+      $data = [
+        'parent_folder' => $idRawFolder,
+        'child_file' => $fileId,
+      ];
 
-      $otorFiles = $modelOtorisasiFile->getDataByWhere([
-        'id_file' => $id_file,
-        'id_role' => $role_id
+      // 🔹 Cek duplikat
+      $isDuplicate = $model->getDataByWhere([
+        'parent_folder' => $data['parent_folder'],
+        'child_file' => $data['child_file']
       ]);
-      if ($otorFiles) {
-        return $this->response->setJSON([
-          'res' => 'refresh',
-          'link' => 'folder',
-          'xname' => csrf_token(),
-          'xhash' => csrf_hash()
-        ]);
+
+      if ($isDuplicate) {
+        $duplicates[] = $fileId;
+        continue;
       }
 
+      // 🔹 Insert file link
+      $res = $model->insertData($data);
 
-      $roles = array_unique([(int)$role_id, 8]);
-      foreach ($roles as $r) {
-        $otor = [
-          'id_file' => (int)$id_file,
-          'id_role' => (int)$r,
-          'can_view' => 1,
-          'can_crud' => 1,
-        ];
-        $modelOtorisasiFile->insertData($otor);
+      if ($res) {
+        // 🔹 Cek otorisasi
+        $otorFiles = $modelOtorisasiFile->getDataByWhere([
+          'id_file' => $fileId,
+          'id_role' => $user_role
+        ]);
+
+        if (!$otorFiles) {
+          $roles = array_unique([(int)$user_role, 8]);
+          foreach ($roles as $r) {
+            $modelOtorisasiFile->insertData([
+              'id_file' => (int)$fileId,
+              'id_role' => (int)$r,
+              'can_view' => 1,
+              'can_crud' => 1,
+            ]);
+          }
+        }
+
+        $inserted[] = $fileId;
       }
     }
 
-    if ($res) {
+    // 🔹 Buat pesan hasil akhir
+    $countInserted = count($inserted);
+    $countDuplicate = count($duplicates);
+
+    if ($countInserted > 0) {
       $res = 'refresh';
       $link = 'folder';
+      if ($countDuplicate > 0) {
+        $message = "{$countInserted} file berhasil ditambahkan, {$countDuplicate} file dilewati karena sudah ada di dalam folder.";
+      } else {
+        $message = "{$countInserted} file berhasil ditambahkan ke folder.";
+      }
+    } else {
+      $res = 'duplicate';
+      $message = "Gagal ditambahkan, semua file sudah ada di dalam folder.";
     }
 
     return $this->response->setJSON([
       'res' => $res,
       'link' => $link ?? '',
+      'message' => $message,
       'xname' => csrf_token(),
       'xhash' => csrf_hash()
     ]);
@@ -693,6 +691,9 @@ class Berkas extends BaseController
     $model = new MyModel($this->table);
     $data = array();
 
+    // ambil parameter kategori dari query string
+    $kategoriId = $this->request->getGet('kategori');
+
     // ambil kolom yang dibutuhkan
     $select = 'users.id_user, users.nama AS nama_user, files.*, categories.nama AS nama_kategori';
 
@@ -702,7 +703,12 @@ class Berkas extends BaseController
       'categories' => 'categories.id_categories = files.categories_id'
     ];
 
+    // kalau kategori dipilih, tambahkan filter
     $where = [];
+    if (!empty($kategoriId)) {
+      $where['files.categories_id'] = $kategoriId;
+    }
+
     $orderBy = ['files.created_at' => 'ASC'];
 
     // ambil data pakai LEFT JOIN

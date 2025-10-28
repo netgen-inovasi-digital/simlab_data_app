@@ -24,11 +24,6 @@ class CreateFiles extends Migration
         'constraint' => 11,
         'null' => false
       ],
-      'id_folder' => [
-        'type' => 'INT',
-        'constraint' => 11,
-        'null' => true
-      ],
       'nomor_dokumen' => [
         'type' => 'VARCHAR',
         'constraint' => 255,

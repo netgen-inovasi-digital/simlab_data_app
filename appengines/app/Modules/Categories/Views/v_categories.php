@@ -104,6 +104,9 @@
           onSuccess: () => {
             loadContent('categories');
             sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+          },
+          onError: () => {
+            sayAlert('errorModal', 'Error', 'Kategori tidak bisa dihapus karena masih digunakan oleh file yang ada.', 'warning');
           }
         });
       });

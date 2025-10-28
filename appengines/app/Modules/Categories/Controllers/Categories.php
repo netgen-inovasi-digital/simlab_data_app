@@ -36,6 +36,7 @@ class Categories extends BaseController
   {
     $json = $this->request->getJSON();
     $id = $json->id ?? null;
+    $modelFiles = new MyModel('files');
 
     if ($id) {
       // Coba deteksi apakah id berbentuk hex terenkripsi
@@ -48,6 +49,16 @@ class Categories extends BaseController
           }
         } catch (\Exception $e) {
         }
+      }
+
+      $cekFileCategory = $modelFiles->where('categories_id', $id)->countAllResults();
+
+      if ($cekFileCategory > 0) {
+        return $this->response->setJSON([
+          'success' => false,
+          'xname' => csrf_token(),
+          'xhash' => csrf_hash()
+        ]);
       }
 
       $model = new MyModel($this->table);
