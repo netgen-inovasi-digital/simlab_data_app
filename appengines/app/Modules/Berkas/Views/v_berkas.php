@@ -548,7 +548,6 @@
 
   function tambahItemFile() {
     $('#addFile').on('click', () => {
-      console.log('Tombol tambah diklik'); // cek apakah ini muncul
       var form = document.getElementById('myFileForm');
       var errorDivs = form.querySelectorAll('.error');
       errorDivs.forEach(errorDiv => {
