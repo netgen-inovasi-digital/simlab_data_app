@@ -335,6 +335,13 @@ class Folder extends BaseController
             rename(FCPATH . 'uploads/' . $file->berkas, $newFilePath);
           }
           // Hapus record dari database
+          // [PERBAIKAN] Hapus juga dari tabel file_links dan otoritas_file
+          $fileLinkModel = new MyModel('file_links');
+          $fileLinkModel->deleteData('child_file', $decryptedId);
+
+          $otorFileModel = new MyModel('otoritas_file');
+          $otorFileModel->deleteData('id_file', $decryptedId);
+
           $fileModel->deleteData('id_files', $decryptedId); // Hapus record file dari tabel 'files'
           $message = "File berhasil dihapus.";
         } else {
@@ -377,7 +384,8 @@ class Folder extends BaseController
     $linkModel = new MyModel('folder_links');
     $fileLinkModel = new MyModel('file_links'); // [BARU]
     $folderModel = new MyModel('folder');
-    $fileModel = new MyModel('files');
+    $fileModel = new MyModel('files'); // [BARU]
+    $otorFileModel = new MyModel('otoritas_file'); // [BARU]
 
     // 1. Cari semua child folder dari tabel folder_links dan hapus secara rekursif
     $children = $linkModel->getAllDataByWhere(['parent_id' => $folderId]);
@@ -387,19 +395,33 @@ class Folder extends BaseController
     }
 
     // 2. Hapus semua file di dalam folder ini
+    // [PERBAIKAN] Logika penghapusan file dan otorisasi terkait
     if (!$isPersonelFolder) {
-      // [PERBAIKAN] Cek apakah ada file yang tertaut ke folder ini.
-      $fileIdsToDelete = $fileLinkModel->builder()->select('child_file')->where('parent_folder', $folderId)->get()->getResultArray();
-      $fileIdsToDelete = array_column($fileIdsToDelete, 'child_file');
+      $fileLinksInThisFolder = $fileLinkModel->getAllDataByWhere(['parent_folder' => $folderId]);
 
-      if (!empty($fileIdsToDelete)) {
-        // [PERBAIKAN] Hanya hapus relasi dari tabel file_links. JANGAN sentuh file fisik atau data di tabel `files`.
-        $fileLinkModel->deleteData('parent_folder', $folderId);
+      foreach ($fileLinksInThisFolder as $fileLink) {
+        $childFileId = $fileLink->child_file; // Dapatkan ID file
+
+        // [PERBAIKAN] Hapus link file dari folder ini terlebih dahulu.
+        $fileLinkModel->deleteData('id', $fileLink->id);
+
+        // [PERBAIKAN] Setelah link dihapus, hitung sisa link untuk file ini.
+        $remainingLinks = $fileLinkModel->getCountAll('child_file', $childFileId);
+
+        // [PERBAIKAN] HANYA hapus otorisasi jika file ini sudah tidak tertaut di folder manapun.
+        if ($remainingLinks == 0) {
+          // Karena ini adalah link terakhir, maka otorisasi untuk file ini aman untuk dihapus.
+          $otorFileModel->deleteData('id_file', $childFileId);
+        }
       }
     }
 
     // 3. Hapus relasi folder dari folder_links
     $linkModel->deleteData('child_id', $folderId); // Hapus folder sebagai anak
+
+    // [PERBAIKAN] Hapus otorisasi folder
+    $otorFolderModel = new MyModel('otoritas_folder');
+    $otorFolderModel->deleteData('id_folder', $folderId);
 
     // 4. Hapus folder itu sendiri dari tabel folder
     $folderModel->deleteData('id_folder', $folderId);
