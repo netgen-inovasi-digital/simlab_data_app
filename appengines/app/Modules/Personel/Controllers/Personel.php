@@ -368,8 +368,31 @@ class Personel extends BaseController
         foreach ($fileFields as $field => $tipe) {
             $file = $this->request->getFile($field);
             if ($file && $file->isValid() && !$file->hasMoved()) {
-                $uploadResult = $this->doUpload($file, $modelFiles); // Kirim modelFiles untuk cek duplikat
-                if ($uploadResult && $uploadResult['status']) {
+                // [PERBAIKAN] Logika khusus untuk foto profil
+                if ($field === 'foto') {
+                    // Hapus foto lama jika ada saat mode edit
+                    if ($id && $currentData && !empty($currentData->foto)) {
+                        $oldFotoPath = FCPATH . 'uploads/' . $currentData->foto;
+                        if (file_exists($oldFotoPath)) {
+                            $trashPath = FCPATH . 'uploads/trash/';
+                            if (!is_dir($trashPath)) {
+                                mkdir($trashPath, 0777, true);
+                            }
+                            $newTrashPath = $trashPath . 'foto_' . uniqid() . '_' . $currentData->foto;
+                            rename($oldFotoPath, $newTrashPath);
+                        }
+                    }
+
+                    // Unggah foto baru
+                    $newFotoName = $this->doUploadFotoProfil($file);
+                    if ($newFotoName) {
+                        $data['foto'] = $newFotoName;
+                    }
+                } else {
+                    // Logika untuk dokumen (CV, COC, dll)
+                    $uploadResult = $this->doUpload($file, $modelFiles); // Kirim modelFiles untuk cek duplikat
+                    if (!$uploadResult || !$uploadResult['status']) continue;
+
                     $newFileId = $this->saveFileToMaster($uploadResult['data'], $user_id, $personelCategoryId, $roles, $modelFiles, $modelOtorFile);
 
                     if ($id) {
@@ -436,10 +459,6 @@ class Personel extends BaseController
                             'nama_file_tersimpan' => $uploadResult['data']['berkas'],
                             'path_file' => 'uploads/' . $uploadResult['data']['berkas']
                         ];
-                    }
-
-                    if ($tipe === 'foto') {
-                        $data['foto'] = $uploadResult['data']['berkas'];
                     }
                 }
             }
@@ -602,6 +621,28 @@ class Personel extends BaseController
         }
 
         return ['status' => false, 'message' => 'Gagal memindahkan file.', 'xname' => csrf_token(), 'xhash' => csrf_hash()];
+    }
+
+    /**
+     * [BARU] Fungsi khusus untuk upload foto profil.
+     * Tidak menyimpan data ke tabel 'files'.
+     */
+    private function doUploadFotoProfil($file)
+    {
+        if (!$file || !$file->isValid() || $file->hasMoved()) {
+            return null;
+        }
+
+        // Validasi tipe dan ukuran
+        if (!in_array($file->getMimeType(), ['image/jpeg', 'image/png', 'image/gif']) || $file->getSize() > 2048 * 1024) {
+            return null; // Gagal validasi
+        }
+
+        $ext = $file->getClientExtension();
+        $newFileName = 'foto_profil_' . uniqid() . '.' . $ext;
+
+        $path = FCPATH . 'uploads';
+        return $file->move($path, $newFileName) ? $newFileName : null;
     }
 
     function toggle()
