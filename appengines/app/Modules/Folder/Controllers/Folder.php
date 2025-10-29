@@ -670,7 +670,12 @@ class Folder extends BaseController
         $personelCategoryId = $personelCategory->id_categories;
       } else {
         // Jika kategori "Personel" tidak ada, buat baru.
-        $personelCategoryId = $modelCategories->insertData(['nama' => 'Personel', 'slug' => 'personel'], true);
+        // [PERBAIKAN] Tambahkan timestamp saat membuat kategori baru
+        $personelCategoryId = $modelCategories->insertData([
+          'nama' => 'Personel',
+          'slug' => 'personel',
+          'created_at' => date('Y-m-d H:i:s')
+        ], true);
       }
 
       $db->transStart();

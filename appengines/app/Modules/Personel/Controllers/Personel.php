@@ -346,7 +346,12 @@ class Personel extends BaseController
         if ($personelCategory) {
             $personelCategoryId = $personelCategory->id_categories;
         } else {
-            $personelCategoryId = $modelCategories->insertData(['nama' => 'Personel', 'slug' => 'personel'], true);
+            // [PERBAIKAN] Tambahkan timestamp saat membuat kategori baru
+            $personelCategoryId = $modelCategories->insertData([
+                'nama' => 'Personel',
+                'slug' => 'personel',
+                'created_at' => date('Y-m-d H:i:s')
+            ], true);
         }
 
         // [PERBAIKAN] Ambil role user untuk otorisasi
