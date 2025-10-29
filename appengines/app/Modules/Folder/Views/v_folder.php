@@ -555,12 +555,15 @@
      * Event listener untuk menambah input field sub-folder secara dinamis.
      */
     tambahSubfolderBtn.addEventListener('click', () => {
-      // Hitung level indentasi berdasarkan jumlah wrapper subfolder yang sudah ada
       const currentLevel = subfolderContainer.querySelectorAll('.subfolder-wrapper').length;
-      const indentSize = 25; // Ukuran indentasi dalam pixel
-      const marginLeft = currentLevel * indentSize;
 
-      // [FIX] Buat div wrapper untuk menerapkan margin, bukan ke input-group langsung
+      if (currentLevel >= 5) {
+        sayAlert('infoModal', 'Batas Tercapai',
+          'Anda hanya dapat menambahkan maksimal 5 level sub-folder.', 'info');
+        return;
+      }
+      const indentSize = 25;
+      const marginLeft = currentLevel * indentSize;
       const wrapper = document.createElement('div');
       wrapper.classList.add('subfolder-wrapper', 'mb-2');
       wrapper.style.marginLeft = `${marginLeft}px`;
@@ -572,6 +575,10 @@
                     </div>
                 `;
       subfolderContainer.appendChild(wrapper);
+
+      if (subfolderContainer.querySelectorAll('.subfolder-wrapper').length >= 5) {
+        tambahSubfolderBtn.disabled = true;
+      }
     });
 
     /**
@@ -579,10 +586,24 @@
      */
     subfolderContainer.addEventListener('click', (e) => {
       if (e.target.closest('.btn-remove-subfolder')) {
-        // [FIX] Hapus elemen wrapper, bukan hanya input-group
         e.target.closest('.subfolder-wrapper').remove();
+        reorderSubfolders();
       }
     });
+
+    function reorderSubfolders() {
+      const wrappers = subfolderContainer.querySelectorAll('.subfolder-wrapper');
+      const indentSize = 25;
+
+      wrappers.forEach((wrapper, index) => {
+        wrapper.style.marginLeft = `${index * indentSize}px`;
+      });
+
+      if (wrappers.length < 5) {
+        tambahSubfolderBtn.disabled = false;
+      }
+    }
+
 
     /**
      * Event listener untuk submit form tambah folder baru.
@@ -1857,6 +1878,9 @@
             <div id="subfolder-container"></div>
             <button type="button" id="tambahSubfolder" class="btn btn-outline-secondary btn-sm"><i
                 class="bi bi-plus"></i> Tambah Sub-folder</button>
+            <!-- [PERBAIKAN] Menambahkan teks informasi batas maksimal -->
+            <small class="form-text text-muted d-block mt-1" style="font-size: 0.75em;">Maksimal 5 level
+              sub-folder.</small>
           </div>
           <div id="opsiGunakanTemplate" class="d-none">
             <div class="mb-3">

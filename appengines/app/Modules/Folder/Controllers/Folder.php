@@ -479,6 +479,17 @@ class Folder extends BaseController
         return $this->response->setJSON(['res' => false, 'message' => 'Nama Folder Utama tidak boleh kosong.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
       }
 
+      // [PERBAIKAN] Validasi di sisi server untuk membatasi jumlah sub-folder menjadi 5
+      if (count($subfolders) > 5) {
+        return $this->response->setJSON([
+          'res'     => 'error',
+          'message' => 'Jumlah sub-folder tidak boleh lebih dari 5 level.',
+          'xname'   => csrf_token(),
+          'xhash'   => csrf_hash()
+        ]);
+      }
+
+
       // [PERBAIKAN] Logika pengecekan duplikat yang lebih akurat
       $builder = $db->table('folder');
       if ($parentId) {
