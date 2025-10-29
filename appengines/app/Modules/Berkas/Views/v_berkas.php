@@ -4,6 +4,9 @@
       <div class="card-header d-flex justify-content-between align-items-center">
         <label class="card-title mb-0"><?php echo $title ?></label>
         <div class="d-flex">
+          <label for="filterKategori" class="fw-semibold me-2 d-flex align-items-center">
+            <i class="bi bi-funnel me-1"></i> Filter Kategori
+          </label>
           <select id="filterKategori" name="filterKategori" class="form-select fw-bold me-2" style="width: auto;">
             <option value="">Semua Kategori</option>
             <?php foreach ($categories as $kategori) { ?>
@@ -582,7 +585,7 @@
   }
 
   $('#modalFormFile').on('hidden.bs.modal', function() {
-    loadContent('berkas'); // refresh isi utama setelah modal ditutup
+    loadContent('berkas');
   });
 
 
@@ -607,7 +610,6 @@
         } else if (data.res == 'reload') {
           sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
         } else if (data.res == 'refresh') {
-          loadContent(data.link);
           sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
         } else if (data.res == 'redirect') {
           window.location.href = data.link;

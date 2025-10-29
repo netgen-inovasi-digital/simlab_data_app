@@ -763,11 +763,15 @@
         filterJenisFile.style.display = 'block';
         filterKategori.style.display = 'block';
       } else {
+        // Reset semua filter selain tipe
         filterJenisFile.style.display = 'none';
         filterKategori.style.display = 'none';
         filterJenisFile.value = 'semua';
         filterKategori.value = 'semua';
+        searchInput.value = ''; // optional reset pencarian juga
       }
+
+      applyFilters();
     });
 
     /**
@@ -1742,13 +1746,25 @@
     });
   }
 
+  function reinitSelectSearch() {
+    // cari wrapper custom dropdown dari selectSearch (elemen sebelum <select>)
+    const oldWrapper = document.querySelector('#file_id')?.previousElementSibling;
+    if (oldWrapper && oldWrapper.classList.contains('position-relative')) {
+      oldWrapper.remove(); // hapus dropdown custom lama
+    }
+    // panggil ulang selectSearch
+    selectSearch('#file_id');
+  }
+
   // Saat kategori berubah
   kategoriSelect.addEventListener('change', function() {
     updateFileDropdown(this.value);
+    reinitSelectSearch(); // re-render dropdown search biar sinkron
   });
 
   // ⏩ panggil saat pertama kali halaman dimuat
   updateFileDropdown();
+  reinitSelectSearch();
 
   // 🧩 Ketika user pilih file dari dropdown
   fileSelect.addEventListener('change', function() {
