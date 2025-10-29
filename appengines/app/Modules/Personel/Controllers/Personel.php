@@ -369,6 +369,24 @@ class Personel extends BaseController
             $file = $this->request->getFile($field);
             if ($file && $file->isValid() && !$file->hasMoved()) {
                 // [PERBAIKAN] Logika khusus untuk foto profil
+                // [BARU] Cek duplikasi nama file untuk personel yang sama (hanya saat edit)
+                if ($id && $field !== 'foto') {
+                    $originalName = $file->getClientName();
+                    $isDuplicate = $modelDokumen->getDataByWhere([
+                        'id_personel' => $id,
+                        'nama_asli_file' => $originalName
+                    ]);
+                    if ($isDuplicate) {
+                        // [PERBAIKAN] Kirim pesan error jika file duplikat ditemukan
+                        return $this->response->setJSON([
+                            'res'     => 'error',
+                            'message' => "Gagal, dokumen dengan nama '{$originalName}' sudah ada untuk personel ini.",
+                            'xname'   => csrf_token(),
+                            'xhash'   => csrf_hash()
+                        ]);
+                    }
+                }
+
                 if ($field === 'foto') {
                     // Hapus foto lama jika ada saat mode edit
                     if ($id && $currentData && !empty($currentData->foto)) {
@@ -469,6 +487,24 @@ class Personel extends BaseController
         if (isset($other_docs_files['doc_lainnya'])) {
             foreach ($other_docs_files['doc_lainnya'] as $file) {
                 if ($file && $file->isValid() && !$file->hasMoved()) {
+                    // [BARU] Cek duplikasi untuk file "Lainnya" juga
+                    if ($id) {
+                        $originalName = $file->getClientName();
+                        $isDuplicate = $modelDokumen->getDataByWhere([
+                            'id_personel' => $id,
+                            'nama_asli_file' => $originalName
+                        ]);
+                        if ($isDuplicate) {
+                            // [PERBAIKAN] Kirim pesan error jika file duplikat ditemukan
+                            return $this->response->setJSON([
+                                'res'     => 'error',
+                                'message' => "Gagal, dokumen dengan nama '{$originalName}' sudah ada untuk personel ini.",
+                                'xname'   => csrf_token(),
+                                'xhash'   => csrf_hash()
+                            ]);
+                        }
+                    }
+
                     $uploadResult = $this->doUpload($file, $modelFiles);
                     if ($uploadResult && $uploadResult['status']) {
                         $newFileId = $this->saveFileToMaster($uploadResult['data'], $user_id, $personelCategoryId, $roles, $modelFiles, $modelOtorFile);

@@ -632,6 +632,9 @@
           updateCsrfToken(data.xname, data.xhash);
           if (data.res === 'validation_error') {
             sayAlert('errorModal', 'Input Tidak Lengkap', data.message, 'warning');
+          } else if (data.res === 'error') {
+            // [PERBAIKAN] Menangani pesan error spesifik dari backend (seperti file duplikat)
+            sayAlert('errorModal', 'Gagal', data.message, 'warning');
           } else if (data.res === 'refresh') {
             // [PERBAIKAN] Panggil hideLoading SEBELUM navigasi/reload
             if (formType === 'personel') {
@@ -648,7 +651,8 @@
               window.location.reload();
             }
           } else {
-            sayAlert('errorModal', 'Gagal', 'Data gagal disimpan. Silakan coba lagi.', 'warning');
+            sayAlert('errorModal', 'Gagal', data.message || 'Data gagal disimpan. Silakan coba lagi.',
+              'warning');
           }
         })
         .catch(error => {
@@ -819,7 +823,8 @@
         const jabatan = (item.dataset.jabatan || '').toLowerCase();
         const penempatan = item.dataset.penempatan || '';
 
-        const searchMatch = (searchTerm === '') || nama.includes(searchTerm) || jabatan.includes(searchTerm);
+        const searchMatch = (searchTerm === '') || nama.includes(searchTerm) || jabatan.includes(
+          searchTerm);
         const filterMatch = (filterValue === 'Semua' || penempatan === filterValue);
 
         if (searchMatch && filterMatch) {
