@@ -41,18 +41,36 @@ class Dashboard extends BaseController
 			$greeting = 'Selamat malam';
 		}
 
-		// Hanya ambil data yang diperlukan
-		$modelFolders = new MyModel('folder');
-		$dataFolders = $modelFolders->getCountAllbyManyWhere([]);
+		// [PERBAIKAN] Logika penghitungan file dan folder berdasarkan otorisasi role
 		$modelFiles = new MyModel('files');
-		$dataFiles = $modelFiles->getCountAllbyManyWhere([]);
+		$modelFolders = new MyModel('folder');
+		$modelOtorFile = new MyModel('otoritas_file');
+		$modelOtorFolder = new MyModel('otoritas_folder');
 		$modelPersonel = new MyModel('personel');
-		$dataPersonel = $modelPersonel->getCountAllbyManyWhere([]);
+
+		$totalFiles = 0;
+		$totalFolders = 0;
+
+		if ($role_id == 8) { // Super Admin melihat semua
+			$totalFiles = $modelFiles->getCountAllbyManyWhere([]);
+			$totalFolders = $modelFolders->getCountAllbyManyWhere([]);
+		} else if ($role_id) { // Role lain melihat berdasarkan otorisasi
+			// Hitung file yang bisa dilihat
+			$totalFiles = $modelOtorFile->getCountAllbyManyWhere([
+				'id_role' => $role_id,
+				'can_view' => 1
+			]);
+			// Hitung folder yang bisa dilihat
+			$totalFolders = $modelOtorFolder->getCountAllbyManyWhere([
+				'id_role' => $role_id,
+				'can_view' => 1
+			]);
+		}
 
 		return [
-			'totalFolders' => $dataFolders,
-			'totalFiles' => $dataFiles,
-			'totalPersonel' => $dataPersonel,
+			'totalFolders' => $totalFolders,
+			'totalFiles' => $totalFiles,
+			'totalPersonel' => $modelPersonel->getCountAllbyManyWhere([]),
 			'greeting' => $greeting,
 			'nama_user' => $nama,
 			'role_id' => $role_id,
