@@ -47,13 +47,17 @@ class Dashboard extends BaseController
 		$modelOtorFile = new MyModel('otoritas_file');
 		$modelOtorFolder = new MyModel('otoritas_folder');
 		$modelPersonel = new MyModel('personel');
+		$modelCategories = new MyModel('categories');
+		$modelUsers = new MyModel('users');
 
 		$totalFiles = 0;
 		$totalFolders = 0;
+		$totalCategories = 0;
 
 		if ($role_id == 8) { // Super Admin melihat semua
 			$totalFiles = $modelFiles->getCountAllbyManyWhere([]);
 			$totalFolders = $modelFolders->getCountAllbyManyWhere([]);
+			$totalCategories = $modelCategories->getCountAllbyManyWhere([]);
 		} else if ($role_id) { // Role lain melihat berdasarkan otorisasi
 			// Hitung file yang bisa dilihat
 			$totalFiles = $modelOtorFile->getCountAllbyManyWhere([
@@ -65,12 +69,25 @@ class Dashboard extends BaseController
 				'id_role' => $role_id,
 				'can_view' => 1
 			]);
+
+			// [BARU] Hitung kategori unik dari file yang bisa dilihat
+			$db = \Config\Database::connect();
+			$totalCategories = $db->table('files')
+				->distinct()
+				->select('files.categories_id')
+				->join('otoritas_file', 'otoritas_file.id_file = files.id_files')
+				->where('otoritas_file.id_role', $role_id)
+				->where('otoritas_file.can_view', 1)
+				->where('files.categories_id IS NOT NULL')
+				->countAllResults();
 		}
 
 		return [
 			'totalFolders' => $totalFolders,
 			'totalFiles' => $totalFiles,
 			'totalPersonel' => $modelPersonel->getCountAllbyManyWhere([]),
+			'totalCategories' => $totalCategories,
+			'totalUsers' => $modelUsers->getCountAllbyManyWhere([]),
 			'greeting' => $greeting,
 			'nama_user' => $nama,
 			'role_id' => $role_id,
