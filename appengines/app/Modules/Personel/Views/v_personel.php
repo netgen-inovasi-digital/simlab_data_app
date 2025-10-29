@@ -700,9 +700,6 @@
      * Event listener untuk input pencarian.
      */
     document.addEventListener('input', e => {
-      if (e.target.id === 'searchInput') {
-        applyFiltersAndSearch();
-      }
 
       // [BARU] Validasi real-time untuk input numerik (NIP & No. HP)
       const numericInput = e.target.closest('input[name="nip"], input[name="no_handphone"]');
@@ -720,9 +717,6 @@
      * Event listener untuk perubahan pada filter dan input file.
      */
     document.addEventListener('change', e => {
-      if (e.target.id === 'filterPenempatan') {
-        applyFiltersAndSearch();
-      }
       if (e.target.matches('.file-input-with-preview')) {
         handleFilePreview(e.target);
       }
@@ -790,27 +784,44 @@
      * Menerapkan filter dan pencarian pada daftar personel, menampilkan/menyembunyikan item yang sesuai.
      */
     function applyFiltersAndSearch() {
-      // [BARU] Ambil elemen pesan
       const searchInput = document.getElementById('searchInput');
       const filterPenempatan = document.getElementById('filterPenempatan');
       const noResultsMessage = document.getElementById('noResultsMessage');
-      const noDataMessage = document.getElementById('noDataMessage'); // Pesan "belum ditambahkan"
-      const searchTerm = searchInput.value.toLowerCase();
-      const filterValue = filterPenempatan.value;
-      const items = document.querySelectorAll('.personel-item');
-      let visibleCount = 0;
+      const noDataMessage = document.getElementById('noDataMessage'); // "belum ditambahkan"
 
-      // [BARU] Sembunyikan pesan "belum ditambahkan" setiap kali filter dijalankan
-      if (noDataMessage) {
-        noDataMessage.style.display = 'none';
+      const searchTerm = (searchInput.value || '').toLowerCase();
+      const filterValue = filterPenempatan.value;
+      const items = Array.from(document.querySelectorAll('.personel-item'));
+      const totalItems = items.length;
+
+      // Reset dulu semua pesan
+      if (noDataMessage) noDataMessage.style.display = 'none';
+      if (noResultsMessage) noResultsMessage.style.display = 'none';
+
+      // Kalau memang gak ada data personel sama sekali
+      if (totalItems === 0) {
+        const isFilterActive = searchTerm !== '' || filterValue !== 'Semua';
+        if (isFilterActive) {
+          // Kalau user lagi search atau filter → tampilkan "tidak ditemukan"
+          if (noResultsMessage) noResultsMessage.style.display = 'block';
+        } else {
+          // Kalau belum ngapa-ngapain → tetap tampilkan "belum ditambahkan"
+          if (noDataMessage) noDataMessage.style.display = 'block';
+        }
+        return;
       }
 
+      // Kalau ada data, lanjut filter
+      let visibleCount = 0;
+
       items.forEach(item => {
-        const nama = item.dataset.nama;
-        const jabatan = item.dataset.jabatan;
-        const penempatan = item.dataset.penempatan;
-        const searchMatch = nama.includes(searchTerm) || jabatan.includes(searchTerm);
+        const nama = (item.dataset.nama || '').toLowerCase();
+        const jabatan = (item.dataset.jabatan || '').toLowerCase();
+        const penempatan = item.dataset.penempatan || '';
+
+        const searchMatch = (searchTerm === '') || nama.includes(searchTerm) || jabatan.includes(searchTerm);
         const filterMatch = (filterValue === 'Semua' || penempatan === filterValue);
+
         if (searchMatch && filterMatch) {
           item.style.display = 'block';
           visibleCount++;
@@ -819,16 +830,21 @@
         }
       });
 
-      // [PERBAIKAN] Logika untuk menampilkan pesan yang tepat
-      const isFilterActive = searchTerm !== '' || filterValue !== 'Semua';
-
-      if (visibleCount === 0 && isFilterActive) {
-        // Jika tidak ada hasil DAN filter/pencarian aktif, tampilkan "Tidak Ditemukan"
-        noResultsMessage.style.display = 'block';
+      // Tampilkan pesan sesuai hasil filter
+      if (visibleCount === 0) {
+        if (noResultsMessage) noResultsMessage.style.display = 'block';
       } else {
-        noResultsMessage.style.display = 'none';
+        if (noResultsMessage) noResultsMessage.style.display = 'none';
+        if (noDataMessage) noDataMessage.style.display = 'none';
       }
     }
+
+
+    searchInput = document.getElementById('searchInput');
+    filterPenempatan = document.getElementById('filterPenempatan');
+
+    searchInput.addEventListener('input', applyFiltersAndSearch);
+    filterPenempatan.addEventListener('change', applyFiltersAndSearch);
 
     /**
      * Mengambil data personel untuk diedit dan menampilkannya di dalam modal form.
