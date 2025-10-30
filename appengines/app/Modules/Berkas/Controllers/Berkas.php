@@ -723,9 +723,11 @@ class Berkas extends BaseController
 
     // jika data ditemukan
     foreach ($list as $row) {
+      $title = esc($row->title);
+      $title = (strlen($title) > 45) ? substr($title, 0, 45) . '...' : $title;
       $titleBlock = '
       <div class="d-flex flex-column">
-        <span class="fw-medium">' . esc($row->title) . '</span>
+        <span class="fw-medium">' . $title . '</span>
       </div>
     ';
 
@@ -736,7 +738,7 @@ class Berkas extends BaseController
       $response[] = esc($row->nomor_dokumen) ?? 'Tidak ada Nomor Dokumen';
       $response[] = $titleBlock;
       $response[] = esc($row->nama_kategori) ?? 'Tidak Berkategori';
-      $response[] = esc($row->created_at != null ? date('d-m-Y', strtotime($row->created_at)) : date('d-m-Y', strtotime($row->updated_at)));
+      $response[] = '<span class="fw-medium ">' . esc($row->created_at != null ? date('d-m-Y', strtotime($row->created_at)) : date('d-m-Y', strtotime($row->updated_at))) . '</span>';
       $response[] = $this->aksi($id, $fileUrl);
       $data[] = $response;
     }
@@ -746,10 +748,7 @@ class Berkas extends BaseController
 
   function aksi($id, $fileUrl = null)
   {
-    return '<div id="' . $id . '" class="d-flex justify-content-end align-items-center gap-2">
-    <span class="text-secondary btn-action" title="Lihat" onclick="showItem(event, \'' . $fileUrl . '\')">
-				<i class="bi-arrow-right-circle"></i></span>
-        <span class="text-muted">|</span>
+    return '<div id="' . $id . '" class="float-end">
     <span class="text-secondary btn-action" title="Detail File" onclick="showFileDetails(event)">
 				<i class="bi bi-eye"></i></span>
       <span class="text-muted">|</span>

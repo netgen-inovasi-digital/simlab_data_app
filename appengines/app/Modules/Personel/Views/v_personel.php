@@ -239,7 +239,7 @@
               $id = bin2hex($encrypter->encrypt($row->id_personel));
             ?>
               <!-- [PERBAIKAN] Atribut draggable hanya aktif jika pengguna memiliki izin -->
-              <div id="<?= $id ?>" class="col-12 col-sm-6 col-md-4 col-lg-3 personel-item"
+              <div id="<?= $id ?>" class="col-12 col-sm-6 col-md-6 col-lg-4 col-xl-3 personel-item"
                 draggable="<?= $can_add ? 'true' : 'false' ?>" data-code="<?= $row->urutan ?>"
                 data-nama="<?= esc(strtolower($row->nama)) ?>"
                 data-jabatan="<?= esc(strtolower($row->jabatan)) ?>"

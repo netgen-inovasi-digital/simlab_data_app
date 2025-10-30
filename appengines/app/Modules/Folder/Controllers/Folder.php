@@ -663,27 +663,11 @@ class Folder extends BaseController
         ]);
       }
 
-      // [BARU] Ambil atau buat ID untuk kategori "Personel"
-      $modelCategories = new MyModel('categories');
-      $personelCategory = $modelCategories->getDataByWhere(['nama' => 'Personel']);
-      if ($personelCategory) {
-        $personelCategoryId = $personelCategory->id_categories;
-      } else {
-        // Jika kategori "Personel" tidak ada, buat baru.
-        // [PERBAIKAN] Tambahkan timestamp saat membuat kategori baru
-        $personelCategoryId = $modelCategories->insertData([
-          'nama' => 'Personel',
-          'slug' => 'personel',
-          'created_at' => date('Y-m-d H:i:s')
-        ], true);
-      }
-
       $db->transStart();
 
       // 1. Buat folder baru dengan nama personel
       $modelFolder = new MyModel('folder');
       $modelLinks = new MyModel('folder_links');
-      $modelFiles = new MyModel('files');
       $modelFileLinks = new MyModel('file_links'); // [BARU]
       $modelOtorFolder = new MyModel('otoritas_folder'); // [BARU]
       $modelOtorFile = new MyModel('otoritas_file'); // [BARU]
