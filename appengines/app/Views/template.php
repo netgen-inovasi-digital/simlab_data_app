@@ -108,7 +108,7 @@
         $nama = esc($session->get('nama') ?? '-');
         $nama_role = esc($session->get('nama_role') ?? '-');
         ?>
-        <span class="fw-bold me-3"><?= "{$nama} ({$nama_role})" ?></span>
+        <span class="fw-bold me-3 d-none d-sm-block"><?= "{$nama} ({$nama_role})" ?></span>
         <a href="profil" class="header-link nav-link" title="Profil">
           <button aria-label="button" type="button" class="btn btn-icon p-0 text-secondary">
             <i class="bi bi-person-fill" style="font-size: 1.3rem;"></i> </button>

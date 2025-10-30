@@ -4,9 +4,6 @@
       <div class="card-header d-flex justify-content-between align-items-center">
         <label class="card-title mb-0"><?php echo $title ?></label>
         <div class="d-flex">
-          <label for="filterKategori" class="fw-semibold me-2 d-flex align-items-center">
-            <i class="bi bi-funnel me-1"></i> Filter Kategori
-          </label>
           <select id="filterKategori" name="filterKategori" class="form-select fw-bold me-2" style="width: auto;">
             <option value="">Semua Kategori</option>
             <?php foreach ($categories as $kategori) { ?>
@@ -26,7 +23,7 @@
               <th>No. Dokumen</th>
               <th show>Judul</th>
               <th show>Kategori</th>
-              <th show>Tanggal Upload</th>
+              <th>Tanggal Upload</th>
               <th show class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
             </tr>
           </thead>

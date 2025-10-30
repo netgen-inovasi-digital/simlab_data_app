@@ -249,11 +249,15 @@
                 <?php endif; ?>
 
                 <?php if ($node->type === 'folder'): ?>
+                  <?php
+                  $namaFolder = esc($node->nama);
+                  // batasi panjang maksimal 20 karakter
+                  $namaFolder = (strlen($namaFolder) > 45) ? substr($namaFolder, 0, 45) . '...' : $namaFolder;
+                  ?>
                   <i class="bi bi-folder-fill" title="Folder"></i>
-                  <span><?= esc($node->nama) ?></span>
+                  <span><?= $namaFolder ?></span>
 
                 <?php else: ?>
-
                   <?php
                   // [PERBAIKAN] Logika untuk memilih ikon berdasarkan ekstensi file
                   $fileExt = strtolower(pathinfo($node->berkas, PATHINFO_EXTENSION));
@@ -283,10 +287,14 @@
                       $iconColor = '#9b5de5'; // Ungu
                       break;
                   }
+
+                  $namaFile = esc($node->title);
+                  // batasi panjang maksimal 20 karakter
+                  $namaFile = (strlen($namaFile) > 45) ? substr($namaFile, 0, 45) . '...' : $namaFile;
                   ?>
                   <i class="bi <?= $iconClass ?>" title="File"
                     style="font-size: 1.3rem; color: <?= $iconColor ?>;"></i>
-                  <span class="ms-1"><?= esc($node->title) ?></span>
+                  <span class="ms-1"><?= esc($namaFile) ?></span>
                 <?php endif; ?>
 
               </div>

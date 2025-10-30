@@ -14,7 +14,7 @@
               <th show width="8%">No.</th>
               <th show>Nama Kategori</th>
               <th>Slug</th>
-              <th show>Tanggal Dibuat</th>
+              <th>Tanggal Dibuat</th>
               <th show class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
             </tr>
           </thead>
