@@ -1829,6 +1829,7 @@
     const fileSelect = document.getElementById('file_id');
     if (fileSelect.value == fileId) {
       fileSelect.value = "";
+      setTimeout(reinitSelectSearch, 10);
     }
   }
 </script>
