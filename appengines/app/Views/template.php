@@ -92,9 +92,6 @@
       echo view('menu');
       ?>
     </nav>
-    <!-- <div class="sidebar-footer">
-            &copy;2025 All Right Reserved.
-        </div> -->
   </div>
   <!-- Main Content -->
   <div class="container-fluid">

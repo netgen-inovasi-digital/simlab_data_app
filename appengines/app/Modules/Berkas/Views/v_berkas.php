@@ -70,20 +70,35 @@
   // addAction();
   tambahItemFile();
 
-  // ===== validasi gambar ===== //
+  // ===== validasi file ===== //
   document.querySelector('#berkas').addEventListener('change', function() {
     var file = this.files[0];
     var errorMsg = document.querySelector('#errorMsg');
     var ketBerkas = document.querySelector('#ketBerkas');
+
     if (file) {
       var allowedTypes = [
+        // PDF
         'application/pdf',
+
+        // Word
         'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+
+        // Excel
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+
+        // CSV
+        'text/csv',
+        'text/plain',
+        'application/csv'
       ];
+
       var maxSizeMB = 10;
+
       if (!allowedTypes.includes(file.type)) {
-        errorMsg.textContent = 'Hanya file PDF, DOC, atau DOCX yang diperbolehkan.';
+        errorMsg.textContent = 'Jenis file tersebut tidak diperbolehkan.';
         errorMsg.classList.remove('d-none');
         ketBerkas.classList.add('d-none');
         this.value = '';
@@ -614,6 +629,8 @@
           sayAlert('errorModal', 'Error', data.link, 'warning');
         } else if (data.res == 'duplicate') {
           sayAlert('errorModal', 'Error', data.message, 'warning');
+        } else if (data.res == 'empty') {
+          sayAlert('errorModal', 'Error', data.message, 'warning');
         } else if (data.res == 'refresh-print') {
           loadContent(data.link);
           window.open(data.print, "_blank");
@@ -666,7 +683,7 @@
             `<div class="text-center mb-3" style="width: 150px; height: 200px; background-color: #e9ecef; border: 1px solid #dee2e6; display: flex; align-items: center; justify-content: center; border-radius: 0.25rem;"><i class="bi ${iconClass}" style="font-size: 4rem; color: #adb5bd;"></i></div>`;
         }
         contentArea.innerHTML =
-          `<div class="row g-4"><div class="col-md-4 d-flex flex-column align-items-center">${filePreviewHtml}<div class="d-flex mt-3"><a href="${fileUrl}" target="_blank" class="btn btn-secondary">View</a></div></div><div class="col-md-8"><table class="biodata-table"><tr><td>Nama File</td><td>:</td><td>${data.title || '-'}</td></tr><tr><td>No. Dokumen</td><td>:</td><td>${data.nomor_dokumen || '-'}</td></tr><tr><td>Revisi ke</td><td>:</td><td>${data.revisi || '-'}</td></tr><tr><td>Tanggal Upload</td><td>:</td><td>${formatTanggal(data.created_at)}</td></tr><tr><td>Author</td><td>:</td><td>${data.author || '-'}</td></tr><tr><td>Kategori</td><td>:</td><td>${data.kategori || '-'}</td></tr></table></div></div>`;
+          `<div class="row g-4"><div class="col-md-4 d-flex flex-column align-items-center">${filePreviewHtml}<div class="d-flex mt-3"><a href="${fileUrl}" target="_blank" class="btn btn-secondary">View</a></div></div><div class="col-md-8"><table class="biodata-table"><tr><td>Nama File</td><td>:</td><td>${data.title || '-'}</td></tr><tr><td>No. Dokumen</td><td>:</td><td>${data.nomor_dokumen || '-'}</td></tr><tr><td>Revisi ke-</td><td>:</td><td>${data.revisi || '-'}</td></tr><tr><td>Tanggal Terbit</td><td>:</td><td>${formatTanggal(data.created_at)}</td></tr><tr><td>Diupload oleh</td><td>:</td><td>${data.author || '-'}</td></tr><tr><td>Kategori</td><td>:</td><td>${data.kategori || '-'}</td></tr></table></div></div>`;
 
         // --- Gunakan otorisasi untuk tombol modal ---
         modalAksiContainer.innerHTML = '';
@@ -731,28 +748,29 @@
           <div class="col">
             <label class="col-md-3 col-form-label">Judul Berkas</label>
             <input name="titleFile" type="text" class="form-control" required
-              placeholder="Masukkan judul file">
+              placeholder="Judul file">
           </div>
         </div>
         <div class="row mb-2">
           <div class="col">
             <label class="col-md-7 col-form-label">No. Dokumen</label>
             <input name="nomor_dokumen" type="text" class="form-control bg-light"
-              placeholder="Masukkan nomor dokumen" required>
+              placeholder="Nomor dokumen" required>
+            <small class="text-muted" id="ketDokumen" style="font-size: 11px;">Apabila tidak ada, berikan tanda "-"</small>
           </div>
           <div class="col">
             <label class="col-md-3 col-form-label">Revisi Ke-</label>
-            <input name="revisi" type="number" class="form-control bg-light" placeholder="Masukkan revisi"
-              required>
+            <input name="revisi" type="number" class="form-control bg-light" placeholder="Revisi dokumen" required>
+            <small class="text-muted" id="ketRevisi" style="font-size: 11px;">Apabila tidak ada, berikan angka 0</small>
           </div>
         </div>
         <div class="row mb-2">
           <div class="col">
             <label class="col-md-6 col-form-label">File</label>
-            <input id="berkas" name="berkas" type="file" class="form-control" accept=".pdf,.doc,.docx">
+            <input id="berkas" name="berkas" type="file" class="form-control" accept=".pdf,.doc,.docx, .xlsx, .xls, .csv">
             <small class="text-muted" id="ketBerkas" style="font-size: 11px;">Upload maks. 100MB (File:
-              .pdf, .doc, .docx.)</small>
-            <small class="text-danger d-none" id="errorMsg">Hanya file docs/pdf yang diperbolehkan!</small>
+              .pdf, .doc, .docx., .xlsx, .xls, .csv)</small>
+            <small class="text-danger d-none" id="errorMsg"></small>
           </div>
           <div class="col">
             <label class="col-md-4 col-form-label">Tanggal Terbit</label>
@@ -766,9 +784,9 @@
           <div class="col">
             <label class="col-md-5 col-form-label">Kategori</label>
             <div class="d-flex gap-2 align-items-start">
-              <select id="kategori_id" name="kategori_id" class="form-select" required
-                style="max-width: 150px;">
-                <option value="">-- pilih data --</option>
+              <select id="kategori_id" name="kategori_id" class="form-select"
+                style="max-width: 220px;">
+                <option value="">Tidak ada kategori</option>
                 <?php foreach ($categories as $kategori): ?>
                   <option value="<?= $kategori->id_categories ?>">
                     <?= esc($kategori->nama) ?>
@@ -796,7 +814,7 @@
             </div>
           </div>
           <div class="col">
-            <label class="col-md-3 col-form-label">Author</label>
+            <label class="col-md-4 col-form-label">Diupload oleh</label>
             <input name="nama" type="text" value="<?= $user->nama ?>" class="form-control bg-light" required
               readonly>
             <input name="user_id" type="text" value="<?= $user->id_user ?>" class="form-control" required

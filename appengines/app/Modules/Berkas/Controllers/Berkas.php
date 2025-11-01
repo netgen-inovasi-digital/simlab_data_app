@@ -36,11 +36,13 @@ class Berkas extends BaseController
 
     // $idencFolder = bin2hex($this->encrypter->encrypt($get->id_folder));
 
+    $kategoriId = $get->categories_id == 0 ? "" : $get->categories_id;
+
     $data[csrf_token()] = csrf_hash();
     $data['idFile'] = $id;
     $data['titleFile'] = $get->title; // ← bersih buat form
-    $data['kategori_id'] = $get->categories_id;
-    $data['nomor_dokumen'] = $get->nomor_dokumen;
+    $data['kategori_id'] = $kategoriId;
+    $data['nomor_dokumen'] = $get->nomor_dokumen ?? "-";
     $data['slug'] = $get->slug;
     $data['revisi'] = $get->revisi;
 
@@ -120,202 +122,6 @@ class Berkas extends BaseController
     ));
   }
 
-  // public function submit()
-  // {
-  //   $idenc = $this->request->getPost('idFile');
-  //   $isEdit = !empty($idenc) && ctype_xdigit($idenc) && strlen($idenc) % 2 === 0;
-
-  //   $modelOtorisasiFile = new MyModel('otoritas_file');
-  //   $modelUser = new MyModel('users');
-  //   $model = new MyModel($this->table);
-
-  //   $role_id = $modelUser->getDataById('id_user', $this->request->getPost('user_id'));
-  //   $tanggalUp = $this->request->getPost('tanggal') ?? date('Y-m-d');
-  //   $now = date('Y-m-d H:i:s');
-
-  //   $idFolderRaw = $this->request->getPost('id_folder');
-  //   $id_folder = $this->encrypter->decrypt(hex2bin($idFolderRaw));
-
-  //   $data = [
-  //     'nomor_dokumen' => $this->request->getPost('nomor_dokumen'),
-  //     'revisi' => (int)$this->request->getPost('revisi'),
-  //     'slug' => $this->request->getPost('slug'),
-  //     'categories_id' => $this->request->getPost('kategori_id'),
-  //     'user_id' => $this->request->getPost('user_id'),
-  //     'id_folder' => (int)$id_folder,
-  //     'updated_at' => $now,
-  //   ];
-
-  //   $berkas = $this->request->getFile('berkas');
-  //   $path = FCPATH . 'uploads';
-
-  //   // 🔹 Kalau upload file baru
-  //   if ($berkas && $berkas->getName() !== '') {
-  //     $titleInput = $this->request->getPost('titleFile');
-
-  //     $ext = strtolower($berkas->getClientExtension());
-
-  //     // 1️⃣ Hapus ekstensi file yang umum (pdf, doc, docx)
-  //     $titleWithoutExt = preg_replace('/\.(pdf|docx|doc)/i', '', $titleInput);
-
-  //     // 2️⃣ (Opsional) Bersihkan karakter ilegal, tapi pertahankan huruf, angka, spasi, dash, underscore, titik, kurung, dll
-  //     $safeTitle = preg_replace('/[^A-Za-z0-9_\- .()]/', '', $titleWithoutExt);
-
-  //     $filename = trim($safeTitle) . '.' . $ext;
-
-  //     $cekDuplikat = $model->getDataByWhere([
-  //       'title' => $filename,
-  //       'id_folder' => $id_folder
-  //     ]);
-
-  //     $cekNoDok = $model->getDataByWhere([
-  //       'nomor_dokumen' => $data['nomor_dokumen'],
-  //       'id_folder' => $id_folder
-  //     ]);
-
-  //     if ($isEdit) {
-  //       $oldData = $model->getDataById($this->id, $this->encrypter->decrypt(hex2bin($idenc)));
-
-  //       if (
-  //         ($cekDuplikat && $cekDuplikat->id_files != $oldData->id_files) ||
-  //         ($cekNoDok && $cekNoDok->id_files != $oldData->id_files)
-  //       ) {
-  //         return $this->response->setJSON([
-  //           'res' => 'duplicate',
-  //           'message' => 'File atau nomor dokumen sudah ada di folder ini.',
-  //           'xname' => csrf_token(),
-  //           'xhash' => csrf_hash()
-  //         ]);
-  //       }
-
-  //       // 🔹 Hapus file lama
-  //       if ($oldData && $oldData->berkas && file_exists($path . '/' . $oldData->berkas)) {
-  //         unlink($path . '/' . $oldData->berkas);
-  //       }
-  //     } else {
-  //       if ($cekDuplikat || $cekNoDok) {
-  //         return $this->response->setJSON([
-  //           'res' => 'duplicate',
-  //           'message' => 'File sudah ada di folder ini.',
-  //           'xname' => csrf_token(),
-  //           'xhash' => csrf_hash()
-  //         ]);
-  //       }
-  //     }
-
-  //     // 🔹 Upload file baru
-  //     $uploadResult = $this->doUpload($berkas);
-  //     if (!$uploadResult['status']) {
-  //       return $this->response->setJSON([
-  //         'res' => 'error_custom',
-  //         'message' => $uploadResult['msg'],
-  //         'xname' => csrf_token(),
-  //         'xhash' => csrf_hash()
-  //       ]);
-  //     }
-
-  //     $data['berkas'] = $uploadResult['filename'];
-  //     $data['title'] = $uploadResult['title'];
-  //   }
-
-  //   // 🔹 Kalau rename file tanpa upload baru
-  //   else if ($isEdit) {
-  //     $newTitleInput = $this->request->getPost('titleFile');
-  //     $newNoDocInput = $this->request->getPost('nomor_dokumen');
-
-  //     if ($newTitleInput) {
-  //       $oldData = $model->getDataById($this->id, $this->encrypter->decrypt(hex2bin($idenc)));
-  //       $ext = pathinfo($oldData->berkas, PATHINFO_EXTENSION);
-
-  //       // 1️⃣ Hapus ekstensi file yang umum (pdf, doc, docx)
-  //       $titleWithoutExt = preg_replace('/\.(pdf|docx|doc)/i', '', $newTitleInput);
-
-  //       // 2️⃣ (Opsional) Bersihkan karakter ilegal, tapi pertahankan huruf, angka, spasi, dash, underscore, titik, kurung, dll
-  //       $safeTitle = preg_replace('/[^A-Za-z0-9_\- .()]/', '', $titleWithoutExt);
-  //       $safeTitle = trim($safeTitle) ?: 'file_' . time();
-
-  //       $newTitle = $safeTitle . '.' . $ext;
-  //       $newBerkas = $safeTitle . '_' . uniqid('', true) . '.' . $ext;
-
-  //       $cekDuplikat = $model->getDataByWhere([
-  //         'title' => $newTitle,
-  //         'id_folder' => $id_folder
-  //       ]);
-
-  //       $cekNoDok = $model->getDataByWhere([
-  //         'nomor_dokumen' => $newNoDocInput,
-  //         'id_folder' => $id_folder
-  //       ]);
-
-  //       if (
-  //         ($cekDuplikat && $cekDuplikat->id_files != $oldData->id_files) ||
-  //         ($cekNoDok && $cekNoDok->id_files != $oldData->id_files)
-  //       ) {
-  //         return $this->response->setJSON([
-  //           'res' => 'duplicate',
-  //           'message' => 'File atau nomor dokumen sudah ada di folder ini.',
-  //           'xname' => csrf_token(),
-  //           'xhash' => csrf_hash()
-  //         ]);
-  //       }
-
-  //       // 🔹 Rename file fisik juga biar sinkron
-  //       $oldPath = $path . '/' . $oldData->berkas;
-  //       $newPath = $path . '/' . $newBerkas;
-
-  //       if (file_exists($oldPath)) {
-  //         rename($oldPath, $newPath);
-  //       }
-
-  //       $data['berkas'] = $newBerkas;
-  //       $data['title'] = $newTitle;
-  //     }
-  //   }
-
-  //   // 🔹 Simpan ke database
-  //   if ($isEdit) {
-  //     $data['updated_at'] = $now;
-  //     $data['created_at'] = $tanggalUp;
-  //     $id = $this->encrypter->decrypt(hex2bin($idenc));
-  //     $res = $model->updateData($data, $this->id, $id);
-  //   } else {
-  //     $data['created_at'] = $tanggalUp;
-  //     $res = $model->insertData($data);
-
-  //     if ($res) {
-  //       $files = $model->getDataByWhere([
-  //         'title' => $data['title'],
-  //         'nomor_dokumen' => $data['nomor_dokumen'],
-  //         'id_folder' => $data['id_folder']
-  //       ]);
-  //       $id_file = $files->id_files;
-  //       $roles = array_unique([(int)$role_id->role_id, 8]);
-  //       foreach ($roles as $r) {
-  //         $otor = [
-  //           'id_file' => (int)$id_file,
-  //           'id_role' => (int)$r,
-  //           'can_view' => 1,
-  //           'can_crud' => 1,
-  //         ];
-  //         $modelOtorisasiFile->insertData($otor);
-  //       }
-  //     }
-  //   }
-
-  //   if ($res) {
-  //     $res = 'refresh';
-  //     $link = 'folder';
-  //   }
-
-  //   return $this->response->setJSON([
-  //     'res' => $res,
-  //     'link' => $link ?? '',
-  //     'xname' => csrf_token(),
-  //     'xhash' => csrf_hash()
-  //   ]);
-  // }
-
-
   public function submit()
   {
     $idenc = $this->request->getPost('idFile');
@@ -329,8 +135,14 @@ class Berkas extends BaseController
     $tanggalUp = $this->request->getPost('tanggal') ?? date('Y-m-d');
     $now = date('Y-m-d H:i:s');
 
+    $nomorDokumenInput = trim($this->request->getPost('nomor_dokumen'));
+
+    if ($nomorDokumenInput === '-' || $nomorDokumenInput === '') {
+      $nomorDokumenInput = null;
+    }
+
     $data = [
-      'nomor_dokumen' => $this->request->getPost('nomor_dokumen'),
+      'nomor_dokumen' => $nomorDokumenInput,
       'revisi' => (int)$this->request->getPost('revisi'),
       'slug' => $this->request->getPost('slug'),
       'categories_id' => $this->request->getPost('kategori_id'),
@@ -341,14 +153,23 @@ class Berkas extends BaseController
     $berkas = $this->request->getFile('berkas');
     $path = FCPATH . 'uploads';
 
+    // 🔹 Cegah submit jika tidak ada file diupload saat tambah baru
+    if (!$isEdit && (!$berkas || $berkas->getError() === 4)) {
+      return $this->response->setJSON([
+        'res' => 'empty',
+        'message' => 'Silakan pilih file untuk diupload.',
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash()
+      ]);
+    }
+
     // 🔹 Kalau upload file baru
     if ($berkas && $berkas->getName() !== '') {
       $titleInput = $this->request->getPost('titleFile');
 
       $ext = strtolower($berkas->getClientExtension());
 
-      // 1️⃣ Hapus ekstensi file yang umum (pdf, doc, docx)
-      $titleWithoutExt = preg_replace('/\.(pdf|docx|doc)/i', '', $titleInput);
+      $titleWithoutExt = preg_replace('/\.(pdf|docx|doc|xls|xlsx|csv)$/i', '', $titleInput);
 
       // 2️⃣ (Opsional) Bersihkan karakter ilegal, tapi pertahankan huruf, angka, spasi, dash, underscore, titik, kurung, dll
       $safeTitle = preg_replace('/[^A-Za-z0-9_\- .()]/', '', $titleWithoutExt);
@@ -359,9 +180,13 @@ class Berkas extends BaseController
         'title' => $filename,
       ]);
 
-      $cekNoDok = $model->getDataByWhere([
-        'nomor_dokumen' => $data['nomor_dokumen'],
-      ]);
+      $cekNoDok = null;
+
+      if (!is_null($data['nomor_dokumen'])) {
+        $cekNoDok = $model->getDataByWhere([
+          'nomor_dokumen' => $data['nomor_dokumen'],
+        ]);
+      }
 
       if ($isEdit) {
         $oldData = $model->getDataById($this->id, $this->encrypter->decrypt(hex2bin($idenc)));
@@ -397,7 +222,7 @@ class Berkas extends BaseController
       $uploadResult = $this->doUpload($berkas);
       if (!$uploadResult['status']) {
         return $this->response->setJSON([
-          'res' => 'error_custom',
+          'res' => false,
           'message' => $uploadResult['msg'],
           'xname' => csrf_token(),
           'xhash' => csrf_hash()
@@ -411,14 +236,17 @@ class Berkas extends BaseController
     // 🔹 Kalau rename file tanpa upload baru
     else if ($isEdit) {
       $newTitleInput = $this->request->getPost('titleFile');
-      $newNoDocInput = $this->request->getPost('nomor_dokumen');
+      $newNoDocInput = trim($this->request->getPost('nomor_dokumen'));
+      $newNoDocInput = ($newNoDocInput === '-' || $newNoDocInput === '') ? null : $newNoDocInput;
+
 
       if ($newTitleInput) {
         $oldData = $model->getDataById($this->id, $this->encrypter->decrypt(hex2bin($idenc)));
         $ext = pathinfo($oldData->berkas, PATHINFO_EXTENSION);
 
         // 1️⃣ Hapus ekstensi file yang umum (pdf, doc, docx)
-        $titleWithoutExt = preg_replace('/\.(pdf|docx|doc)/i', '', $newTitleInput);
+        $titleWithoutExt = preg_replace('/\.(pdf|docx|doc|xls|xlsx|csv)$/i', '', $newTitleInput);
+
 
         // 2️⃣ (Opsional) Bersihkan karakter ilegal, tapi pertahankan huruf, angka, spasi, dash, underscore, titik, kurung, dll
         $safeTitle = preg_replace('/[^A-Za-z0-9_\- .()]/', '', $titleWithoutExt);
@@ -431,9 +259,12 @@ class Berkas extends BaseController
           'title' => $newTitle,
         ]);
 
-        $cekNoDok = $model->getDataByWhere([
-          'nomor_dokumen' => $newNoDocInput,
-        ]);
+        $cekNoDok = null;
+        if (!is_null($newNoDocInput)) {
+          $cekNoDok = $model->getDataByWhere([
+            'nomor_dokumen' => $newNoDocInput,
+          ]);
+        }
 
         if (
           ($cekDuplikat && $cekDuplikat->id_files != $oldData->id_files) ||
@@ -501,7 +332,6 @@ class Berkas extends BaseController
       'xhash' => csrf_hash()
     ]);
   }
-
 
   public function submitLinks()
   {
@@ -647,19 +477,34 @@ class Berkas extends BaseController
     if (!($file && $file->isValid() && !$file->hasMoved())) {
       return ['status' => false, 'msg' => 'File tidak valid atau sudah dipindahkan'];
     }
-
-    $allowedExt  = ['pdf', 'doc', 'docx'];
+    $allowedExt  = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv'];
     $allowedMime = [
+      // PDF
       'application/pdf',
+
+      // Word
       'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/octet-stream', // kadang muncul utk docx
+
+      // Excel
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/zip',           // kadang muncul utk xlsx
+      'application/vnd.ms-office', // kadang muncul utk file Office
+
+      // CSV
+      'text/csv',
+      'text/plain',
+      'application/csv',
+      'application/vnd.ms-excel', // beberapa server pakai ini untuk CSV juga
     ];
 
     $ext  = strtolower($file->getClientExtension());
     $mime = $file->getMimeType();
 
     if (!in_array($ext, $allowedExt) || !in_array($mime, $allowedMime)) {
-      return ['status' => false, 'msg' => 'Format file tidak diperbolehkan (hanya PDF/DOC/DOCX)'];
+      return ['status' => false, 'msg' => 'Format file tidak diperbolehkan'];
     }
 
     if ($file->getSize() > 10 * 1024 * 1024) {
@@ -670,7 +515,7 @@ class Berkas extends BaseController
     // Ambil title dari input
     $titleInput = $this->request->getPost('titleFile');
     // 1️⃣ Hapus ekstensi file yang umum (pdf, doc, docx)
-    $titleWithoutExt = preg_replace('/\.(pdf|docx|doc)/i', '', $titleInput);
+    $titleWithoutExt = preg_replace('/\.(pdf|docx|doc|xls|xlsx|csv)$/i', '', $titleInput);
 
     // 2️⃣ (Opsional) Bersihkan karakter ilegal, tapi pertahankan huruf, angka, spasi, dash, underscore, titik, kurung, dll
     $safeTitle = preg_replace('/[^A-Za-z0-9_\- .()]/', '', $titleWithoutExt);
@@ -724,7 +569,7 @@ class Berkas extends BaseController
     // jika data ditemukan
     foreach ($list as $row) {
       $title = esc($row->title);
-      $title = (strlen($title) > 45) ? substr($title, 0, 45) . '...' : $title;
+      $title = (strlen($title) > 30) ? substr($title, 0, 30) . '...' : $title;
       $titleBlock = '
       <div class="d-flex flex-column">
         <span class="fw-medium">' . $title . '</span>
@@ -735,7 +580,7 @@ class Berkas extends BaseController
       $fileUrl = base_url('uploads/' . $row->berkas);
 
       $response = array();
-      $response[] = esc($row->nomor_dokumen) ?? 'Tidak ada Nomor Dokumen';
+      $response[] = esc($row->nomor_dokumen != null) ? esc($row->nomor_dokumen) : 'Tidak ada';
       $response[] = $titleBlock;
       $response[] = esc($row->nama_kategori) ?? 'Tidak Berkategori';
       $response[] = '<span class="fw-medium ">' . esc($row->created_at != null ? date('d-m-Y', strtotime($row->created_at)) : date('d-m-Y', strtotime($row->updated_at))) . '</span>';
