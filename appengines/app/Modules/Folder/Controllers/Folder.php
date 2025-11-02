@@ -1008,6 +1008,40 @@ class Folder extends BaseController
     $db = \Config\Database::connect();
     $db->transStart();
 
+    // [PERBAIKAN] Validasi backend untuk mencegah pemindahan ke folder dengan flag=1
+    // Loop ini sekarang hanya memeriksa item yang benar-benar berubah parent-nya.
+    foreach ($items as $item) {
+      $id = $this->encrypter->decrypt(hex2bin($item['id']));
+      $parentId = !empty($item['parent_id'])
+        ? $this->encrypter->decrypt(hex2bin($item['parent_id']))
+        : null;
+
+      // Ambil parent_id lama dari database untuk perbandingan
+      $oldParentId = null;
+      if ($item['type'] === 'folder') {
+        $link = $db->table('folder_links')->where('child_id', $id)->get()->getRow();
+        if ($link) $oldParentId = $link->parent_id;
+      } elseif ($item['type'] === 'file') {
+        $link = $db->table('file_links')->where('child_file', $id)->get()->getRow();
+        if ($link) $oldParentId = $link->parent_folder;
+      }
+
+      // Hanya lakukan validasi jika parent_id berubah DAN parent_id baru tidak kosong
+      if ($parentId != $oldParentId && $parentId !== null) {
+        $targetParentFolder = $db->table('folder')->select('flag, nama')->where('id_folder', $parentId)->get()->getRow();
+
+        // Jika folder tujuan memiliki flag=1, batalkan operasi
+        if ($targetParentFolder && $targetParentFolder->flag == 1) {
+          return $this->response->setJSON([
+            'res' => false,
+            'message' => "Item tidak dapat dipindahkan ke dalam '{$targetParentFolder->nama}' karena merupakan Folder Personel.",
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash(),
+          ]);
+        }
+      }
+    }
+
     // [FIX] Validasi duplikasi nama sebelum memproses pemindahan
     foreach ($items as $item) {
       if ($item['type'] === 'folder') {
