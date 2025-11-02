@@ -783,14 +783,14 @@ class Folder extends BaseController
 
               if (!$existingOtor) {
                 if ($r == 2 || $r == 9) {
-                  $modelOtorFolder->insertData([
+                  $modelOtorFile->insertData([
                     'id_file' => $fileId,
                     'id_role' => $r,
                     'can_view' => 1,
                     'can_crud' => 0,
                   ]);
                 } else {
-                  $modelOtorFolder->insertData([
+                  $modelOtorFile->insertData([
                     'id_file' => $fileId,
                     'id_role' => $r,
                     'can_view' => 1,
