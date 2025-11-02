@@ -917,8 +917,6 @@
         let originalLevel = 0;
 
         item.addEventListener("dragstart", (e) => {
-            // [FIX] Pemeriksaan keamanan untuk mencegah drag pada item yang tidak seharusnya.
-            // Ini menutup celah di mana menyeleksi teks bisa memicu drag.
             if (item.getAttribute('draggable') === 'false') {
                 e.preventDefault();
                 return;
@@ -926,15 +924,12 @@
 
             draggedItem = item;
             dragStartX = e.clientX;
-
-            // Simpan parent lama atau level lama (buat referensi saat drop gagal)
             item.dataset.oldCount = item.dataset.count;
             item.dataset.prevId = item.previousElementSibling ? item.previousElementSibling.id : 'none';
 
-            childrenOfDraggedItem = []; // [PENTING] Reset setiap kali drag dimulai
+            childrenOfDraggedItem = [];
             if (item.dataset.type === 'folder') {
                 childrenOfDraggedItem = findChildrenRecursive(draggedItem);
-                // [BARU] Simpan level asli dari item yang di-drag
                 originalLevel = parseInt(item.dataset.count, 10);
             }
             item.style.opacity = "0.7";
@@ -944,60 +939,41 @@
             }, 0);
         });
 
+        // [REFACTOR TOTAL] Merombak total logika dragend untuk kejelasan dan keandalan.
         item.addEventListener("dragend", (e) => {
             try {
-                var currentIndex = [...folderMenu.children].indexOf(placeholder);
-                let previousItem = null;
-                let parentFolder = null; // [FIX] Selalu reset parentFolder di awal setiap dragend
-
-                for (let i = currentIndex - 1; i >= 0; i--) {
-                    const el = folderMenu.children[i];
-                    if (el === draggedItem || el.style.display === "none") continue;
-                    if (el.dataset.type === "folder") {
-                        const caret = el.querySelector(".bi-caret-down");
-                        if (!caret || !caret.classList.contains("collapsed")) {
-                            parentFolder = el;
-                            previousItem = el;
-                            break;
-                        }
-                    }
-                    if (el.dataset.type === "file") continue;
-                }
-
-
-                // Hitung level indentasi baru
+                // 1. Hitung indentasi baru berdasarkan pergerakan mouse.
                 let count = parseInt(item.dataset.count) || 0;
                 let deltaX = e.clientX - dragStartX;
                 let change = deltaX > 0 ? Math.floor(deltaX / 30) : Math.ceil(deltaX / 30);
                 count += change;
-
                 if (count < 0) count = 0;
                 if (draggedItem.dataset.type === "file" && count === 0) count = 1;
-                let maxLevel = parentFolder ? parseInt(parentFolder.dataset.count) + 1 : 0;
-                if (parentFolder) {
-                    const caret = parentFolder.querySelector(".bi-caret-down");
-                    if (caret && caret.classList.contains("collapsed")) {
-                        count = parseInt(parentFolder.dataset.count);
+
+                // 2. Tentukan calon folder induk (parent) berdasarkan posisi placeholder.
+                let parentFolder = null;
+                const currentIndex = [...folderMenu.children].indexOf(placeholder);
+                for (let i = currentIndex - 1; i >= 0; i--) {
+                    const el = folderMenu.children[i];
+                    if (el.style.display !== 'none' && el.dataset.type === 'folder') {
+                        const prevLevel = parseInt(el.dataset.count, 10);
+                        if (prevLevel < count) {
+                            parentFolder = el;
+                            break;
+                        }
                     }
                 }
-                if (count > maxLevel) count = maxLevel;
 
-                // [PERBAIKAN] Terapkan indentasi baru ke induk SEBELUM memindahkan anak
-
-                // [BARU] Logika untuk mencegah item dipindahkan ke dalam folder dengan flag=1 (Folder Personel)
+                // 3. Lakukan semua validasi SEBELUM menerapkan perubahan.
+                // Validasi #1: Mencegah pemindahan ke dalam Folder Personel.
                 if (parentFolder && parentFolder.dataset.flag === '1') {
-                    // Kembalikan ke level semula
-                    count = originalLevel;
-                    // Tampilkan pesan error
                     sayAlert('errorModal', 'Operasi Dibatalkan',
                         'Folder atau file tidak dapat dipindahkan ke dalam Folder Personel.', 'warning');
-                    // Hentikan eksekusi lebih lanjut untuk event ini
-                    // Kembalikan item ke posisi semula dan jangan simpan perubahan
                     revertDrag(item);
                     return;
                 }
 
-                // [PERBAIKAN] Logika untuk mencegah folder dipindahkan ke dalam sub-foldernya sendiri.
+                // Validasi #2: Mencegah folder dipindahkan ke dalam sub-foldernya sendiri.
                 if (draggedItem.dataset.type === 'folder' && parentFolder) {
                     const isMovingIntoOwnChild = childrenOfDraggedItem.some(child => child.id === parentFolder.id);
                     if (isMovingIntoOwnChild) {
@@ -1008,53 +984,26 @@
                     }
                 }
 
-                // [PERBAIKAN] Setelah level baru dihitung, periksa ulang apakah item tersebut benar-benar menjadi anak dari parentFolder.
-                // Jika levelnya sama atau lebih kecil, maka itu bukan anak, jadi set parentFolder ke null.
-                if (parentFolder && count <= parseInt(parentFolder.dataset.count, 10)) {
-                    parentFolder = null;
-                }
-
+                // 4. Jika semua validasi lolos, terapkan perubahan.
+                // Batasi level indentasi agar tidak "loncat" terlalu jauh.
+                let maxLevel = parentFolder ? parseInt(parentFolder.dataset.count) + 1 : 0;
+                if (count > maxLevel) count = maxLevel;
 
                 item.dataset.count = count;
                 item.style.marginLeft = (count * 30) + "px";
 
-                // [PERBAIKAN] 1. Pindahkan ke posisi sebelumnya apabila tidak ada induk
-                if (!parentFolder && draggedItem.dataset.type === "file") {
-                    // Kembalikan ke posisi DOM semula
-                    item.dataset.count = item.dataset.oldCount || 0;
-                    item.style.marginLeft = (item.dataset.count * 30) + "px";
-
-                    const prevId = item.dataset.prevId;
-                    if (prevId && prevId !== 'none') {
-                        const prevEl = document.getElementById(prevId);
-                        if (prevEl && prevEl.nextSibling) {
-                            folderMenu.insertBefore(draggedItem, prevEl.nextSibling);
-                        } else {
-                            folderMenu.appendChild(draggedItem);
-                        }
-                    } else {
-                        folderMenu.insertBefore(draggedItem, folderMenu.firstChild);
-                    }
-                } else {
-                    // Normal behavior
-                    folderMenu.insertBefore(draggedItem, placeholder);
-                }
-
-                // Kembalikan tampilan item dan hapus placeholder
+                // 5. Finalisasi: Pindahkan item, hapus placeholder, dan simpan.
+                folderMenu.insertBefore(draggedItem, placeholder);
                 item.style.display = "flex";
                 item.style.opacity = "1";
                 if (placeholder.parentNode) placeholder.remove();
 
-                // [PERBAIKAN] 2. Pindahkan anak-anak yang sudah disimpan sebelumnya
                 moveChildren(draggedItem, childrenOfDraggedItem, originalLevel);
                 updateKodeFolder();
-
                 saveAll();
                 updateCarets();
 
             } finally {
-                // [FIX] Blok ini akan SELALU dieksekusi, baik operasi berhasil maupun gagal (setelah 'return').
-                // Ini adalah kunci untuk membersihkan state yang "menempel".
                 if (draggedItem) {
                     draggedItem.style.display = "flex";
                     draggedItem.style.opacity = "1";
@@ -1064,8 +1013,6 @@
                 if (placeholder.parentNode) {
                     placeholder.remove();
                 }
-
-                // Reset semua variabel state global
                 draggedItem = null;
                 childrenOfDraggedItem = [];
                 originalLevel = 0;
@@ -1073,10 +1020,8 @@
         });
 
         /**
-         * [FUNGSI BARU] Mengembalikan item yang di-drag ke posisi semula jika drop tidak valid.
          */
         function revertDrag(item) {
-            // [FIX] Kembalikan indentasi ke nilai SEBELUM drag dimulai. Ini adalah kunci utama.
             const originalCount = item.dataset.oldCount || 0;
             item.dataset.count = originalCount;
             item.style.marginLeft = (originalCount * 30) + "px";

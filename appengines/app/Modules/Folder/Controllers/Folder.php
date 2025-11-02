@@ -241,7 +241,7 @@ class Folder extends BaseController
       $where = ['id_files' => $id];
       $get = $model->getOneByJoin($join, $where, $select, 'LEFT'); // Menggunakan LEFT JOIN
       if (!$get) {
-        return $this->response->setStatusCode(404)->setJSON(['error' => 'File tidak ditemukan']);
+        return $this->response->setStatusCode(404)->setJSON(['error' => 'File tidak ditemukan', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
       }
 
       $data = (array) $get;
@@ -254,7 +254,7 @@ class Folder extends BaseController
       return $this->response->setJSON($data);
     } catch (\Exception $e) {
       log_message('error', '[FolderController] ' . $e->getMessage());
-      return $this->response->setStatusCode(500)->setJSON(['error' => 'Terjadi kesalahan pada server.']);
+      return $this->response->setStatusCode(500)->setJSON(['error' => 'Terjadi kesalahan pada server.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
     }
   }
 
@@ -264,10 +264,10 @@ class Folder extends BaseController
       $decryptedId = $this->encrypter->decrypt(hex2bin($id));
       $model = new MyModel($this->table);
       $folder = $model->getDataById($this->id, $decryptedId);
-      if (!$folder) return $this->response->setStatusCode(404)->setJSON(['error' => 'Folder tidak ditemukan.']);
+      if (!$folder) return $this->response->setStatusCode(404)->setJSON(['error' => 'Folder tidak ditemukan.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
       return $this->response->setJSON(['id' => $id, 'nama' => $folder->nama]);
     } catch (\Exception $e) {
-      return $this->response->setStatusCode(500)->setJSON(['error' => 'Gagal mengambil data folder.']);
+      return $this->response->setStatusCode(500)->setJSON(['error' => 'Gagal mengambil data folder.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
     }
   }
 
@@ -1149,7 +1149,8 @@ class Folder extends BaseController
 
     return $this->response->setJSON([
       'res'   => true,
-      'xhash' => csrf_hash()
+      'xhash' => csrf_hash(),
+      'xname' => csrf_token(),
     ]);
   }
 }
