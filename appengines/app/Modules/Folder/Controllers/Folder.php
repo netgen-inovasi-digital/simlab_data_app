@@ -1032,6 +1032,7 @@ class Folder extends BaseController
 
         // Jika folder tujuan memiliki flag=1, batalkan operasi
         if ($targetParentFolder && $targetParentFolder->flag == 1) {
+          $db->transRollback(); // [FIX] Batalkan transaksi sebelum return
           return $this->response->setJSON([
             'res' => false,
             'message' => "Item tidak dapat dipindahkan ke dalam '{$targetParentFolder->nama}' karena merupakan Folder Personel.",
