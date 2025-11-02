@@ -127,11 +127,11 @@ class Berkas extends BaseController
     $idenc = $this->request->getPost('idFile');
     $isEdit = !empty($idenc) && ctype_xdigit($idenc) && strlen($idenc) % 2 === 0;
 
-    $modelOtorisasiFile = new MyModel('otoritas_file');
-    $modelUser = new MyModel('users');
+    // $modelOtorisasiFile = new MyModel('otoritas_file');
+    // $modelUser = new MyModel('users');
     $model = new MyModel($this->table);
 
-    $role_id = $modelUser->getDataById('id_user', $this->request->getPost('user_id'));
+    // $role_id = $modelUser->getDataById('id_user', $this->request->getPost('user_id'));
     $tanggalUp = $this->request->getPost('tanggal') ?? date('Y-m-d');
     $now = date('Y-m-d H:i:s');
 
@@ -301,23 +301,23 @@ class Berkas extends BaseController
       $data['created_at'] = $tanggalUp;
       $res = $model->insertData($data);
 
-      if ($res) {
-        $files = $model->getDataByWhere([
-          'title' => $data['title'],
-          'nomor_dokumen' => $data['nomor_dokumen'],
-        ]);
-        $id_file = $files->id_files;
-        $roles = array_unique([(int)$role_id->role_id, 8]);
-        foreach ($roles as $r) {
-          $otor = [
-            'id_file' => (int)$id_file,
-            'id_role' => (int)$r,
-            'can_view' => 1,
-            'can_crud' => 1,
-          ];
-          $modelOtorisasiFile->insertData($otor);
-        }
-      }
+      // if ($res) {
+      //   $files = $model->getDataByWhere([
+      //     'title' => $data['title'],
+      //     'nomor_dokumen' => $data['nomor_dokumen'],
+      //   ]);
+      //   $id_file = $files->id_files;
+      //   $roles = array_unique([(int)$role_id->role_id, 8]);
+      //   foreach ($roles as $r) {
+      //     $otor = [
+      //       'id_file' => (int)$id_file,
+      //       'id_role' => (int)$r,
+      //       'can_view' => 1,
+      //       'can_crud' => 1,
+      //     ];
+      //     $modelOtorisasiFile->insertData($otor);
+      //   }
+      // }
     }
 
     if ($res) {
@@ -337,10 +337,14 @@ class Berkas extends BaseController
   {
     $model = new MyModel('file_links');
     $modelOtorisasiFile = new MyModel('otoritas_file');
+    $modelRoles = new MyModel('roles');
 
     $id_folder = $this->request->getPost('id_folder');
     $idRawFolder = $this->encrypter->decrypt(hex2bin($id_folder));
     $user_role = $this->request->getPost('user_role');
+    $allRoles = $modelRoles->getAllData();
+    // Ambil hanya kolom role_id saja
+    $role_ids = array_map(fn($r) => (int)$r->id_role, $allRoles);
 
     $files = $this->request->getPost('files');
 
@@ -384,7 +388,7 @@ class Berkas extends BaseController
         ]);
 
         if (!$otorFiles) {
-          $roles = array_unique([(int)$user_role, 8]);
+          $roles = array_unique(array_merge($role_ids));
           foreach ($roles as $r) {
             $modelOtorisasiFile->insertData([
               'id_file' => (int)$fileId,

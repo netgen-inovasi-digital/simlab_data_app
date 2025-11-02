@@ -293,9 +293,6 @@
             option.selected = true;
           }
           formEdit.style.display = 'none';
-          // inputEdit.classList.add('d-none');
-          // btnUpdate.classList.add('d-none');
-          // btnDelete.classList.add('d-none');
           perbaruiTombol();
           sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
         } else {
