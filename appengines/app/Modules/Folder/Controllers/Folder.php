@@ -384,7 +384,6 @@ class Folder extends BaseController
     $linkModel = new MyModel('folder_links');
     $fileLinkModel = new MyModel('file_links'); // [BARU]
     $folderModel = new MyModel('folder');
-    $fileModel = new MyModel('files'); // [BARU]
     $otorFileModel = new MyModel('otoritas_file'); // [BARU]
 
     // 1. Cari semua child folder dari tabel folder_links dan hapus secara rekursif
@@ -432,10 +431,13 @@ class Folder extends BaseController
     $parentId = $this->request->getPost('parent_id') ?: null;
     $db = \Config\Database::connect(); // Panggil koneksi database
     $session = session();
-    $user_id = $session->get('id_user');
-    $modelUser = new MyModel('users');
-    $user = $modelUser->getDataById('id_user', $user_id);
-    $role_id = $user->role_id;
+    // $user_id = $session->get('id_user');
+    // $modelUser = new MyModel('users');
+    // $user = $modelUser->getDataById('id_user', $user_id);
+    // $role_id = $user->role_id;
+    $modelRole = new MyModel('roles');
+    $allRoles = $modelRole->getAllData();
+    $role_id = array_map(fn($r) => (int)$r->id_role, $allRoles);
 
     // Logika untuk EDIT folder
     if (!empty($idFolderEdit)) {
@@ -542,14 +544,23 @@ class Folder extends BaseController
       ]);
 
       // Insert otorisasi untuk folder utama
-      $roles = array_unique([(int)$role_id, 8]);
+      $roles = array_unique(array_merge($role_id));
       foreach ($roles as $r) {
-        $modelOtorFolder->insertData([
-          'id_folder' => $folderUtamaId,
-          'id_role' => $r,
-          'can_view' => 1,
-          'can_crud' => 1,
-        ]);
+        if ($r == 2 || $r == 9) {
+          $modelOtorFolder->insertData([
+            'id_folder' => $folderUtamaId,
+            'id_role' => $r,
+            'can_view' => 1,
+            'can_crud' => 0,
+          ]);
+        } else {
+          $modelOtorFolder->insertData([
+            'id_folder' => $folderUtamaId,
+            'id_role' => $r,
+            'can_view' => 1,
+            'can_crud' => 1,
+          ]);
+        }
       }
 
       // 2. Buat sub-folder secara berantai
@@ -590,7 +601,22 @@ class Folder extends BaseController
             'sort_order' => $currentSortOrder // [FIX] Tambahkan sort_order di sini juga
           ]);
           foreach ($roles as $r) {
-            $modelOtorFolder->insertData(['id_folder' => $subfolderId, 'id_role' => $r, 'can_view' => 1, 'can_crud' => 1]);
+            // $modelOtorFolder->insertData(['id_folder' => $subfolderId, 'id_role' => $r, 'can_view' => 1, 'can_crud' => 1]);
+            if ($r == 2 || $r == 9) {
+              $modelOtorFolder->insertData([
+                'id_folder' => $subfolderId,
+                'id_role' => $r,
+                'can_view' => 1,
+                'can_crud' => 0,
+              ]);
+            } else {
+              $modelOtorFolder->insertData([
+                'id_folder' => $subfolderId,
+                'id_role' => $r,
+                'can_view' => 1,
+                'can_crud' => 1,
+              ]);
+            }
           }
           $currentParentId = $subfolderId; // Subfolder berikutnya akan menjadi anak dari yang ini
         }
@@ -672,8 +698,8 @@ class Folder extends BaseController
       $modelOtorFolder = new MyModel('otoritas_folder'); // [BARU]
       $modelOtorFile = new MyModel('otoritas_file'); // [BARU]
 
-      // [BARU] Ambil role yang akan diberi akses (user saat ini & super admin)
-      $roles = array_unique([(int)$role_id, 8]);
+      // [BARU] Ambil role yang akan diberi akses
+      $roles = array_unique(array_merge($role_id));
 
       // [BARU] Hitung sort_order berikutnya
       $lastSortOrder = $db->table('folder')->selectMax('sort_order', 'max_sort')->get()->getRow('max_sort') ?? 0;
@@ -692,12 +718,21 @@ class Folder extends BaseController
 
       // [BARU] Berikan otorisasi untuk folder yang baru dibuat
       foreach ($roles as $r) {
-        $modelOtorFolder->insertData([
-          'id_folder' => $folderId,
-          'id_role' => $r,
-          'can_view' => 1,
-          'can_crud' => 1,
-        ]);
+        if ($r == 2 || $r == 9) {
+          $modelOtorFolder->insertData([
+            'id_folder' => $folderId,
+            'id_role' => $r,
+            'can_view' => 1,
+            'can_crud' => 0,
+          ]);
+        } else {
+          $modelOtorFolder->insertData([
+            'id_folder' => $folderId,
+            'id_role' => $r,
+            'can_view' => 1,
+            'can_crud' => 1,
+          ]);
+        }
       }
 
       // [PERBAIKAN TOTAL] Ambil semua dokumen milik personel dari tabel 'dokumen'.
@@ -747,12 +782,21 @@ class Folder extends BaseController
               ]);
 
               if (!$existingOtor) {
-                $modelOtorFile->insertData([
-                  'id_file' => $fileId,
-                  'id_role' => $r,
-                  'can_view' => 1,
-                  'can_crud' => 1,
-                ]);
+                if ($r == 2 || $r == 9) {
+                  $modelOtorFile->insertData([
+                    'id_file' => $fileId,
+                    'id_role' => $r,
+                    'can_view' => 1,
+                    'can_crud' => 0,
+                  ]);
+                } else {
+                  $modelOtorFile->insertData([
+                    'id_file' => $fileId,
+                    'id_role' => $r,
+                    'can_view' => 1,
+                    'can_crud' => 1,
+                  ]);
+                }
               }
             }
           }
@@ -844,10 +888,16 @@ class Folder extends BaseController
 
     // Ambil role_id user saat ini untuk set otorisasi
     $session = session();
-    $user_id = $session->get('id_user');
-    $modelUser = new MyModel('users');
-    $user = $modelUser->getDataById('id_user', $user_id);
-    $roles = array_unique([(int)$user->role_id, 8]); // Role user & Super Admin
+    // $user_id = $session->get('id_user');
+    // $modelUser = new MyModel('users');
+    // $user = $modelUser->getDataById('id_user', $user_id);
+    // $roles = array_unique([(int)$user->role_id, 8]); // Role user & Super Admin
+
+    $modelRole = new MyModel('roles');
+    $allRoles = $modelRole->getAllData();
+    $role_id = array_map(fn($r) => (int)$r->id_role, $allRoles);
+
+    $roles = array_unique(array_merge($role_id));
 
     // 1. Ambil data folder template
     $templateFolder = $modelFolder->getDataById('id_folder', $templateFolderId);
@@ -902,12 +952,21 @@ class Folder extends BaseController
 
     // [FIX] Tambahkan otorisasi untuk folder yang baru di-clone
     foreach ($roles as $r) {
-      $modelOtorFolder->insertData([
-        'id_folder' => $newFolderId,
-        'id_role' => $r,
-        'can_view' => 1,
-        'can_crud' => 1,
-      ]);
+      if ($r == 2 || $r == 9) {
+        $modelOtorFolder->insertData([
+          'id_folder' => $newFolderId,
+          'id_role' => $r,
+          'can_view' => 1,
+          'can_crud' => 0,
+        ]);
+      } else {
+        $modelOtorFolder->insertData([
+          'id_folder' => $newFolderId,
+          'id_role' => $r,
+          'can_view' => 1,
+          'can_crud' => 1,
+        ]);
+      }
     }
 
     // 3. Hubungkan folder baru ke parent yang ditentukan
@@ -942,12 +1001,21 @@ class Folder extends BaseController
           ]);
 
           if (!$existingOtor) {
-            $modelOtorFile->insertData([
-              'id_file' => $existingFileId,
-              'id_role' => $r,
-              'can_view' => 1,
-              'can_crud' => 1,
-            ]);
+            if ($r == 2 || $r == 9) {
+              $modelOtorFile->insertData([
+                'id_file' => $existingFileId,
+                'id_role' => $r,
+                'can_view' => 1,
+                'can_crud' => 0,
+              ]);
+            } else {
+              $modelOtorFile->insertData([
+                'id_file' => $existingFileId,
+                'id_role' => $r,
+                'can_view' => 1,
+                'can_crud' => 1,
+              ]);
+            }
           }
         }
       }
