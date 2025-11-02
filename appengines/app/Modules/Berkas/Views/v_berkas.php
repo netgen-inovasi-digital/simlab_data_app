@@ -361,8 +361,9 @@
       .then(json => {
         // Update CSRF
         if (json.xname && json.xhash) {
-          const input = document.querySelector(`[name="${json.xname}"]`);
-          if (input) input.value = json.xhash;
+          document.querySelectorAll(`[name="${json.xname}"]`).forEach(input => {
+            input.value = json.xhash;
+          });
         }
 
         if (json.success || json.res === true) {
@@ -756,7 +757,7 @@
             <small class="text-muted" id="ketDokumen" style="font-size: 11px;">Apabila tidak ada, berikan tanda "-"</small>
           </div>
           <div class="col">
-            <label class="col-md-3 col-form-label">Revisi Ke-</label>
+            <label class="col-md-5 col-form-label">Revisi Ke-</label>
             <input name="revisi" type="number" class="form-control bg-light" placeholder="Revisi dokumen" required>
             <small class="text-muted" id="ketRevisi" style="font-size: 11px;">Apabila tidak ada, berikan angka 0</small>
           </div>
@@ -770,7 +771,7 @@
             <small class="text-danger d-none" id="errorMsg"></small>
           </div>
           <div class="col">
-            <label class="col-md-4 col-form-label">Tanggal Terbit</label>
+            <label class="col-md-6 col-form-label">Tanggal Terbit</label>
             <input name="tanggal" id="tanggal-input" type="date" class="form-control"
               value="<?= esc(date('Y-m-d')) ?>" required>
           </div>
@@ -811,7 +812,7 @@
             </div>
           </div>
           <div class="col">
-            <label class="col-md-4 col-form-label">Diupload oleh</label>
+            <label class="col-md-6 col-form-label">Diupload oleh</label>
             <input name="nama" type="text" value="<?= $user->nama ?>" class="form-control bg-light" required
               readonly>
             <input name="user_id" type="text" value="<?= $user->id_user ?>" class="form-control" required

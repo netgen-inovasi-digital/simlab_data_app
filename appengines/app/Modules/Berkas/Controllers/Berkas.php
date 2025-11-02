@@ -108,7 +108,7 @@ class Berkas extends BaseController
 
     $db->transComplete();
     if ($db->transStatus() === false) {
-      return $this->response->setStatusCode(500)->setJSON(['res' => 'error', 'message' => 'Gagal menghapus data dari database.']);
+      return $this->response->setStatusCode(500)->setJSON(['res' => 'error', 'message' => 'Gagal menghapus data dari database.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
     }
     if ($res) {
       $res = 'refresh';
@@ -300,24 +300,6 @@ class Berkas extends BaseController
     } else {
       $data['created_at'] = $tanggalUp;
       $res = $model->insertData($data);
-
-      // if ($res) {
-      //   $files = $model->getDataByWhere([
-      //     'title' => $data['title'],
-      //     'nomor_dokumen' => $data['nomor_dokumen'],
-      //   ]);
-      //   $id_file = $files->id_files;
-      //   $roles = array_unique([(int)$role_id->role_id, 8]);
-      //   foreach ($roles as $r) {
-      //     $otor = [
-      //       'id_file' => (int)$id_file,
-      //       'id_role' => (int)$r,
-      //       'can_view' => 1,
-      //       'can_crud' => 1,
-      //     ];
-      //     $modelOtorisasiFile->insertData($otor);
-      //   }
-      // }
     }
 
     if ($res) {
@@ -339,95 +321,110 @@ class Berkas extends BaseController
     $modelOtorisasiFile = new MyModel('otoritas_file');
     $modelRoles = new MyModel('roles');
 
-    $id_folder = $this->request->getPost('id_folder');
-    $idRawFolder = $this->encrypter->decrypt(hex2bin($id_folder));
-    $user_role = $this->request->getPost('user_role');
-    $allRoles = $modelRoles->getAllData();
-    // Ambil hanya kolom role_id saja
-    $role_ids = array_map(fn($r) => (int)$r->id_role, $allRoles);
+    try {
+      $id_folder = $this->request->getPost('id_folder');
+      $idRawFolder = $this->encrypter->decrypt(hex2bin($id_folder));
+      $user_role = $this->request->getPost('user_role');
+      $allRoles = $modelRoles->getAllData();
+      $role_ids = array_map(fn($r) => (int)$r->id_role, $allRoles);
 
-    $files = $this->request->getPost('files');
+      $files = $this->request->getPost('files');
 
-    if (empty($files) || !is_array($files)) {
+      if (empty($files) || !is_array($files)) {
+        return $this->response->setJSON([
+          'res' => 'empty',
+          'message' => 'Tidak ada file yang dipilih.',
+          'xname' => csrf_token(),
+          'xhash' => csrf_hash()
+        ]);
+      }
+
+      $inserted = [];
+      $duplicates = [];
+
+      foreach ($files as $fileId) {
+        $data = [
+          'parent_folder' => $idRawFolder,
+          'child_file' => $fileId,
+        ];
+
+        // Cek duplikat
+        $isDuplicate = $model->getDataByWhere([
+          'parent_folder' => $data['parent_folder'],
+          'child_file' => $data['child_file']
+        ]);
+
+        if ($isDuplicate) {
+          $duplicates[] = $fileId;
+          continue;
+        }
+
+        // Insert file link
+        $res = $model->insertData($data);
+
+        if ($res) {
+          // Cek otorisasi
+          $otorFiles = $modelOtorisasiFile->getDataByWhere([
+            'id_file' => $fileId,
+            'id_role' => $user_role
+          ]);
+
+          if (!$otorFiles) {
+            $roles = array_unique(array_merge($role_ids));
+            foreach ($roles as $r) {
+              if ($r == 2 || $r == 9) {
+                $modelOtorisasiFile->insertData([
+                  'id_file' => (int)$fileId,
+                  'id_role' => (int)$r,
+                  'can_view' => 1,
+                  'can_crud' => 0,
+                ]);
+              } else {
+                $modelOtorisasiFile->insertData([
+                  'id_file' => (int)$fileId,
+                  'id_role' => (int)$r,
+                  'can_view' => 1,
+                  'can_crud' => 1,
+                ]);
+              }
+            }
+          }
+
+          $inserted[] = $fileId;
+        }
+      }
+
+      $countInserted = count($inserted);
+      $countDuplicate = count($duplicates);
+
+      if ($countInserted > 0) {
+        $res = 'refresh';
+        $link = 'folder';
+        $message = $countDuplicate > 0
+          ? "{$countInserted} file berhasil ditambahkan, {$countDuplicate} file dilewati karena sudah ada di dalam folder."
+          : "{$countInserted} file berhasil ditambahkan ke folder.";
+      } else {
+        $res = 'duplicate';
+        $link = '';
+        $message = "Gagal ditambahkan, File sudah ada di dalam folder.";
+      }
+
       return $this->response->setJSON([
-        'res' => 'empty',
-        'message' => 'Tidak ada file yang dipilih.',
+        'res' => $res,
+        'link' => $link,
+        'message' => $message,
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash()
+      ]);
+    } catch (\Throwable) {
+      return $this->response->setJSON([
+        'res' => false,
         'xname' => csrf_token(),
         'xhash' => csrf_hash()
       ]);
     }
-
-    $inserted = [];
-    $duplicates = [];
-
-    foreach ($files as $fileId) {
-      $data = [
-        'parent_folder' => $idRawFolder,
-        'child_file' => $fileId,
-      ];
-
-      // 🔹 Cek duplikat
-      $isDuplicate = $model->getDataByWhere([
-        'parent_folder' => $data['parent_folder'],
-        'child_file' => $data['child_file']
-      ]);
-
-      if ($isDuplicate) {
-        $duplicates[] = $fileId;
-        continue;
-      }
-
-      // 🔹 Insert file link
-      $res = $model->insertData($data);
-
-      if ($res) {
-        // 🔹 Cek otorisasi
-        $otorFiles = $modelOtorisasiFile->getDataByWhere([
-          'id_file' => $fileId,
-          'id_role' => $user_role
-        ]);
-
-        if (!$otorFiles) {
-          $roles = array_unique(array_merge($role_ids));
-          foreach ($roles as $r) {
-            $modelOtorisasiFile->insertData([
-              'id_file' => (int)$fileId,
-              'id_role' => (int)$r,
-              'can_view' => 1,
-              'can_crud' => 1,
-            ]);
-          }
-        }
-
-        $inserted[] = $fileId;
-      }
-    }
-
-    // 🔹 Buat pesan hasil akhir
-    $countInserted = count($inserted);
-    $countDuplicate = count($duplicates);
-
-    if ($countInserted > 0) {
-      $res = 'refresh';
-      $link = 'folder';
-      if ($countDuplicate > 0) {
-        $message = "{$countInserted} file berhasil ditambahkan, {$countDuplicate} file dilewati karena sudah ada di dalam folder.";
-      } else {
-        $message = "{$countInserted} file berhasil ditambahkan ke folder.";
-      }
-    } else {
-      $res = 'duplicate';
-      $message = "Gagal ditambahkan, semua file sudah ada di dalam folder.";
-    }
-
-    return $this->response->setJSON([
-      'res' => $res,
-      'link' => $link ?? '',
-      'message' => $message,
-      'xname' => csrf_token(),
-      'xhash' => csrf_hash()
-    ]);
   }
+
 
   public function deleteLinks($id)
   {
@@ -464,7 +461,7 @@ class Berkas extends BaseController
 
     $db->transComplete();
     if ($db->transStatus() === false) {
-      return $this->response->setStatusCode(500)->setJSON(['res' => 'error', 'message' => 'Gagal menghapus data dari database.']);
+      return $this->response->setStatusCode(500)->setJSON(['res' => 'error', 'message' => 'Gagal menghapus data dari database.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
     }
 
     return $this->response->setJSON([
@@ -581,21 +578,21 @@ class Berkas extends BaseController
     ';
 
       $id = bin2hex($this->encrypter->encrypt($row->id_files));
-      $fileUrl = base_url('uploads/' . $row->berkas);
+      // $fileUrl = base_url('uploads/' . $row->berkas);
 
       $response = array();
       $response[] = esc($row->nomor_dokumen != null) ? esc($row->nomor_dokumen) : 'Tidak ada';
       $response[] = $titleBlock;
       $response[] = esc($row->nama_kategori) ?? 'Tidak Berkategori';
       $response[] = '<span class="fw-medium ">' . esc($row->created_at != null ? date('d-m-Y', strtotime($row->created_at)) : date('d-m-Y', strtotime($row->updated_at))) . '</span>';
-      $response[] = $this->aksi($id, $fileUrl);
+      $response[] = $this->aksi($id);
       $data[] = $response;
     }
     $output = array("items" => $data);
     return $this->response->setJSON($output);
   }
 
-  function aksi($id, $fileUrl = null)
+  function aksi($id)
   {
     return '<div id="' . $id . '" class="float-end">
     <span class="text-secondary btn-action" title="Detail File" onclick="showFileDetails(event)">
