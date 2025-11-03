@@ -1567,27 +1567,6 @@
         if (!formData.has(csrfName)) {
             formData.append(csrfName, csrfHash);
         }
-      }).then(response => {
-        if (!response.ok) {
-          throw new Error('Data tidak ditemukan');
-        }
-        return response.json();
-      }).then(data => {
-        if (data.error) throw new Error(data.error);
-        const fileUrl = data.berkas ? `<?= base_url('uploads/') ?>${data.berkas}` : '#';
-        const fileExt = data.berkas ? data.berkas.split('.').pop().toLowerCase() : '';
-        let filePreviewHtml = '';
-        if (fileExt === 'pdf') {
-          filePreviewHtml =
-            `<iframe src="${fileUrl}" width="150" height="200" style="border: 1px solid #dee2e6; border-radius: 0.25rem;"><p>Browser Anda tidak mendukung pratinjau PDF. <a href="${fileUrl}" target="_blank">Unduh PDF</a></p></iframe>`;
-        } else {
-          let iconClass = 'bi-file-earmark-text';
-          if (['doc', 'docx'].includes(fileExt)) iconClass = 'bi-file-earmark-word';
-          filePreviewHtml =
-            `<div class="text-center mb-3" style="width: 150px; height: 200px; background-color: #e9ecef; border: 1px solid #dee2e6; display: flex; align-items: center; justify-content: center; border-radius: 0.25rem;"><i class="bi ${iconClass}" style="font-size: 4rem; color: #adb5bd;"></i></div>`;
-        }
-        contentArea.innerHTML =
-          `<div class="row g-4"><div class="col-md-4 d-flex flex-column align-items-center">${filePreviewHtml}<div class="d-flex mt-3"><a href="${fileUrl}" target="_blank" class="btn btn-secondary">View</a></div></div><div class="col-md-8"><table class="biodata-table"><tr><td>Nama File</td><td>:</td><td>${data.title || '-'}</td></tr><tr><td>No. Dokumen</td><td>:</td><td>${data.nomor_dokumen || '-'}</td></tr><tr><td>Revisi ke-</td><td>:</td><td>${data.revisi || '-'}</td></tr><tr><td>Tanggal Terbit</td><td>:</td><td>${formatTanggal(data.created_at)}</td></tr><tr><td>Diupload oleh</td><td>:</td><td>${data.author || '-'}</td></tr><tr><td>Kategori</td><td>:</td><td>${data.kategori || '-'}</td></tr></table></div></div>`;
 
         fetch(url, {
                 method: 'POST',
@@ -1691,7 +1670,7 @@
                         `<div class="text-center mb-3" style="width: 150px; height: 200px; background-color: #e9ecef; border: 1px solid #dee2e6; display: flex; align-items: center; justify-content: center; border-radius: 0.25rem;"><i class="bi ${iconClass}" style="font-size: 4rem; color: #adb5bd;"></i></div>`;
                 }
                 contentArea.innerHTML =
-                    `<div class="row g-4"><div class="col-md-4 d-flex flex-column align-items-center">${filePreviewHtml}<div class="d-flex mt-3"><a href="${fileUrl}" target="_blank" class="btn btn-secondary">View</a></div></div><div class="col-md-8"><table class="biodata-table"><tr><td>Nama File</td><td>:</td><td>${data.title || '-'}</td></tr><tr><td>No. Dokumen</td><td>:</td><td>${data.nomor_dokumen || '-'}</td></tr><tr><td>Revisi ke</td><td>:</td><td>${data.revisi || '-'}</td></tr><tr><td>Tanggal Upload</td><td>:</td><td>${formatTanggal(data.created_at)}</td></tr><tr><td>Author</td><td>:</td><td>${data.author || '-'}</td></tr><tr><td>Kategori</td><td>:</td><td>${data.kategori || '-'}</td></tr></table></div></div>`;
+                    `<div class="row g-4"><div class="col-md-4 d-flex flex-column align-items-center">${filePreviewHtml}<div class="d-flex mt-3"><a href="${fileUrl}" target="_blank" class="btn btn-secondary">View</a></div></div><div class="col-md-8"><table class="biodata-table"><tr><td>Nama File</td><td>:</td><td>${data.title || '-'}</td></tr><tr><td>No. Dokumen</td><td>:</td><td>${data.nomor_dokumen || '-'}</td></tr><tr><td>Revisi ke-</td><td>:</td><td>${data.revisi || '-'}</td></tr><tr><td>Tanggal Terbit</td><td>:</td><td>${formatTanggal(data.created_at)}</td></tr><tr><td>Diupload oleh</td><td>:</td><td>${data.author || '-'}</td></tr><tr><td>Kategori</td><td>:</td><td>${data.kategori || '-'}</td></tr></table></div></div>`;
 
                 // --- Gunakan otorisasi untuk tombol modal ---
                 modalAksiContainer.innerHTML = '';
@@ -1757,7 +1736,8 @@
                         'success');
                     loadContent(data.link);
                 } else {
-                    sayAlert('errorModal', 'Gagal', data.message || 'Gagal menghapus data.', 'warning');
+                    sayAlert('errorModal', 'Gagal', data.message || 'Gagal menghapus data.',
+                        'warning');
                 }
             })
         });
@@ -1768,7 +1748,8 @@
     // Ambil data dari PHP
     allFiles = <?= json_encode($files) ?>;
     fileSelect = document.getElementById('file_id');
-    listFiles = document.getElementById('listFiles');
+    listFiles = document
+        .getElementById('listFiles');
     kategoriSelect = document.getElementById('kategori_id');
 
     // 🔧 Fungsi untuk update dropdown file
