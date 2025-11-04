@@ -1148,6 +1148,9 @@
       const categoryFilter = document.getElementById('filterFileCategory');
       fileDropdown.innerHTML = '<option value="">Memuat...</option>';
 
+      // [BARU] Simpan semua opsi file dalam sebuah variabel untuk filtering
+      let allFileOptions = [];
+
       fetch('<?= site_url('personel/fileList') ?>', {
           headers: {
             'Content-Type': 'application/json',
@@ -1166,6 +1169,7 @@
 
           // Isi daftar file
           if (data.files.length > 0) {
+            allFileOptions = []; // Kosongkan sebelum mengisi
             data.files.forEach(file => {
               // Jangan tampilkan file yang sudah tertaut
               if (existingFileIds.includes(file.id_files)) return;
@@ -1174,33 +1178,41 @@
               option.value = file.id_files;
               option.textContent = file.title;
               option.dataset.category = file.categories_id;
-              option.dataset.name = file.title.toLowerCase();
-              fileDropdown.appendChild(option);
+              allFileOptions.push(option); // Simpan ke array
             });
           } else {
             fileDropdown.innerHTML = '<option value="">Tidak ada file tersedia</option>';
           }
 
           // Tambahkan event listener untuk filter setelah file dimuat
-          categoryFilter.addEventListener('change', filterFiles);
+          // [PERBAIKAN] Pastikan event listener hanya ditambahkan sekali
+          if (!categoryFilter.hasAttribute('data-listener-added')) {
+            categoryFilter.addEventListener('change', filterFiles);
+            categoryFilter.setAttribute('data-listener-added', 'true');
+          }
 
-          // [PERBAIKAN] Inisialisasi searchable dropdown setelah file dimuat
-          reinitFileDropdownSearch();
+          // [PERBAIKAN] Panggil filterFiles() untuk menampilkan semua file pada awalnya
+          filterFiles();
         })
         .catch(err => {
-          console.error("Error populating file list:", err); // Tambahkan log untuk debugging
+          console.error("Error populating file list:", err);
           fileDropdown.innerHTML = '<option value="">Gagal memuat file</option>';
+          reinitFileDropdownSearch();
         });
 
       function filterFiles() {
-        // [PERBAIKAN] Logika filter file sekarang hanya berdasarkan kategori
         const categoryId = categoryFilter.value;
-        document.querySelectorAll('#fileDropdown option').forEach(option => {
-          if (option.value === "") return; // Jangan sembunyikan opsi default
+        fileDropdown.innerHTML = '<option value="">-- Pilih File --</option>'; // Reset dropdown
+
+        allFileOptions.forEach(option => {
           const categoryMatch = !categoryId || option.dataset.category === categoryId;
-          option.style.display = categoryMatch ? '' : 'none';
+          if (categoryMatch) {
+            fileDropdown.appendChild(option.cloneNode(true)); // Tambahkan klon opsi yang cocok
+          }
         });
-        reinitFileDropdownSearch(); // Re-inisialisasi dropdown agar menampilkan opsi yang difilter
+
+        // [FIX] Re-inisialisasi dropdown setelah opsinya diubah
+        reinitFileDropdownSearch();
       }
     }
 
