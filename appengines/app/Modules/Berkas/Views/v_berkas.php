@@ -20,7 +20,6 @@
           <thead>
             <tr>
               <th show width="8%">No.</th>
-              <th>No. Dokumen</th>
               <th show>Judul</th>
               <th show>Kategori</th>
               <th>Tanggal Upload</th>
