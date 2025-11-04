@@ -206,7 +206,7 @@ class Folder extends BaseController
     // ambil daftar personel dengan dokumen
     $personelWithDocs = $db->table('personel as p')
       ->select('p.id_personel, p.nama')
-      ->where('EXISTS (SELECT 1 FROM files f WHERE f.id_personel = p.id_personel)')
+      ->where('EXISTS (SELECT 1 FROM personel_files pf WHERE pf.id_personel = p.id_personel)')
       ->orderBy('p.nama', 'ASC')
       ->get()
       ->getResult();
@@ -380,7 +380,7 @@ class Folder extends BaseController
     return $this->response->setJSON($response_data);
   }
 
-  private function _deleteFolderRecursive($folderId, $isPersonelFolder = false)
+  public function _deleteFolderRecursive($folderId, $isPersonelFolder = false)
   {
     $linkModel = new MyModel('folder_links');
     $fileLinkModel = new MyModel('file_links'); // [BARU]
@@ -738,8 +738,13 @@ class Folder extends BaseController
       }
 
       // [PERUBAHAN ALUR] Ambil semua file milik personel langsung dari tabel 'files'.
-      $modelFiles = new MyModel('files');
-      $filesPersonel = $modelFiles->getAllDataByWhere(['id_personel' => $id_personel]);
+      // [FIX] Ambil file dari tabel pivot `personel_files` yang terhubung ke tabel `files`.
+      $modelPersonelFiles = new MyModel('personel_files');
+      $filesPersonel = $modelPersonelFiles->getAllDataByJoin(
+        ['files' => 'files.id_files = personel_files.id_files'],
+        ['personel_files.id_personel' => $id_personel]
+      );
+
 
       // Buat tautan untuk setiap file yang ditemukan.
       foreach ($filesPersonel as $file) {
@@ -758,8 +763,7 @@ class Folder extends BaseController
               'parent_folder' => $folderId,
               'child_file' => $fileId,
               // 'sort_order' bisa ditambahkan jika diperlukan
-            ]);
-            $modelFiles->updateData(['id_personel' => $id_personel], 'id_files', $fileId);
+            ]); // [FIX] Hapus update id_personel karena sudah tidak relevan
 
             // [PERBAIKAN] Pastikan otorisasi untuk file ini ada, terutama untuk Super Admin.
             // Ini menyelesaikan masalah file tidak muncul setelah folder dihapus dan dibuat ulang.
@@ -818,7 +822,7 @@ class Folder extends BaseController
     //    TAPI BELUM punya folder personel.
     $personelWithDocs = $db->table('personel as p')
       ->select('p.id_personel, p.nama')
-      ->where('EXISTS (SELECT 1 FROM files f WHERE f.id_personel = p.id_personel)') // Memastikan hanya personel yang memiliki dokumen yang dipilih
+      ->where('EXISTS (SELECT 1 FROM personel_files pf WHERE pf.id_personel = p.id_personel)') // [FIX] Cek dari tabel pivot personel_files
       ->where("NOT EXISTS (SELECT 1 FROM folder fol WHERE fol.nama = p.nama AND fol.flag = 1)", null, false) // Memastikan personel belum memiliki folder personel
       ->orderBy('p.nama', 'ASC') // Mengurutkan berdasarkan nama, ASC
       ->orderBy('p.nama', 'ASC')

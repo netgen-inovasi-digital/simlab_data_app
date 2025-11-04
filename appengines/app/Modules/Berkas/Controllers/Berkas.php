@@ -369,15 +369,16 @@ class Berkas extends BaseController
 
         if ($res) {
           // [BARU] Jika folder tujuan adalah folder personel (flag=1), update id_personel di tabel files
+          // [CARA BARU] Buat tautan di tabel personel_files 
           if ($targetFolder && $targetFolder->flag == 1) {
             $modelPersonel = new MyModel('personel');
             $personel = $modelPersonel->getDataByWhere(['nama' => $targetFolder->nama]);
             if ($personel) {
-              $modelFiles->updateData(['id_personel' => $personel->id_personel], 'id_files', $fileId);
-            } else {
-              // [PENTING] Jika folder tujuan BUKAN folder personel, pastikan id_personel di-reset.
-              // Ini mencegah file tetap tertaut ke personel jika dipindahkan ke folder biasa.
-              $modelFiles->updateData(['id_personel' => null], 'id_files', $fileId);
+              $modelPersonelFiles = new MyModel('personel_files');
+              // Cek duplikasi sebelum insert
+              if (!$modelPersonelFiles->getDataByWhere(['id_personel' => $personel->id_personel, 'id_files' => $fileId])) {
+                $modelPersonelFiles->insertData(['id_personel' => $personel->id_personel, 'id_files' => $fileId]);
+              }
             }
           }
 
@@ -448,14 +449,19 @@ class Berkas extends BaseController
   public function deleteLinks($id)
   {
     $model = new MyModel('file_links');
-    $modelFiles = new MyModel('files'); // [BARU] Tambahkan model files
     $modelOtorisasiFile = new MyModel('otoritas_file');
+    $modelFolder = new MyModel('folder'); // [CARA BARU]
+    $modelPersonelFiles = new MyModel('personel_files'); // [CARA BARU]
 
     $json = $this->request->getJSON();
     $idFolder = $json->idFolder ?? null;
 
     $id = $this->encrypter->decrypt(hex2bin($id));
     $get = $model->getDataByWhere(['child_file' => $id, 'parent_folder' => $idFolder]);
+
+    // [CARA BARU] Cek apakah folder ini adalah folder personel
+    $folder = $modelFolder->getDataById('id_folder', $idFolder);
+    $isPersonelFolder = $folder && $folder->flag == 1;
 
     $db = \Config\Database::connect();
     $db->transStart();
@@ -472,8 +478,15 @@ class Berkas extends BaseController
         // Hapus semua otorisasi yang terkait dengan file ini
         $modelOtorisasiFile->deleteData('id_file', $id);
       }
-      // [PERBAIKAN] Selalu reset id_personel di tabel files saat tautan dari folder personel dihapus.
-      $modelFiles->updateData(['id_personel' => null], 'id_files', $id);
+
+      // [CARA BARU] Jika ini adalah folder personel, hapus juga tautan dari personel_files
+      if ($isPersonelFolder) {
+        $modelPersonel = new MyModel('personel');
+        $personel = $modelPersonel->getDataByWhere(['nama' => $folder->nama]);
+        if ($personel) {
+          $modelPersonelFiles->deleteData(['id_personel' => $personel->id_personel, 'id_files' => $id]);
+        }
+      }
     }
 
     if ($res) {

@@ -98,17 +98,20 @@ class Personel extends BaseController
       // [PERUBAHAN ALUR] Ambil dokumen langsung dari tabel 'files' berdasarkan id_personel.
       // Ini memastikan semua dokumen milik personel akan tampil, bahkan jika folder personel belum dibuat.
       $modelFiles = new MyModel('files');
+      $modelPersonelFiles = new MyModel('personel_files'); // [BARU] Model untuk tabel pivot
       $all_docs = [];
 
-      // 1. Ambil semua file yang memiliki id_personel yang sesuai.
-      $personelFiles = $modelFiles->getAllDataByWhere(['id_personel' => $id]);
+      // 1. [UBAH] Ambil semua file yang tertaut melalui tabel pivot `personel_files`.
+      $personelFiles = $modelPersonelFiles->getAllDataByJoin(
+        ['files' => 'files.id_files = personel_files.id_files'], // Asumsi nama kolom child_file
+        ['personel_files.id_personel' => $id]
+      );
 
       // 2. Ubah format data agar sesuai dengan yang diharapkan oleh frontend.
       foreach ($personelFiles as $file) {
         $all_docs[] = (object) [
-          'id_dokumen' => $file->id_files, // Gunakan id_files sebagai id unik
+          'id_dokumen' => $file->id_files, // [FIX] Gunakan id_files, bukan child_file
           'id_personel' => $id,
-          'tipe_dokumen' => 'lainnya', // Anggap semua sebagai 'lainnya'
           'nama_asli_file' => $file->title,
           'nama_file_tersimpan' => $file->berkas,
           'path_file' => 'uploads/' . $file->berkas,
@@ -177,20 +180,45 @@ class Personel extends BaseController
 
       $decryptedId = $this->encrypter->decrypt(hex2bin($id));
 
+      // [CARA BARU] Logika untuk menghapus folder personel terkait
+      $modelFolder = new MyModel('folder');
       $model = new MyModel($this->table);
+      $personelData = $model->getDataById($this->id, $decryptedId);
+
+      // Mulai transaksi database
+      $db = \Config\Database::connect();
+      $db->transStart();
+
+      // Hapus folder personel jika ada
+      if ($personelData) {
+        $personelFolder = $modelFolder->getDataByWhere(['nama' => $personelData->nama, 'flag' => 1]);
+        if ($personelFolder) {
+          $folderController = new \Modules\Folder\Controllers\Folder();
+          $folderController->_deleteFolderRecursive($personelFolder->id_folder, true);
+        }
+      }
+
+      // Hapus data personel dari tabel personel
       $res = $model->deleteData($this->id, $decryptedId);
 
-      if ($res) {
-        return $this->response->setJSON([
-          'res' => 'refresh',
-          'link' => 'personel',
-          'xname' => csrf_token(),
-          'xhash' => csrf_hash()
-        ]);
+      // Selesaikan transaksi
+      $db->transComplete();
+
+      // Periksa status transaksi setelah selesai
+      if ($db->transStatus() === false) {
+        // Jika transaksi gagal, lempar exception
+        throw new \Exception('Gagal menghapus data dari database.');
       }
-      throw new \Exception('Gagal menghapus data dari database.');
+
+      // Jika semua berhasil, kirim respons sukses
+      return $this->response->setJSON([
+        'res' => 'refresh',
+        'link' => 'personel',
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash()
+      ]);
     } catch (\Exception $e) {
-      log_message('error', '[PERSONEL_DELETE] ' . $e->getMessage());
+      log_message('error', '[PERSONEL_DELETE] ' . $e->getMessage() . ' ' . $e->getTraceAsString());
       return $this->response->setStatusCode(500)->setJSON(['error' => 'Terjadi kesalahan internal saat mencoba menghapus data.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
     }
   }
@@ -288,37 +316,24 @@ class Personel extends BaseController
       $filesToDelete = $this->request->getPost('delete_files');
       if (!empty($filesToDelete) && is_array($filesToDelete)) {
         // Load model yang dibutuhkan untuk penghapusan sinkron
-        $modelFiles = new MyModel('files');
+        $modelPersonelFiles = new MyModel('personel_files');
+        $modelFolder = new MyModel('folder');
         $modelFileLinks = new MyModel('file_links');
-        $modelOtorFile = new MyModel('otoritas_file');
+
+        // Ambil data personel untuk mencari folder yang sesuai
+        $personelData = $model->getDataById($this->id, $id);
 
         foreach ($filesToDelete as $fileId) {
-          // Karena kita menghapus tautan, bukan file master, kita hanya perlu menghapus dari file_links.
-          // Juga, kita perlu mencari folder personel yang sesuai.
-          $personelData = $model->getDataById($this->id, $id); // Sekarang $model sudah terdefinisi
+          // 1. Hapus tautan dari tabel pivot `personel_files`
+          $modelPersonelFiles->deleteData(['id_personel' => $id, 'id_files' => $fileId]);
+
+          // 2. [SINKRONISASI] Hapus juga tautan dari `file_links` jika Folder Personel ada
           if ($personelData) {
-            $modelFolder = new MyModel('folder');
             $personelFolder = $modelFolder->getDataByWhere(['nama' => $personelData->nama, 'flag' => 1]);
-
             if ($personelFolder) {
-              // [FIX] Menggunakan metode yang ada untuk menghapus.
-              // Cari dulu link yang spesifik untuk mendapatkan ID-nya.
-              $linkToDelete = $modelFileLinks->getDataByWhere([
-                'parent_folder' => $personelFolder->id_folder,
-                'child_file' => $fileId
-              ]);
-
-              if ($linkToDelete) $modelFileLinks->deleteData('id', $linkToDelete->id);
-
-              // [OPSIONAL] Cek apakah file ini masih tertaut di tempat lain.
-              // Jika tidak, otorisasi bisa dihapus. Untuk saat ini, kita biarkan otorisasi tetap ada
-              // karena file mungkin masih digunakan di folder lain.
+              // Hapus tautan file dari folder personel yang sesuai
+              $modelFileLinks->deleteData(['parent_folder' => $personelFolder->id_folder, 'child_file' => $fileId]);
             }
-
-            // [PERBAIKAN KRUSIAL] Reset id_personel di tabel files,
-            // terlepas dari apakah folder personel sudah ada atau belum.
-            // Ini memastikan kepemilikan file terhapus bahkan jika hanya ada di data personel.
-            $modelFiles->updateData(['id_personel' => null], 'id_files', $fileId);
           }
         }
       }
@@ -386,65 +401,61 @@ class Personel extends BaseController
     // [BARU] Logika untuk menautkan file dari form dokumen
     if ($isDokumenForm) {
       $filesToLink = $this->request->getPost('files');
-      $modelFileLinks = new MyModel('file_links');
-      $modelFolder = new MyModel('folder');
-      $modelFiles = new MyModel('files'); // [BARU] Load model files
-      $db = \Config\Database::connect(); // [BARU] Load database connection
+      $modelPersonelFiles = new MyModel('personel_files'); // [UBAH] Gunakan model pivot
 
-      // Dapatkan data personel untuk menemukan folder yang sesuai
-      $personelData = $model->getDataById($this->id, $id);
-      if (!$personelData) {
-        return $this->response->setStatusCode(404)->setJSON(['error' => 'Personel tidak ditemukan untuk menautkan dokumen.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
-      }
-
-      // Cari folder yang namanya sama dengan nama personel dan memiliki flag=1
-      $personelFolder = $modelFolder->getDataByWhere(['nama' => $personelData->nama, 'flag' => 1]);
-
-      // [PERUBAHAN ALUR BARU]
-      // Tetap proses meskipun folder belum ada. Cukup update id_personel di tabel files.
-      // Penautan ke folder (file_links) akan dilakukan nanti saat folder personel dibuat.
       if (!empty($filesToLink) && is_array($filesToLink)) {
         foreach ($filesToLink as $fileId) {
-          // 1. Selalu update id_personel di tabel files untuk menandai kepemilikan.
-          $modelFiles->updateData(['id_personel' => $id], 'id_files', $fileId);
+          // [UBAH] Cek duplikasi di tabel pivot
+          $isDuplicate = $modelPersonelFiles->getDataByWhere([
+            'id_personel' => $id,
+            'id_files' => $fileId
+          ]);
 
-          // 2. HANYA buat file_links jika folder personel SUDAH ADA.
-          if ($personelFolder) {
-            // Cek duplikasi di tabel file_links
-            $isDuplicate = $modelFileLinks->getDataByWhere([
-              'parent_folder' => $personelFolder->id_folder,
-              'child_file' => $fileId
-            ]);
-            if ($isDuplicate) {
-              continue; // Lewati jika tautan sudah ada
-            }
+          if ($isDuplicate) {
+            continue; // Lewati jika tautan sudah ada
+          }
 
-            // Buat tautan baru di file_links
-            $modelFileLinks->insertData([
-              'parent_folder' => $personelFolder->id_folder,
-              'child_file' => $fileId,
-            ]);
+          // [UBAH] Buat tautan baru di tabel pivot `personel_files`
+          $modelPersonelFiles->insertData([
+            'id_personel' => $id,
+            'id_files' => $fileId,
+          ]);
 
-            // [PERBAIKAN KRUSIAL] Pastikan otorisasi untuk file yang baru ditautkan ini ada.
-            // Tanpa ini, file tidak akan muncul di tree view Dokumen Akreditasi.
-            $modelRoles = new MyModel('roles');
-            $allRoles = $modelRoles->getAllData();
-            foreach ($allRoles as $role) {
-              $existingOtor = $modelOtorFile->getDataByWhere([
-                'id_file' => $fileId,
-                'id_role' => $role->id_role
+          // [CARA BARU] Sinkronisasi ke Folder Personel di Dokumen Akreditasi 
+          // 1. Cari folder personel yang sesuai (flag=1)
+          $modelFolder = new MyModel('folder');
+          $personelData = $model->getDataById($this->id, $id);
+          if ($personelData) {
+            $personelFolder = $modelFolder->getDataByWhere(['nama' => $personelData->nama, 'flag' => 1]);
+
+            // 2. Jika folder personel ada, buat tautan di file_links
+            if ($personelFolder) {
+              $modelFileLinks = new MyModel('file_links');
+              $isLinkDuplicate = $modelFileLinks->getDataByWhere([
+                'parent_folder' => $personelFolder->id_folder,
+                'child_file' => $fileId
               ]);
 
-              if (!$existingOtor) {
-                $modelOtorFile->insertData([
-                  'id_file' => $fileId,
-                  'id_role' => $role->id_role,
-                  'can_view' => 1,
-                  'can_crud' => ($role->id_role == 2 || $role->id_role == 9) ? 0 : 1
+              if (!$isLinkDuplicate) {
+                $modelFileLinks->insertData([
+                  'parent_folder' => $personelFolder->id_folder,
+                  'child_file' => $fileId,
                 ]);
+
+                // 3. Pastikan otorisasi file ada agar terlihat di menu Dokumen Akreditasi
+                $modelRoles = new MyModel('roles');
+                $allRoles = $modelRoles->getAllData();
+                foreach ($allRoles as $role) {
+                  if (!$modelOtorFile->getDataByWhere(['id_file' => $fileId, 'id_role' => $role->id_role])) {
+                    $modelOtorFile->insertData(['id_file' => $fileId, 'id_role' => $role->id_role, 'can_view' => 1, 'can_crud' => in_array($role->id_role, [2, 9]) ? 0 : 1]);
+                  }
+                }
               }
             }
           }
+
+          // Catatan: Logika otorisasi file (`otoritas_file`) tidak perlu diubah di sini.
+          // Otorisasi file sebaiknya tetap dikelola secara terpisah, tidak terikat pada penautan ke personel.
         }
       }
     }
