@@ -374,10 +374,12 @@ class Berkas extends BaseController
             $personel = $modelPersonel->getDataByWhere(['nama' => $targetFolder->nama]);
             if ($personel) {
               $modelFiles->updateData(['id_personel' => $personel->id_personel], 'id_files', $fileId);
+            } else {
+              // [PENTING] Jika folder tujuan BUKAN folder personel, pastikan id_personel di-reset.
+              // Ini mencegah file tetap tertaut ke personel jika dipindahkan ke folder biasa.
+              $modelFiles->updateData(['id_personel' => null], 'id_files', $fileId);
             }
           }
-          // [PENTING] Jika folder tujuan BUKAN folder personel, pastikan id_personel di-reset.
-          $modelFiles->updateData(['id_personel' => null], 'id_files', $fileId);
 
 
           // Cek otorisasi

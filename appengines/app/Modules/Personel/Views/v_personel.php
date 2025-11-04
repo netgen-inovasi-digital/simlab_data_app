@@ -439,12 +439,9 @@
             <p class="text-muted small">Pilih satu atau lebih dokumen dari Data File untuk ditautkan ke
               personel ini.</p>
 
-            <!-- Filter -->
+            <!-- [PERBAIKAN] Filter pencarian nama file dihapus, kategori tetap ada -->
             <div class="row mb-3">
-              <div class="col-md-6">
-                <input type="text" id="searchFile" class="form-control" placeholder="Cari nama file...">
-              </div>
-              <div class="col-md-6">
+              <div class="col-md-12">
                 <select id="filterFileCategory" class="form-select">
                   <option value="">Semua Kategori</option>
                   <!-- Opsi kategori akan diisi oleh JS -->
@@ -454,12 +451,14 @@
 
             <!-- Daftar File -->
             <div id="fileListContainer">
-              <div class="input-group">
-                <select id="fileDropdown" class="form-select">
-                  <option value="">Memuat daftar file...</option>
-                </select>
-                <button class="btn btn-outline-primary" type="button"
-                  id="addFileToListBtn">Tambah</button>
+              <!-- [PERBAIKAN] Membungkus dropdown dan tombol dalam flex container untuk memastikan kesejajaran -->
+              <div class="d-flex align-items-center gap-2">
+                <div class="input-group flex-grow-1">
+                  <select id="fileDropdown" class="form-select">
+                    <option value="">Memuat daftar file...</option>
+                  </select>
+                </div>
+                <button class="btn btn-primary" type="button" id="addFileToListBtn">Tambah</button>
               </div>
             </div>
 
@@ -529,6 +528,23 @@
       if (loadingIndicator) {
         loadingIndicator.classList.replace('d-flex', 'd-none');
       }
+    }
+
+    /**
+     * [BARU] Fungsi untuk menginisialisasi ulang searchable dropdown.
+     * Diperlukan agar dropdown berfungsi dengan benar setelah datanya diperbarui.
+     */
+    function reinitFileDropdownSearch() {
+      const fileDropdown = document.getElementById('fileDropdown');
+      if (!fileDropdown) return;
+
+      // [PERBAIKAN] Hapus wrapper lama yang dibuat oleh plugin selectSearch
+      const oldWrapper = fileDropdown.previousElementSibling;
+      if (oldWrapper && oldWrapper.classList.contains('position-relative')) {
+        oldWrapper.remove();
+      }
+      fileDropdown.style.display = 'block'; // Tampilkan kembali select asli
+      if (typeof selectSearch === 'function') selectSearch('#fileDropdown');
     }
 
     /**
@@ -632,13 +648,28 @@
       removeSelectionBtn = e.target.closest('.remove-selection');
       if (removeSelectionBtn) {
         e.preventDefault();
+        const listItem = removeSelectionBtn.closest('li');
         const fileId = removeSelectionBtn.dataset.fileId;
+        const fileName = listItem.querySelector('span').textContent;
+        const fileCategory = listItem.dataset.category; // Ambil kategori dari data-attribute
+
         // Hapus dari list UI
-        removeSelectionBtn.closest('li').remove();
+        listItem.remove();
+
         // Hapus dari input hidden
         document.querySelector(`#dokumenForm input[name="files[]"][value="${fileId}"]`)?.remove();
-        // Uncheck checkbox di daftar file
-        document.querySelector(`#fileListContainer input[value="${fileId}"]`).checked = false;
+
+        // [PERBAIKAN] Tambahkan kembali file ke dropdown
+        const fileDropdown = document.getElementById('fileDropdown');
+        const newOption = document.createElement('option');
+        newOption.value = fileId;
+        newOption.textContent = fileName;
+        newOption.dataset.category = fileCategory; // Set kembali data-category
+        newOption.dataset.name = fileName.toLowerCase(); // Set kembali data-name
+        fileDropdown.appendChild(newOption);
+
+        // Inisialisasi ulang dropdown agar searchable
+        reinitFileDropdownSearch();
         checkSelectedFiles();
       }
 
@@ -1017,11 +1048,13 @@
       if (document.getElementById(`selected-file-${fileId}`)) return;
 
       // Tambahkan ke daftar UI
+      const selectedOption = document.querySelector(`#fileDropdown option[value="${fileId}"]`);
       const li = document.createElement('li');
       li.className = 'list-group-item d-flex justify-content-between align-items-center';
       li.id = `selected-file-${fileId}`;
+      li.dataset.category = selectedOption ? selectedOption.dataset.category : ''; // Simpan kategori
       li.innerHTML =
-        `<span>${escapeHtml(fileName)}</span><button class="btn btn-sm btn-danger remove-selection" data-file-id="${fileId}">&times;</button>`;
+        `<span>${escapeHtml(fileName)}</span><button type="button" class="btn btn-sm btn-danger remove-selection" data-file-id="${fileId}">&times;</button>`;
       selectedList.appendChild(li);
 
       const hiddenInput = document.createElement('input');
@@ -1149,21 +1182,25 @@
           }
 
           // Tambahkan event listener untuk filter setelah file dimuat
-          document.getElementById('searchFile').addEventListener('input', filterFiles);
           categoryFilter.addEventListener('change', filterFiles);
+
+          // [PERBAIKAN] Inisialisasi searchable dropdown setelah file dimuat
+          reinitFileDropdownSearch();
         })
         .catch(err => {
+          console.error("Error populating file list:", err); // Tambahkan log untuk debugging
           fileDropdown.innerHTML = '<option value="">Gagal memuat file</option>';
         });
 
       function filterFiles() {
-        const searchTerm = document.getElementById('searchFile').value.toLowerCase();
+        // [PERBAIKAN] Logika filter file sekarang hanya berdasarkan kategori
         const categoryId = categoryFilter.value;
         document.querySelectorAll('#fileDropdown option').forEach(option => {
-          const nameMatch = (option.dataset.name || '').includes(searchTerm);
+          if (option.value === "") return; // Jangan sembunyikan opsi default
           const categoryMatch = !categoryId || option.dataset.category === categoryId;
-          option.style.display = (nameMatch && categoryMatch) ? '' : 'none';
+          option.style.display = categoryMatch ? '' : 'none';
         });
+        reinitFileDropdownSearch(); // Re-inisialisasi dropdown agar menampilkan opsi yang difilter
       }
     }
 

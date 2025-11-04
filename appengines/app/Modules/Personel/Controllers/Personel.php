@@ -424,6 +424,26 @@ class Personel extends BaseController
               'parent_folder' => $personelFolder->id_folder,
               'child_file' => $fileId,
             ]);
+
+            // [PERBAIKAN KRUSIAL] Pastikan otorisasi untuk file yang baru ditautkan ini ada.
+            // Tanpa ini, file tidak akan muncul di tree view Dokumen Akreditasi.
+            $modelRoles = new MyModel('roles');
+            $allRoles = $modelRoles->getAllData();
+            foreach ($allRoles as $role) {
+              $existingOtor = $modelOtorFile->getDataByWhere([
+                'id_file' => $fileId,
+                'id_role' => $role->id_role
+              ]);
+
+              if (!$existingOtor) {
+                $modelOtorFile->insertData([
+                  'id_file' => $fileId,
+                  'id_role' => $role->id_role,
+                  'can_view' => 1,
+                  'can_crud' => ($role->id_role == 2 || $role->id_role == 9) ? 0 : 1
+                ]);
+              }
+            }
           }
         }
       }
