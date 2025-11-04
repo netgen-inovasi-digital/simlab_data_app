@@ -332,6 +332,15 @@ class Berkas extends BaseController
 
       // [BARU] Cek apakah folder tujuan adalah folder personel
       $targetFolder = $modelFolder->getDataById('id_folder', $idRawFolder);
+      // [MODIFIKASI] Jika folder tujuan adalah folder personel (flag=1), tolak operasi.
+      if ($targetFolder && isset($targetFolder->flag) && $targetFolder->flag == 1) {
+        return $this->response->setJSON([
+          'res' => 'error',
+          'message' => 'File tidak dapat ditambahkan ke Folder Personel melalui menu ini.',
+          'xname' => csrf_token(),
+          'xhash' => csrf_hash()
+        ]);
+      }
 
       $files = $this->request->getPost('files');
 
@@ -368,20 +377,6 @@ class Berkas extends BaseController
         $res = $model->insertData($data);
 
         if ($res) {
-          // [BARU] Jika folder tujuan adalah folder personel (flag=1), update id_personel di tabel files
-          // [CARA BARU] Buat tautan di tabel personel_files 
-          if ($targetFolder && $targetFolder->flag == 1) {
-            $modelPersonel = new MyModel('personel');
-            $personel = $modelPersonel->getDataByWhere(['nama' => $targetFolder->nama]);
-            if ($personel) {
-              $modelPersonelFiles = new MyModel('personel_files');
-              // Cek duplikasi sebelum insert
-              if (!$modelPersonelFiles->getDataByWhere(['id_personel' => $personel->id_personel, 'id_files' => $fileId])) {
-                $modelPersonelFiles->insertData(['id_personel' => $personel->id_personel, 'id_files' => $fileId]);
-              }
-            }
-          }
-
 
           // Cek otorisasi
           $otorFiles = $modelOtorisasiFile->getDataByWhere([
@@ -616,6 +611,7 @@ class Berkas extends BaseController
       // $fileUrl = base_url('uploads/' . $row->berkas);
 
       $response = array();
+      $response[] = esc($row->nomor_dokumen != null) ? esc($row->nomor_dokumen) : 'Tidak ada';
       $response[] = $titleBlock;
       $response[] = esc($row->nama_kategori) ?? 'Tidak Berkategori';
       $response[] = '<span class="fw-medium ">' . esc($row->created_at != null ? date('d-m-Y', strtotime($row->created_at)) : date('d-m-Y', strtotime($row->updated_at))) . '</span>';

@@ -463,18 +463,50 @@ class Personel extends BaseController
 
     // 6. Simpan ke Database (SATU KALI)
     $res = false;
+    $db = \Config\Database::connect(); // [BARU] Panggil koneksi database
+    $db->transStart(); // [BARU] Mulai transaksi
+
     if ($isPersonelForm && empty($id)) {
       // Mode Tambah Personel Baru
       $code = $this->request->getPost('code');
       $data['urutan'] = (int)$code + 1;
       $newPersonelId = $model->insertData($data, true); // Dapatkan ID baru
       $res = (bool)$newPersonelId;
-    } else {
+    } elseif ($id) {
       // Mode Edit (baik data personel maupun hanya dokumen)
       // Hanya update jika ada data personel yang dikirim
       if (!empty($data)) {
         $res = $model->updateData($data, $this->id, $id);
+
+        // [BARU] Logika sinkronisasi nama folder personel
+        // Cek jika update berhasil, nama diubah, dan ini adalah form personel
+        if ($res && $isPersonelForm && isset($data['nama']) && $currentData->nama !== $data['nama']) {
+          $modelFolder = new MyModel('folder');
+          // Cari folder personel yang cocok dengan nama LAMA
+          $personelFolder = $modelFolder->getDataByWhere(['nama' => $currentData->nama, 'flag' => 1]);
+
+          if ($personelFolder) {
+            // Jika ditemukan, update namanya dengan nama BARU
+            $folderUpdateData = [
+              'nama' => $data['nama'],
+              'slug' => url_title($data['nama'], '-', true) . '-' . uniqid(), // Buat slug baru yang unik
+              'updated_at' => date('Y-m-d H:i:s'),
+            ];
+            $modelFolder->updateData($folderUpdateData, 'id_folder', $personelFolder->id_folder);
+          }
+        }
       } else $res = true; // Jika hanya upload/hapus dokumen, anggap berhasil
+    }
+
+    $db->transComplete(); // [BARU] Selesaikan transaksi
+
+    if ($db->transStatus() === false) {
+      return $this->response->setJSON([
+        'res'     => 'error',
+        'message' => 'Gagal menyimpan data ke database karena kegagalan transaksi.',
+        'xname'   => csrf_token(),
+        'xhash'   => csrf_hash()
+      ]);
     }
 
     if ($res) {

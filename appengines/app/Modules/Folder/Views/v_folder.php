@@ -378,14 +378,19 @@
 
         <span class="aksi-text ms-2 me-1" style="display: none;" >Bisa Aksi</span>
 
-        <span class=" action-btn text-dark" role="button" title="Tambah" onclick="tambahItemFile(event)" id="addFile">
-            <i class="bi bi-plus-circle"></i>
-        </span>
-        <label class="divider">|</label>
-        <span class="text-dark action-btn" role="button" title="Ubah" onclick="editItemFolder(event)">
-                      <i class="bi bi-pencil-square"></i>
-                  </span>
-        <label class="divider">|</label>
+        ' .
+                    // [MODIFIKASI] Hanya tampilkan tombol Tambah dan Ubah jika BUKAN folder personel
+                    (!isset($node->flag) || $node->flag != 1 ?
+                        '<span class=" action-btn text-dark" role="button" title="Tambah" onclick="tambahItemFile(event)" id="addFile">
+                            <i class="bi bi-plus-circle"></i>
+                        </span>
+                        <label class="divider">|</label>
+                        <span class="text-dark action-btn" role="button" title="Ubah" onclick="editItemFolder(event)">
+                            <i class="bi bi-pencil-square"></i>
+                        </span>
+                        <label class="divider">|</label>'
+                        : '')
+                    . '
         <span class="text-danger action-btn" role="button" title="Hapus" onclick="deleteItemFolder(event, \'folder\')">
                       <i class="bi bi-x-circle"></i>
                   </span>

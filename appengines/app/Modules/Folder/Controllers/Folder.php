@@ -450,6 +450,14 @@ class Folder extends BaseController
       try {
         $decryptedId = $this->encrypter->decrypt(hex2bin($idFolderEdit));
 
+        // [MODIFIKASI] Cek apakah folder ini adalah folder personel. Jika ya, tolak edit.
+        $modelFolder = new MyModel('folder');
+        $folderToEdit = $modelFolder->getDataById('id_folder', $decryptedId);
+        if ($folderToEdit && isset($folderToEdit->flag) && $folderToEdit->flag == 1) {
+          return $this->response->setStatusCode(403)->setJSON(['res' => 'error', 'message' => 'Folder Personel tidak dapat diubah namanya.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
+        }
+
+
         // [FIX] Cek duplikasi slug saat edit, pastikan slug unik.
         $modelFolder = new MyModel('folder');
         $slug = url_title($namaFolder, '-', true);
