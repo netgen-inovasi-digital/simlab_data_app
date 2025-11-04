@@ -320,6 +320,8 @@ class Berkas extends BaseController
     $model = new MyModel('file_links');
     $modelOtorisasiFile = new MyModel('otoritas_file');
     $modelRoles = new MyModel('roles');
+    $modelFolder = new MyModel('folder'); // [BARU]
+    $modelFiles = new MyModel('files');   // [BARU]
 
     try {
       $id_folder = $this->request->getPost('id_folder');
@@ -327,6 +329,9 @@ class Berkas extends BaseController
       $user_role = $this->request->getPost('user_role');
       $allRoles = $modelRoles->getAllData();
       $role_ids = array_map(fn($r) => (int)$r->id_role, $allRoles);
+
+      // [BARU] Cek apakah folder tujuan adalah folder personel
+      $targetFolder = $modelFolder->getDataById('id_folder', $idRawFolder);
 
       $files = $this->request->getPost('files');
 
@@ -363,6 +368,18 @@ class Berkas extends BaseController
         $res = $model->insertData($data);
 
         if ($res) {
+          // [BARU] Jika folder tujuan adalah folder personel (flag=1), update id_personel di tabel files
+          if ($targetFolder && $targetFolder->flag == 1) {
+            $modelPersonel = new MyModel('personel');
+            $personel = $modelPersonel->getDataByWhere(['nama' => $targetFolder->nama]);
+            if ($personel) {
+              $modelFiles->updateData(['id_personel' => $personel->id_personel], 'id_files', $fileId);
+            }
+          }
+          // [PENTING] Jika folder tujuan BUKAN folder personel, pastikan id_personel di-reset.
+          $modelFiles->updateData(['id_personel' => null], 'id_files', $fileId);
+
+
           // Cek otorisasi
           $otorFiles = $modelOtorisasiFile->getDataByWhere([
             'id_file' => $fileId,
@@ -429,6 +446,7 @@ class Berkas extends BaseController
   public function deleteLinks($id)
   {
     $model = new MyModel('file_links');
+    $modelFiles = new MyModel('files'); // [BARU] Tambahkan model files
     $modelOtorisasiFile = new MyModel('otoritas_file');
 
     $json = $this->request->getJSON();
@@ -452,6 +470,8 @@ class Berkas extends BaseController
         // Hapus semua otorisasi yang terkait dengan file ini
         $modelOtorisasiFile->deleteData('id_file', $id);
       }
+      // [PERBAIKAN] Selalu reset id_personel di tabel files saat tautan dari folder personel dihapus.
+      $modelFiles->updateData(['id_personel' => null], 'id_files', $id);
     }
 
     if ($res) {
