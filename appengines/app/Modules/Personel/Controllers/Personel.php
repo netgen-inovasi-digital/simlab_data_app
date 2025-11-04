@@ -95,14 +95,28 @@ class Personel extends BaseController
         return $this->response->setStatusCode(404)->setJSON(['error' => 'Data tidak ditemukan', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
       }
 
-      // [PERBAIKAN FINAL] Ambil data HANYA dari tabel 'dokumen'.
-      // Ini adalah cara paling aman karena semua data (lama dan baru) sekarang ada di sini.
-      $all_docs = $modelDokumen->getAllDataByWhere(['id_personel' => $id]);
+      // [PERUBAHAN ALUR] Ambil dokumen langsung dari tabel 'files' berdasarkan id_personel.
+      // Ini memastikan semua dokumen milik personel akan tampil, bahkan jika folder personel belum dibuat.
+      $modelFiles = new MyModel('files');
+      $modelPersonelFiles = new MyModel('personel_files'); // [BARU] Model untuk tabel pivot
+      $all_docs = [];
 
-      $docs_by_type = [];
-      foreach ($all_docs as $doc) {
-        // Kelompokkan dokumen berdasarkan tipenya
-        $docs_by_type[$doc->tipe_dokumen][] = $doc;
+      // 1. [UBAH] Ambil semua file yang tertaut melalui tabel pivot `personel_files`.
+      $personelFiles = $modelPersonelFiles->getAllDataByJoin(
+        ['files' => 'files.id_files = personel_files.id_files'], // Asumsi nama kolom child_file
+        ['personel_files.id_personel' => $id]
+      );
+
+      // 2. Ubah format data agar sesuai dengan yang diharapkan oleh frontend.
+      foreach ($personelFiles as $file) {
+        $all_docs[] = (object) [
+          'id_dokumen' => $file->id_files, // [FIX] Gunakan id_files, bukan child_file
+          'id_personel' => $id,
+          'nama_asli_file' => $file->title,
+          'nama_file_tersimpan' => $file->berkas,
+          'path_file' => 'uploads/' . $file->berkas,
+          'id_files' => $file->id_files, // Tambahkan id_files untuk referensi
+        ];
       }
 
 
@@ -121,10 +135,10 @@ class Personel extends BaseController
         'email' => $get->email ?? '',
         'foto' => $get->foto ?? '',
         // [UBAH] Kirim data dokumen dalam format JSON
-        'doc_cv' => isset($docs_by_type['cv']) ? json_encode($docs_by_type['cv']) : '[]',
-        'doc_coc' => isset($docs_by_type['coc']) ? json_encode($docs_by_type['coc']) : '[]',
-        'doc_surat_tugas' => isset($docs_by_type['surat_tugas']) ? json_encode($docs_by_type['surat_tugas']) : '[]',
-        'doc_lainnya' => isset($docs_by_type['lainnya']) ? json_encode($docs_by_type['lainnya']) : '[]',
+        'doc_cv' => '[]', // Kosongkan data lama
+        'doc_coc' => '[]', // Kosongkan data lama
+        'doc_surat_tugas' => '[]', // Kosongkan data lama
+        'doc_lainnya' => json_encode($all_docs), // Masukkan semua dokumen ke 'lainnya'
       ];
 
       // [PERBAIKAN] Sisipkan data izin hanya jika pengguna berwenang.
@@ -166,23 +180,68 @@ class Personel extends BaseController
 
       $decryptedId = $this->encrypter->decrypt(hex2bin($id));
 
+      // [CARA BARU] Logika untuk menghapus folder personel terkait
+      $modelFolder = new MyModel('folder');
       $model = new MyModel($this->table);
+      $personelData = $model->getDataById($this->id, $decryptedId);
+
+      // Mulai transaksi database
+      $db = \Config\Database::connect();
+      $db->transStart();
+
+      // Hapus folder personel jika ada
+      if ($personelData) {
+        $personelFolder = $modelFolder->getDataByWhere(['nama' => $personelData->nama, 'flag' => 1]);
+        if ($personelFolder) {
+          $folderController = new \Modules\Folder\Controllers\Folder();
+          $folderController->_deleteFolderRecursive($personelFolder->id_folder, true);
+        }
+      }
+
+      // Hapus data personel dari tabel personel
       $res = $model->deleteData($this->id, $decryptedId);
 
-      if ($res) {
-        return $this->response->setJSON([
-          'res' => 'refresh',
-          'link' => 'personel',
-          'xname' => csrf_token(),
-          'xhash' => csrf_hash()
-        ]);
+      // Selesaikan transaksi
+      $db->transComplete();
+
+      // Periksa status transaksi setelah selesai
+      if ($db->transStatus() === false) {
+        // Jika transaksi gagal, lempar exception
+        throw new \Exception('Gagal menghapus data dari database.');
       }
-      throw new \Exception('Gagal menghapus data dari database.');
+
+      // Jika semua berhasil, kirim respons sukses
+      return $this->response->setJSON([
+        'res' => 'refresh',
+        'link' => 'personel',
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash()
+      ]);
     } catch (\Exception $e) {
-      log_message('error', '[PERSONEL_DELETE] ' . $e->getMessage());
+      log_message('error', '[PERSONEL_DELETE] ' . $e->getMessage() . ' ' . $e->getTraceAsString());
       return $this->response->setStatusCode(500)->setJSON(['error' => 'Terjadi kesalahan internal saat mencoba menghapus data.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
     }
   }
+
+  /**
+   * [BARU] Endpoint untuk menyediakan daftar file dari tabel 'files' dalam format JSON.
+   * Digunakan untuk mengisi modal pemilihan file.
+   */
+  public function fileList()
+  {
+    if (!$this->request->isAJAX()) {
+      return $this->response->setStatusCode(403);
+    }
+
+    $modelFiles = new MyModel('files');
+    $files = $modelFiles->getAllData('created_at', 'DESC');
+
+    $modelCategories = new MyModel('categories');
+    $categories = $modelCategories->getAllData();
+
+    return $this->response->setJSON(['files' => $files, 'categories' => $categories, 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
+  }
+
 
   public function submit()
   {
@@ -194,8 +253,14 @@ class Personel extends BaseController
     $idenc = $this->request->getPost('id');
     $id = !empty($idenc) ? $this->encrypter->decrypt(hex2bin($idenc)) : null; // Dekripsi ID di awal
 
-    // [UBAH] Tentukan aturan validasi berdasarkan input yang diterima
+    // [PERBAIKAN] Inisialisasi model utama di awal agar tersedia untuk semua blok logika.
+    $model = new MyModel($this->table);
+
+    // [UBAH] Tentukan aturan validasi berdasarkan input yang diterima (form personel atau form dokumen)
     $isPersonelForm = $this->request->getPost('nama') !== null;
+    // [PERBAIKAN] Form dokumen dianggap valid jika ada file yang akan ditambahkan ATAU dihapus.
+    $isDokumenForm = $this->request->getPost('files') !== null || $this->request->getPost('delete_files') !== null;
+
 
     // Aturan validasi dasar
     $rules = [];
@@ -215,15 +280,15 @@ class Personel extends BaseController
         'email' => "required|valid_email|is_unique[personel.email,id_personel,{$id}]",
         'foto' => 'max_size[foto,2048]|is_image[foto]',
       ];
-    } else {
-      // Aturan untuk form dokumen.
-      // [PERBAIKAN] Pindahkan semua aturan validasi dokumen ke sini.
+    } else if ($isDokumenForm) {
       $rules = [
-        'doc_cv' => 'max_size[doc_cv,5120]|ext_in[doc_cv,pdf,doc,docx]',
-        'doc_coc' => 'max_size[doc_coc,5120]|ext_in[doc_coc,pdf,doc,docx]',
-        'doc_surat_tugas' => 'max_size[doc_surat_tugas,5120]|ext_in[doc_surat_tugas,pdf,doc,docx]',
-        'doc_lainnya.*' => 'max_size[doc_lainnya,5120]|ext_in[doc_lainnya,pdf,doc,docx]',
+        'id'      => 'required' // Pastikan ID personel juga dikirim.
       ];
+      // [PERBAIKAN] Hanya terapkan aturan validasi untuk 'files' jika field tersebut ada.
+      // Ini memungkinkan form disubmit hanya untuk menghapus file (delete_files) tanpa error.
+      if ($this->request->getPost('files')) {
+        $rules['files.*'] = 'is_natural_no_zero';
+      }
     }
 
     // Pesan error kustom
@@ -245,10 +310,37 @@ class Personel extends BaseController
       ]);
     }
 
-    $model = new MyModel($this->table);
+    // [PERBAIKAN] Logika Hapus File dipindahkan ke sini, di luar kondisi $isPersonelForm.
+    // Ini memastikan penghapusan dapat terjadi baik dari form personel maupun form dokumen.
+    if (!empty($id)) {
+      $filesToDelete = $this->request->getPost('delete_files');
+      if (!empty($filesToDelete) && is_array($filesToDelete)) {
+        // Load model yang dibutuhkan untuk penghapusan sinkron
+        $modelPersonelFiles = new MyModel('personel_files');
+        $modelFolder = new MyModel('folder');
+        $modelFileLinks = new MyModel('file_links');
+
+        // Ambil data personel untuk mencari folder yang sesuai
+        $personelData = $model->getDataById($this->id, $id);
+
+        foreach ($filesToDelete as $fileId) {
+          // 1. Hapus tautan dari tabel pivot `personel_files`
+          $modelPersonelFiles->deleteData(['id_personel' => $id, 'id_files' => $fileId]);
+
+          // 2. [SINKRONISASI] Hapus juga tautan dari `file_links` jika Folder Personel ada
+          if ($personelData) {
+            $personelFolder = $modelFolder->getDataByWhere(['nama' => $personelData->nama, 'flag' => 1]);
+            if ($personelFolder) {
+              // Hapus tautan file dari folder personel yang sesuai
+              $modelFileLinks->deleteData(['parent_folder' => $personelFolder->id_folder, 'child_file' => $fileId]);
+            }
+          }
+        }
+      }
+    }
+
+
     $modelDokumen = new MyModel('dokumen'); // [BARU] Load model dokumen
-    // [PERBAIKAN] Load model yang diperlukan untuk menyimpan ke tabel files
-    $modelFiles = new MyModel('files');
     $modelOtorFile = new MyModel('otoritas_file');
     $modelCategories = new MyModel('categories');
     $currentData = null;
@@ -270,7 +362,7 @@ class Personel extends BaseController
       }
     }
 
-    // 3. Siapkan data dari POST (hanya jika ini form personel)
+    // 3. Siapkan data dari POST
     $data = [];
     if ($isPersonelForm) {
       $data = [
@@ -286,288 +378,88 @@ class Personel extends BaseController
         'no_handphone' => $this->request->getPost('no_handphone'),
         'email' => $this->request->getPost('email'),
       ];
-    }
 
-    // [UBAH] Logika Hapus File
-    if (!empty($id)) {
-      $filesToDelete = $this->request->getPost('delete_files');
-      if (!empty($filesToDelete)) {
-        // [PERBAIKAN] Load model yang dibutuhkan untuk penghapusan sinkron
-        $modelFiles = new MyModel('files');
-        $modelFileLinks = new MyModel('file_links');
-        $modelOtorFile = new MyModel('otoritas_file');
-
-        foreach ($filesToDelete as $id_dokumen) {
-          $doc = $modelDokumen->getDataById('id_dokumen', $id_dokumen);
-          if ($doc) {
-            // [PERBAIKAN] Cari file master di tabel 'files' berdasarkan nama file
-            $fileMaster = $modelFiles->getDataByWhere(['berkas' => $doc->nama_file_tersimpan]);
-
-            if ($fileMaster) {
-              // Hapus semua tautan file dari folder manapun
-              $modelFileLinks->deleteData('child_file', $fileMaster->id_files);
-              // Hapus semua otorisasi file
-              $modelOtorFile->deleteData('id_file', $fileMaster->id_files);
-            }
-
-            $filePath = FCPATH . $doc->path_file;
+      // Proses upload foto profil jika ada
+      $file = $this->request->getFile('foto');
+      if ($file && $file->isValid() && !$file->hasMoved()) {
+        if ($id && $currentData && !empty($currentData->foto)) {
+          $oldFotoPath = FCPATH . 'uploads/' . $currentData->foto;
+          if (file_exists($oldFotoPath)) {
             $trashPath = FCPATH . 'uploads/trash/';
-
-            // Buat direktori sampah jika belum ada
-            if (!is_dir($trashPath)) {
-              mkdir($trashPath, 0777, true);
-            }
-
-            if (file_exists($filePath)) {
-              // Pindahkan file ke direktori sampah
-              $newFilePath = $trashPath . basename($filePath);
-              rename($filePath, $newFilePath);
-            }
-
-            // Hapus record dari tabel 'dokumen'
-            $modelDokumen->deleteData('id_dokumen', $id_dokumen);
-
-            // [PERBAIKAN] Hapus record dari tabel master 'files'
-            if ($fileMaster) {
-              $modelFiles->deleteData('id_files', $fileMaster->id_files);
-            }
-
-            // Jika yang dihapus adalah foto profil, null-kan juga di tabel personel
-            if ($doc->tipe_dokumen == 'foto') {
-              $model->updateData(['foto' => null], $this->id, $id);
-            }
+            if (!is_dir($trashPath)) mkdir($trashPath, 0777, true);
+            $newTrashPath = $trashPath . 'foto_' . uniqid() . '_' . $currentData->foto;
+            rename($oldFotoPath, $newTrashPath);
           }
+        }
+        $newFotoName = $this->doUploadFotoProfil($file);
+        if ($newFotoName) {
+          $data['foto'] = $newFotoName;
         }
       }
     }
 
-    // // ===== [PERBAIKAN] Buat kategori hanya saat upload dokumen =====
-    $hasDocs = false;
+    // [BARU] Logika untuk menautkan file dari form dokumen
+    if ($isDokumenForm) {
+      $filesToLink = $this->request->getPost('files');
+      $modelPersonelFiles = new MyModel('personel_files'); // [UBAH] Gunakan model pivot
 
-    // cek dokumen tunggal
-    $docFields = ['doc_cv', 'doc_coc', 'doc_surat_tugas'];
-    foreach ($docFields as $f) {
-      $file = $this->request->getFile($f);
-      if ($file && $file->isValid() && !$file->hasMoved()) {
-        $hasDocs = true;
-        break;
-      }
-    }
-
-    // cek dokumen lainnya (multiple)
-    if (!$hasDocs) {
-      $otherFiles = $this->request->getFiles();
-      if (!empty($otherFiles) && isset($otherFiles['doc_lainnya'])) {
-        $filesLain = $otherFiles['doc_lainnya'];
-        if (is_array($filesLain)) {
-          foreach ($filesLain as $f) {
-            if ($f && $f->isValid() && !$f->hasMoved()) {
-              $hasDocs = true;
-              break;
-            }
-          }
-        }
-      }
-    }
-
-    $personelCategoryId = null;
-    if ($hasDocs) {
-      $personelCategory = $modelCategories->getDataByWhere(['nama' => 'Personel']);
-      if ($personelCategory) {
-        $personelCategoryId = is_object($personelCategory)
-          ? $personelCategory->id_categories
-          : $personelCategory['id_categories'];
-      } else {
-        $personelCategoryId = $modelCategories->insertData([
-          'nama' => 'Personel',
-          'slug' => 'personel',
-          'created_at' => date('Y-m-d H:i:s')
-        ], true);
-      }
-    }
-    // ===== END =====
-
-    // [PERBAIKAN] Ambil role user untuk otorisasi
-    $session = session();
-    $user_id = $session->get('id_user');
-    $role_id = $session->get('role_id');
-    $roles = array_unique([(int)$role_id, 8]); // Role user & Super Admin
-
-    // [UBAH] Logika Upload File Baru
-    $fileFields = [
-      'foto' => 'foto',
-      'doc_cv' => 'cv',
-      'doc_coc' => 'coc',
-      'doc_surat_tugas' => 'surat_tugas'
-    ];
-
-    $newlyUploadedFiles = []; // Simpan file yang baru diupload untuk mode tambah
-
-    foreach ($fileFields as $field => $tipe) {
-      $file = $this->request->getFile($field);
-      if ($file && $file->isValid() && !$file->hasMoved()) {
-        // [PERBAIKAN] Logika khusus untuk foto profil
-        // [BARU] Cek duplikasi nama file untuk personel yang sama (hanya saat edit)
-        if ($id && $field !== 'foto') {
-          $originalName = $file->getClientName();
-          $isDuplicate = $modelDokumen->getDataByWhere([
+      if (!empty($filesToLink) && is_array($filesToLink)) {
+        foreach ($filesToLink as $fileId) {
+          // [UBAH] Cek duplikasi di tabel pivot
+          $isDuplicate = $modelPersonelFiles->getDataByWhere([
             'id_personel' => $id,
-            'nama_asli_file' => $originalName
+            'id_files' => $fileId
           ]);
+
           if ($isDuplicate) {
-            // [PERBAIKAN] Kirim pesan error jika file duplikat ditemukan
-            return $this->response->setJSON([
-              'res'     => 'error',
-              'message' => "Gagal, dokumen dengan nama '{$originalName}' sudah ada untuk personel ini.",
-              'xname'   => csrf_token(),
-              'xhash'   => csrf_hash()
-            ]);
-          }
-        }
-
-        if ($field === 'foto') {
-          // Hapus foto lama jika ada saat mode edit
-          if ($id && $currentData && !empty($currentData->foto)) {
-            $oldFotoPath = FCPATH . 'uploads/' . $currentData->foto;
-            if (file_exists($oldFotoPath)) {
-              $trashPath = FCPATH . 'uploads/trash/';
-              if (!is_dir($trashPath)) {
-                mkdir($trashPath, 0777, true);
-              }
-              $newTrashPath = $trashPath . 'foto_' . uniqid() . '_' . $currentData->foto;
-              rename($oldFotoPath, $newTrashPath);
-            }
+            continue; // Lewati jika tautan sudah ada
           }
 
-          // Unggah foto baru
-          $newFotoName = $this->doUploadFotoProfil($file);
-          if ($newFotoName) {
-            $data['foto'] = $newFotoName;
-          }
-        } else {
-          // Logika untuk dokumen (CV, COC, dll)
-          $uploadResult = $this->doUpload($file, $modelFiles); // Kirim modelFiles untuk cek duplikat
-          if (!$uploadResult || !$uploadResult['status']) continue;
+          // [UBAH] Buat tautan baru di tabel pivot `personel_files`
+          $modelPersonelFiles->insertData([
+            'id_personel' => $id,
+            'id_files' => $fileId,
+          ]);
 
-          $newFileId = $this->saveFileToMaster($uploadResult['data'], $user_id, $personelCategoryId, $roles, $modelFiles, $modelOtorFile);
+          // [CARA BARU] Sinkronisasi ke Folder Personel di Dokumen Akreditasi 
+          // 1. Cari folder personel yang sesuai (flag=1)
+          $modelFolder = new MyModel('folder');
+          $personelData = $model->getDataById($this->id, $id);
+          if ($personelData) {
+            $personelFolder = $modelFolder->getDataByWhere(['nama' => $personelData->nama, 'flag' => 1]);
 
-          if ($id) {
-            // [PERBAIKAN BARU] Logika untuk mengganti file lama.
-            // Hanya berlaku untuk tipe dokumen yang unik per personel (bukan 'lainnya').
-            if ($tipe !== 'lainnya') {
-              $oldDocs = $modelDokumen->getAllDataByWhere(['id_personel' => $id, 'tipe_dokumen' => $tipe]);
-              if (!empty($oldDocs)) {
-                $modelFileLinks = new MyModel('file_links');
-                // Logika penghapusan file lama sudah benar, tidak perlu diubah.
-                foreach ($oldDocs as $oldDoc) {
-                  // 1. Hapus dari tabel master 'files' dan semua yang terkait
-                  $fileMaster = $modelFiles->getDataByWhere(['berkas' => $oldDoc->nama_file_tersimpan]);
-                  if ($fileMaster) {
-                    $modelFileLinks->deleteData('child_file', $fileMaster->id_files);
-                    $modelOtorFile->deleteData('id_file', $fileMaster->id_files);
-                    $modelFiles->deleteData('id_files', $fileMaster->id_files);
+            // 2. Jika folder personel ada, buat tautan di file_links
+            if ($personelFolder) {
+              $modelFileLinks = new MyModel('file_links');
+              $isLinkDuplicate = $modelFileLinks->getDataByWhere([
+                'parent_folder' => $personelFolder->id_folder,
+                'child_file' => $fileId
+              ]);
+
+              if (!$isLinkDuplicate) {
+                $modelFileLinks->insertData([
+                  'parent_folder' => $personelFolder->id_folder,
+                  'child_file' => $fileId,
+                ]);
+
+                // 3. Pastikan otorisasi file ada agar terlihat di menu Dokumen Akreditasi
+                $modelRoles = new MyModel('roles');
+                $allRoles = $modelRoles->getAllData();
+                foreach ($allRoles as $role) {
+                  if (!$modelOtorFile->getDataByWhere(['id_file' => $fileId, 'id_role' => $role->id_role])) {
+                    $modelOtorFile->insertData(['id_file' => $fileId, 'id_role' => $role->id_role, 'can_view' => 1, 'can_crud' => in_array($role->id_role, [2, 9]) ? 0 : 1]);
                   }
-                  // 2. Pindahkan file fisik ke trash
-                  $filePath = FCPATH . $oldDoc->path_file;
-                  if (file_exists($filePath)) {
-                    $trashPath = FCPATH . 'uploads/trash/';
-                    if (!is_dir($trashPath)) mkdir($trashPath, 0777, true);
-                    $newFilePath = $trashPath . basename($filePath);
-                    rename($filePath, $newFilePath);
-                  }
-                  // 3. Hapus dari tabel 'dokumen'
-                  $modelDokumen->deleteData('id_dokumen', $oldDoc->id_dokumen);
                 }
               }
             }
-
-            // Setelah file lama (jika ada) dihapus, simpan data file baru.
-            $modelDokumen->insertData([
-              'id_personel' => $id,
-              'tipe_dokumen' => $tipe,
-              'nama_asli_file' => $uploadResult['data']['title'],
-              'nama_file_tersimpan' => $uploadResult['data']['berkas'],
-              'path_file' => 'uploads/' . $uploadResult['data']['berkas']
-            ]);
-
-            // [PERBAIKAN BARU] Sinkronkan file baru ke Folder Personel jika ada.
-            $personelData = $model->getDataById($this->id, $id);
-            if ($personelData) {
-              $modelFolder = new MyModel('folder');
-              $personelFolder = $modelFolder->getDataByWhere([
-                'nama' => $personelData->nama,
-                'flag' => 1
-              ]);
-
-              if ($personelFolder) {
-                $modelFileLinks = new MyModel('file_links');
-                $modelFileLinks->insertData([
-                  'parent_folder' => $personelFolder->id_folder,
-                  'child_file'    => $newFileId,
-                ]);
-              }
-            }
-          } else {
-            // [PERBAIKAN] Simpan data file lengkap untuk mode tambah.
-            $newlyUploadedFiles[] = [
-              'tipe_dokumen' => $tipe,
-              'nama_asli_file' => $uploadResult['data']['title'],
-              'nama_file_tersimpan' => $uploadResult['data']['berkas'],
-              'path_file' => 'uploads/' . $uploadResult['data']['berkas']
-            ];
           }
+
+          // Catatan: Logika otorisasi file (`otoritas_file`) tidak perlu diubah di sini.
+          // Otorisasi file sebaiknya tetap dikelola secara terpisah, tidak terikat pada penautan ke personel.
         }
       }
     }
 
-    // [UBAH] Proses upload untuk 'doc_lainnya' (multi-file)
-    $other_docs_files = $this->request->getFiles();
-    if (isset($other_docs_files['doc_lainnya'])) {
-      foreach ($other_docs_files['doc_lainnya'] as $file) {
-        if ($file && $file->isValid() && !$file->hasMoved()) {
-          // [BARU] Cek duplikasi untuk file "Lainnya" juga
-          if ($id) {
-            $originalName = $file->getClientName();
-            $isDuplicate = $modelDokumen->getDataByWhere([
-              'id_personel' => $id,
-              'nama_asli_file' => $originalName
-            ]);
-            if ($isDuplicate) {
-              // [PERBAIKAN] Kirim pesan error jika file duplikat ditemukan
-              return $this->response->setJSON([
-                'res'     => 'error',
-                'message' => "Gagal, dokumen dengan nama '{$originalName}' sudah ada untuk personel ini.",
-                'xname'   => csrf_token(),
-                'xhash'   => csrf_hash()
-              ]);
-            }
-          }
-
-          $uploadResult = $this->doUpload($file, $modelFiles);
-          if ($uploadResult && $uploadResult['status']) {
-            $newFileId = $this->saveFileToMaster($uploadResult['data'], $user_id, $personelCategoryId, $roles, $modelFiles, $modelOtorFile);
-            if ($id) {
-              // [PERBAIKAN] Simpan data file lengkap ke tabel 'dokumen'.
-              $modelDokumen->insertData([
-                'id_personel' => $id,
-                'tipe_dokumen' => 'lainnya',
-                'nama_asli_file' => $uploadResult['data']['title'],
-                'nama_file_tersimpan' => $uploadResult['data']['berkas'],
-                'path_file' => 'uploads/' . $uploadResult['data']['berkas']
-              ]);
-            } else {
-              // [PERBAIKAN] Simpan data file lengkap untuk mode tambah.
-              $newlyUploadedFiles[] = [
-                'tipe_dokumen' => 'lainnya',
-                'nama_asli_file' => $uploadResult['data']['title'],
-                'nama_file_tersimpan' => $uploadResult['data']['berkas'],
-                'path_file' => 'uploads/' . $uploadResult['data']['berkas']
-              ];
-            }
-          }
-        }
-      }
-    }
 
     // 6. Simpan ke Database (SATU KALI)
     $res = false;
@@ -576,20 +468,7 @@ class Personel extends BaseController
       $code = $this->request->getPost('code');
       $data['urutan'] = (int)$code + 1;
       $newPersonelId = $model->insertData($data, true); // Dapatkan ID baru
-
-      if ($newPersonelId) {
-        // [PERBAIKAN] Insert file yang sudah diupload tadi ke tabel dokumen
-        foreach ($newlyUploadedFiles as $fileInfo) {
-          $modelDokumen->insertData([
-            'id_personel' => $newPersonelId,
-            'tipe_dokumen' => $fileInfo['tipe_dokumen'],
-            'nama_asli_file' => $fileInfo['nama_asli_file'],
-            'nama_file_tersimpan' => $fileInfo['nama_file_tersimpan'],
-            'path_file' => $fileInfo['path_file']
-          ]);
-        }
-        $res = true; // Anggap berhasil
-      }
+      $res = (bool)$newPersonelId;
     } else {
       // Mode Edit (baik data personel maupun hanya dokumen)
       // Hanya update jika ada data personel yang dikirim
@@ -661,40 +540,6 @@ class Personel extends BaseController
       }
     }
     return $newFileId;
-  }
-
-  function doUpload($file, $modelFiles)
-  {
-    if (!$file || !$file->isValid() || $file->hasMoved()) {
-      return ['status' => false, 'message' => 'File tidak valid.', 'xname' => csrf_token(), 'xhash' => csrf_hash()];
-    }
-
-    $originalName = $file->getClientName();
-    $ext = $file->getClientExtension();
-
-    // Cek duplikasi berdasarkan nama file di tabel `files`
-    $isDuplicate = $modelFiles->getDataByWhere(['title' => $originalName]);
-    if ($isDuplicate) {
-      // Jika duplikat, tambahkan timestamp untuk membuat nama unik
-      $baseName = pathinfo($originalName, PATHINFO_FILENAME);
-      $originalName = $baseName . '_' . time() . '.' . $ext;
-    }
-
-    $safeTitle = preg_replace('/[^a-zA-Z0-9\-_ .()]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
-    $newFileName = $safeTitle . '_' . uniqid() . '.' . $ext;
-
-    $path = 'uploads';
-    if ($file->move(FCPATH . $path, $newFileName)) {
-      return [
-        'status' => true,
-        'data' => [
-          'title' => $originalName, // Nama asli file untuk ditampilkan
-          'berkas' => $newFileName, // Nama file yang disimpan di server
-        ]
-      ];
-    }
-
-    return ['status' => false, 'message' => 'Gagal memindahkan file.', 'xname' => csrf_token(), 'xhash' => csrf_hash()];
   }
 
   /**

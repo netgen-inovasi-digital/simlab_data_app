@@ -423,57 +423,67 @@
     </div>
   </div>
 
-  <!-- [BARU] Modal Form untuk Dokumen Pendukung -->
+  <!-- [ROMBAK TOTAL] Modal Form untuk Dokumen Pendukung, sekarang menjadi Pemilih File -->
   <div class="modal fade" id="dokumenModalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
     aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="dokumenModalFormLabel">Kelola Dokumen Pendukung</h5>
+          <h5 class="modal-title" id="dokumenModalFormLabel">Pilih Dokumen untuk Personel</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        <form id="dokumenForm" action="<?= site_url('personel/submit') ?>" method="post"
-          enctype="multipart/form-data">
+        <form id="dokumenForm" action="<?= site_url('personel/submit') ?>" method="post">
           <?= csrf_field() ?>
           <div class="modal-body">
             <input type="hidden" name="id" />
-            <p class="text-muted small">Unggah atau perbarui dokumen pendukung untuk personel ini. Kosongkan
-              jika tidak ada perubahan.</p>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Daftar Riwayat Hidup (CV)</label>
-                <input name="doc_cv" type="file" class="form-control file-input-with-preview"
-                  accept=".pdf,.doc,.docx">
-                <div id="doc_cv_link" class="mt-1 file-preview-container"></div>
-                <small class="form-text text-muted">File: .pdf, .doc, .docx.</small>
+            <p class="text-muted small">Pilih satu atau lebih dokumen dari Data File untuk ditautkan ke
+              personel ini.</p>
+
+            <!-- [PERBAIKAN] Filter pencarian nama file dihapus, kategori tetap ada -->
+            <div class="row mb-3">
+              <div class="col-md-12">
+                <select id="filterFileCategory" class="form-select">
+                  <option value="">Semua Kategori</option>
+                  <!-- Opsi kategori akan diisi oleh JS -->
+                </select>
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Code of Conduct</label>
-                <input name="doc_coc" type="file" class="form-control file-input-with-preview"
-                  accept=".pdf,.doc,.docx">
-                <div id="doc_coc_link" class="mt-1 file-preview-container"></div>
-                <small class="form-text text-muted">File: .pdf, .doc, .docx.</small>
+            </div>
+
+            <!-- Daftar File -->
+            <div id="fileListContainer">
+              <!-- [PERBAIKAN] Membungkus dropdown dan tombol dalam flex container untuk memastikan kesejajaran -->
+              <div class="d-flex align-items-center gap-2">
+                <div class="input-group flex-grow-1">
+                  <select id="fileDropdown" class="form-select">
+                    <option value="">Memuat daftar file...</option>
+                  </select>
+                </div>
+                <button class="btn btn-primary" type="button" id="addFileToListBtn">Tambah</button>
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Surat Tugas</label>
-                <input name="doc_surat_tugas" type="file" class="form-control file-input-with-preview"
-                  accept=".pdf,.doc,.docx">
-                <div id="doc_surat_tugas_link" class="mt-1 file-preview-container"></div>
-                <small class="form-text text-muted">File: .pdf, .doc, .docx.</small>
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Dokumen Lainnya</label>
-                <input name="doc_lainnya[]" type="file" class="form-control file-input-with-preview"
-                  multiple accept=".pdf,.doc,.docx">
-                <div id="doc_lainnya_link" class="mt-1 file-preview-container"></div>
-                <small class="form-text text-muted">Bisa lebih dari satu. File: .pdf, .doc,
-                  .docx.</small>
+            </div>
+
+
+
+            <!-- File yang Dipilih -->
+            <div class="mt-3">
+              <h6>Dokumen yang akan ditautkan:</h6>
+              <ul class="list-group" id="selectedFilesList">
+                <li class="list-group-item text-muted" id="no-file-selected">Belum ada file yang
+                  dipilih.</li>
+              </ul>
+            </div>
+
+            <!-- Daftar Dokumen yang Sudah Ada -->
+            <div class="mt-4">
+              <h6>Dokumen yang sudah tertaut:</h6>
+              <div id="existingDocsContainer" class="file-preview-container">
+                <!-- Daftar dokumen yang sudah ada akan di-render di sini -->
               </div>
             </div>
           </div>
           <div class="modal-footer">
             <button class="btn btn-light" type="button" data-bs-dismiss="modal">Batal</button>
-            <button id="btn-save-dokumen" class="btn btn-success" type="button">Simpan Dokumen</button>
+            <button id="btn-save-dokumen" class="btn btn-success" type="button">Simpan</button>
           </div>
         </form>
       </div>
@@ -490,18 +500,23 @@
   <!-- [UBAH] Seluruh logika JavaScript dipindahkan dari app.js kembali ke sini -->
   <script>
     // === Variabel Global ===
-    var biodataModal = new bootstrap.Modal(document.getElementById('biodataModal'));
-    var personelModalFormEl = document.getElementById('personelModalForm');
-    var dokumenModalFormEl = document.getElementById('dokumenModalForm');
-    var dokumenModalForm = new bootstrap.Modal(dokumenModalFormEl);
-    var personelModalForm = new bootstrap.Modal(personelModalFormEl);
-    var contentArea = document.getElementById('biodata-content');
-    var modalAksiContainer = document.getElementById('modal-aksi-container');
-    var draggedItem = null;
-    var container = document.getElementById("personel-container");
-    var placeholder = document.createElement("div");
-    var loadingIndicator = document.getElementById('loading-indicator');
+    biodataModal = new bootstrap.Modal(document.getElementById('biodataModal'));
+    personelModalFormEl = document.getElementById('personelModalForm');
+    dokumenModalFormEl = document.getElementById('dokumenModalForm');
+    dokumenModalForm = new bootstrap.Modal(dokumenModalFormEl);
+    personelModalForm = new bootstrap.Modal(personelModalFormEl);
+    contentArea = document.getElementById('biodata-content');
+    modalAksiContainer = document.getElementById('modal-aksi-container');
+    draggedItem = null;
+    container = document.getElementById("personel-container");
+    placeholder = document.createElement("div");
+    loadingIndicator = document.getElementById('loading-indicator');
     placeholder.classList.add("col-12", "col-sm-6", "col-md-4", "col-lg-3", "drag-placeholder");
+    // [BARU] Variabel global untuk menyimpan token CSRF terbaru
+    csrfStore = {
+      name: '<?= csrf_token() ?>',
+      hash: '<?= csrf_hash() ?>'
+    };
 
     // === Fungsi Utilitas ===
     function showLoading() {
@@ -516,10 +531,30 @@
     }
 
     /**
+     * [BARU] Fungsi untuk menginisialisasi ulang searchable dropdown.
+     * Diperlukan agar dropdown berfungsi dengan benar setelah datanya diperbarui.
+     */
+    function reinitFileDropdownSearch() {
+      const fileDropdown = document.getElementById('fileDropdown');
+      if (!fileDropdown) return;
+
+      // [PERBAIKAN] Hapus wrapper lama yang dibuat oleh plugin selectSearch
+      const oldWrapper = fileDropdown.previousElementSibling;
+      if (oldWrapper && oldWrapper.classList.contains('position-relative')) {
+        oldWrapper.remove();
+      }
+      fileDropdown.style.display = 'block'; // Tampilkan kembali select asli
+      if (typeof selectSearch === 'function') selectSearch('#fileDropdown');
+    }
+
+    /**
      * [BARU] Fungsi terpusat untuk memperbarui token CSRF di semua form.
      */
     function updateCsrfToken(name, hash) {
       if (name && hash) {
+        // [UBAH] Simpan token ke variabel global
+        csrfStore.name = name;
+        csrfStore.hash = hash;
         document.querySelectorAll(`[name="${name}"]`).forEach(input => input.value = hash);
       }
     }
@@ -556,28 +591,24 @@
         e.preventDefault();
         const saveButton = e.target.closest('#btn-save-dokumen');
         const form = document.getElementById('dokumenForm');
-        // Tidak ada validasi required di sini, jadi langsung kirim
         const formData = new FormData(form);
-        // Kita bisa gunakan fungsi save yang sama, karena backend akan memprosesnya
-        // berdasarkan field yang ada di FormData
         saveDataPersonel(form.getAttribute('action'), formData, saveButton, 'dokumen');
       }
 
 
       // 3. Handler untuk Tombol "Hapus File"
-      const removeBtn = e.target.closest('.btn-remove-preview, .btn-remove-file');
+      removeBtn = e.target.closest('.btn-remove-preview, .btn-remove-file');
       if (removeBtn) {
         e.preventDefault();
-        const parentContainer = removeBtn.closest('.mb-3');
-        const input = parentContainer.querySelector('input[type="file"]');
-        const form = parentContainer.closest('form');
+        // [PERBAIKAN] Langsung cari form terdekat, jangan bergantung pada '.mb-3'
+        const form = removeBtn.closest('form');
+        if (!form) return; // Hentikan jika form tidak ditemukan
 
-        if (removeBtn.dataset.existingFile === 'true') {
+        if (removeBtn.classList.contains('remove-existing-doc')) {
           // [UBAH] Menggunakan id_dokumen untuk penghapusan
           const idDokumen = removeBtn.dataset.idDokumen;
           const hiddenInput = document.createElement('input');
           hiddenInput.type = 'hidden';
-          // Backend akan mencari array 'delete_files' yang berisi ID dokumen
           hiddenInput.name = `delete_files[]`;
           hiddenInput.value = idDokumen;
           form.appendChild(hiddenInput);
@@ -586,9 +617,12 @@
             // Sembunyikan preview foto
             document.getElementById('previewWrapper').style.display = 'none';
           } else {
-            removeBtn.parentElement.remove();
+            removeBtn.closest('.file-preview-item').remove();
           }
         } else {
+          // [PERBAIKAN] Cari input file dari parent container yang relevan
+          const parentContainer = removeBtn.closest('.mb-3, .file-preview-item');
+          const input = parentContainer ? parentContainer.querySelector('input[type="file"]') : null;
           const previewItem = removeBtn.parentElement;
           if (input.multiple) {
             const fileNameToRemove = removeBtn.dataset.filename;
@@ -609,6 +643,62 @@
           }
         }
       }
+
+      // [BARU] Handler untuk menghapus file dari daftar pilihan di modal dokumen
+      removeSelectionBtn = e.target.closest('.remove-selection');
+      if (removeSelectionBtn) {
+        e.preventDefault();
+        const listItem = removeSelectionBtn.closest('li');
+        const fileId = removeSelectionBtn.dataset.fileId;
+        const fileName = listItem.querySelector('span').textContent;
+        const fileCategory = listItem.dataset.category; // Ambil kategori dari data-attribute
+
+        // Hapus dari list UI
+        listItem.remove();
+
+        // Hapus dari input hidden
+        document.querySelector(`#dokumenForm input[name="files[]"][value="${fileId}"]`)?.remove();
+
+        // [PERBAIKAN] Tambahkan kembali file ke dropdown
+        const fileDropdown = document.getElementById('fileDropdown');
+        const newOption = document.createElement('option');
+        newOption.value = fileId;
+        newOption.textContent = fileName;
+        newOption.dataset.category = fileCategory; // Set kembali data-category
+        newOption.dataset.name = fileName.toLowerCase(); // Set kembali data-name
+        fileDropdown.appendChild(newOption);
+
+        // Inisialisasi ulang dropdown agar searchable
+        reinitFileDropdownSearch();
+        checkSelectedFiles();
+      }
+
+      // [BARU] Handler untuk tombol "Tambah" di sebelah dropdown file
+      if (e.target.closest('#addFileToListBtn')) {
+        e.preventDefault();
+        const fileDropdown = document.getElementById('fileDropdown');
+        const selectedOption = fileDropdown.options[fileDropdown.selectedIndex];
+
+        if (!selectedOption || !selectedOption.value) {
+          sayAlert('infoModal', 'Info', 'Silakan pilih file terlebih dahulu.', 'info');
+          return;
+        }
+
+        const fileId = selectedOption.value;
+        const fileName = selectedOption.text;
+
+        // Panggil fungsi untuk menambahkan file ke daftar
+        addFileToSelection(fileId, fileName);
+
+        // Hapus opsi dari dropdown
+        selectedOption.remove();
+
+        // Reset dropdown ke opsi default
+        fileDropdown.selectedIndex = 0;
+
+        // Cek apakah ada file yang dipilih
+        checkSelectedFiles();
+      }
     };
 
     // Pasang satu handler terpusat
@@ -623,6 +713,12 @@
     function saveDataPersonel(url, formData, buttonElement, formType = 'personel') {
       showLoading();
       buttonElement.disabled = true;
+
+      // [PERBAIKAN KRUSIAL] Selalu set token CSRF dari variabel global `csrfStore`
+      // sebelum mengirim request. Ini memastikan token yang dikirim selalu yang terbaru,
+      // bahkan setelah beberapa kali request AJAX tanpa me-reload halaman.
+      formData.set(csrfStore.name, csrfStore.hash);
+
       fetch(url, {
           method: 'POST',
           body: formData
@@ -680,9 +776,6 @@
       form.querySelector('[name="id"]').value = '';
       form.querySelectorAll('input[name^="delete_files"]').forEach(el => el.remove());
 
-      // Reset form dokumen juga
-      document.getElementById('dokumenForm').reset();
-
       form.classList.remove('was-validated');
 
       const fotoInput = form.querySelector('[name="foto"]');
@@ -697,6 +790,22 @@
         if (previewImg) {
           previewImg.setAttribute('src', '#');
         }
+      }
+    }
+
+    /**
+     * [BARU] Mereset form dokumen ke keadaan awal.
+     */
+    function resetDokumenForm() {
+      const form = document.getElementById('dokumenForm');
+      if (form) {
+        form.reset();
+        form.querySelector('[name="id"]').value = '';
+        form.querySelectorAll('input[name^="delete_files"]').forEach(el => el.remove());
+        form.querySelectorAll('input[name^="files[]"]').forEach(el => el.remove());
+        document.getElementById('existingDocsContainer').innerHTML = '';
+        document.getElementById('selectedFilesList').innerHTML =
+          '<li class="list-group-item text-muted" id="no-file-selected">Belum ada file yang dipilih.</li>';
       }
     }
 
@@ -724,6 +833,7 @@
       if (e.target.matches('.file-input-with-preview')) {
         handleFilePreview(e.target);
       }
+
     });
 
     /**
@@ -926,6 +1036,45 @@
     }
 
     /**
+     * [BARU] Fungsi untuk menambahkan file ke daftar pilihan.
+     * @param {string} fileId - ID file.
+     * @param {string} fileName - Nama file.
+     */
+    function addFileToSelection(fileId, fileName) {
+      const selectedList = document.getElementById('selectedFilesList');
+      const form = document.getElementById('dokumenForm');
+
+      // Cek duplikasi di daftar pilihan
+      if (document.getElementById(`selected-file-${fileId}`)) return;
+
+      // Tambahkan ke daftar UI
+      const selectedOption = document.querySelector(`#fileDropdown option[value="${fileId}"]`);
+      const li = document.createElement('li');
+      li.className = 'list-group-item d-flex justify-content-between align-items-center';
+      li.id = `selected-file-${fileId}`;
+      li.dataset.category = selectedOption ? selectedOption.dataset.category : ''; // Simpan kategori
+      li.innerHTML =
+        `<span>${escapeHtml(fileName)}</span><button type="button" class="btn btn-sm btn-danger remove-selection" data-file-id="${fileId}">&times;</button>`;
+      selectedList.appendChild(li);
+
+      const hiddenInput = document.createElement('input');
+      hiddenInput.type = 'hidden';
+      hiddenInput.name = 'files[]';
+      hiddenInput.value = fileId;
+      form.appendChild(hiddenInput);
+    }
+
+    /**
+     * [BARU] Mengecek apakah ada file yang dipilih di modal dokumen.
+     */
+    function checkSelectedFiles() {
+      const selectedList = document.getElementById('selectedFilesList');
+      const noFileMessage = document.getElementById('no-file-selected');
+      const hasSelection = selectedList.querySelector('li:not(#no-file-selected)');
+      if (noFileMessage) noFileMessage.style.display = hasSelection ? 'none' : 'block';
+    }
+
+    /**
      * [BARU] Mengambil data dokumen personel dan menampilkannya di modal dokumen.
      */
     function manageDokumen(event) {
@@ -936,12 +1085,8 @@
         showLoading();
         const id = closest.getAttribute('id');
         const url = `<?= site_url('personel/edit/') ?>${id}`;
-        const form = document.getElementById('dokumenForm');
-        form.reset();
-        form.querySelector('[name="id"]').value = id;
-        form.querySelectorAll('input[name^="delete_files"]').forEach(el => el.remove());
-        document.querySelectorAll('#dokumenModalForm .file-preview-container').forEach(p => p.innerHTML = '');
 
+        resetDokumenForm();
         fetch(url, {
             method: 'GET',
             headers: {
@@ -953,42 +1098,37 @@
           .then(data => {
             if (data.error) throw new Error(data.error);
             updateCsrfToken(data.xname, data.xhash);
-            const fileFields = {
-              'foto': 'Foto Profil',
-              'doc_cv': 'CV',
-              'doc_coc': 'Code of Conduct',
-              'doc_surat_tugas': 'Surat Tugas',
-              'doc_lainnya': 'Dokumen Lainnya'
-            };
-            Object.entries(fileFields).forEach(([fieldName, label]) => {
-              const fileData = data[fieldName];
-              if (fieldName !== 'foto') {
-                // Logika untuk semua dokumen (CV, COC, Surat Tugas, Lainnya)
-                const previewContainer = form.querySelector(`#${fieldName}_link`);
-                if (previewContainer) previewContainer.innerHTML = ''; // Reset container
 
-                if (fileData && fileData.trim() !== '' && previewContainer) {
-                  // [PERBAIKAN] Logika untuk menampilkan file dari data yang diambil.
-                  let files = [];
-                  try {
-                    files = JSON.parse(fileData);
-                  } catch (e) {
-                    console.error(`Gagal parse JSON untuk ${fieldName}:`, fileData, e);
-                  }
+            // Isi ID personel ke form
+            document.querySelector('#dokumenForm [name="id"]').value = id;
 
-                  if (Array.isArray(files) && files.length > 0) {
-                    files.forEach(file => {
-                      const displayName = file.nama_asli_file ||
-                        'File tidak bernama';
-                      const filePath = file.path_file ?
-                        `<?= base_url() ?>${file.path_file}` : '#';
-                      previewContainer.innerHTML +=
-                        `<div class="file-preview-item existing-file-preview"><a href="${filePath}" target="_blank" class="file-preview-name" title="${escapeHtml(displayName)}">${displayName}</a><button type="button" class="btn-remove-file" data-existing-file="true" data-id-dokumen="${file.id_dokumen}" title="Hapus file">×</button></div>`;
-                    });
-                  }
-                }
-              }
-            });
+            // Render dokumen yang sudah ada
+            const existingDocsContainer = document.getElementById('existingDocsContainer');
+            existingDocsContainer.innerHTML = ''; // Kosongkan dulu
+
+            const allDocs = [
+              ...(JSON.parse(data.doc_cv || '[]')),
+              ...(JSON.parse(data.doc_coc || '[]')),
+              ...(JSON.parse(data.doc_surat_tugas || '[]')),
+              ...(JSON.parse(data.doc_lainnya || '[]'))
+            ];
+
+            if (allDocs.length > 0) {
+              allDocs.forEach(file => {
+                const displayName = file.nama_asli_file || 'File tidak bernama';
+                const filePath = file.path_file ? `<?= base_url() ?>${file.path_file}` : '#';
+                existingDocsContainer
+                  .innerHTML += // [PERBAIKAN] Gunakan id_files untuk penghapusan tautan
+                  `<div class="file-preview-item"><a href="${filePath}" target="_blank" class="file-preview-name" title="${escapeHtml(displayName)}">${displayName}</a><button type="button" class="btn-remove-file remove-existing-doc" data-id-dokumen="${file.id_files}" title="Hapus Tautan">×</button></div>`;
+              });
+            } else {
+              existingDocsContainer.innerHTML =
+                '<p class="text-muted small">Belum ada dokumen yang tertaut.</p>';
+            }
+
+            // Ambil dan render daftar file untuk dipilih
+            populateFileList(allDocs.map(doc => doc.id_files));
+
             dokumenModalForm.show();
           })
           .catch(error => {
@@ -996,6 +1136,71 @@
             sayAlert('errorModal', 'Error',
               `Terjadi kesalahan: ${error.message || 'Gagal mengambil data.'}`, 'warning');
           }).finally(() => hideLoading());
+      }
+    }
+
+    /**
+     * [BARU] Mengambil daftar file dari server dan menampilkannya di modal.
+     * @param {Array} existingFileIds - Array ID file yang sudah tertaut untuk ditandai.
+     */
+    function populateFileList(existingFileIds = []) {
+      const fileDropdown = document.getElementById('fileDropdown');
+      const categoryFilter = document.getElementById('filterFileCategory');
+      fileDropdown.innerHTML = '<option value="">Memuat...</option>';
+
+      fetch('<?= site_url('personel/fileList') ?>', {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        })
+        .then(res => res.json())
+        .then(data => {
+          fileDropdown.innerHTML = '<option value="">-- Pilih File --</option>';
+          categoryFilter.innerHTML = '<option value="">Semua Kategori</option>';
+
+          // Isi filter kategori
+          data.categories.forEach(cat => {
+            categoryFilter.innerHTML += `<option value="${cat.id_categories}">${cat.nama}</option>`;
+          });
+
+          // Isi daftar file
+          if (data.files.length > 0) {
+            data.files.forEach(file => {
+              // Jangan tampilkan file yang sudah tertaut
+              if (existingFileIds.includes(file.id_files)) return;
+
+              const option = document.createElement('option');
+              option.value = file.id_files;
+              option.textContent = file.title;
+              option.dataset.category = file.categories_id;
+              option.dataset.name = file.title.toLowerCase();
+              fileDropdown.appendChild(option);
+            });
+          } else {
+            fileDropdown.innerHTML = '<option value="">Tidak ada file tersedia</option>';
+          }
+
+          // Tambahkan event listener untuk filter setelah file dimuat
+          categoryFilter.addEventListener('change', filterFiles);
+
+          // [PERBAIKAN] Inisialisasi searchable dropdown setelah file dimuat
+          reinitFileDropdownSearch();
+        })
+        .catch(err => {
+          console.error("Error populating file list:", err); // Tambahkan log untuk debugging
+          fileDropdown.innerHTML = '<option value="">Gagal memuat file</option>';
+        });
+
+      function filterFiles() {
+        // [PERBAIKAN] Logika filter file sekarang hanya berdasarkan kategori
+        const categoryId = categoryFilter.value;
+        document.querySelectorAll('#fileDropdown option').forEach(option => {
+          if (option.value === "") return; // Jangan sembunyikan opsi default
+          const categoryMatch = !categoryId || option.dataset.category === categoryId;
+          option.style.display = categoryMatch ? '' : 'none';
+        });
+        reinitFileDropdownSearch(); // Re-inisialisasi dropdown agar menampilkan opsi yang difilter
       }
     }
 
@@ -1021,43 +1226,31 @@
           if (data.error) throw new Error(data.error);
           const imageUrl = data.foto && data.foto.trim() !== '' ? `<?= base_url('uploads/') ?>${data.foto}` :
             'https://placehold.co/200x250?text=Foto';
-          let mainDocList = '',
-            otherDocList = '',
-            docHtmlColumns = '';
+          let docList = '',
+            docHtml = '';
 
-          // [UBAH] Fungsi untuk memproses array dokumen dari JSON
-          const processDocs = (jsonString, label) => {
-            let html = '';
-            try {
-              const files = JSON.parse(jsonString);
-              if (Array.isArray(files) && files.length > 0) {
-                files.forEach(file => {
-                  const displayName = file.nama_asli_file;
-                  const path = `<?= base_url() ?>${file.path_file}`;
-                  const itemLabel = label || displayName;
-                  html +=
-                    `<div class="list-group-item d-flex justify-content-between align-items-center"><a href="${path}" target="_blank" class="file-name-display text-decoration-none text-dark" title="Lihat: ${escapeHtml(displayName)}">${itemLabel}</a><a href="${path}" download="${escapeHtml(displayName)}" class="text-secondary" title="Unduh: ${escapeHtml(displayName)}"><i class="bi bi-download"></i></a></div>`;
-                });
-              }
-            } catch (e) {
-              console.error(`Gagal parse JSON untuk dokumen:`, jsonString, e);
-            }
-            return html;
-          };
+          // [UBAH] Gabungkan semua dokumen menjadi satu list
+          const allDocs = [
+            ...(JSON.parse(data.doc_cv || '[]')),
+            ...(JSON.parse(data.doc_coc || '[]')),
+            ...(JSON.parse(data.doc_surat_tugas || '[]')),
+            ...(JSON.parse(data.doc_lainnya || '[]'))
+          ];
 
-          mainDocList += processDocs(data.doc_cv, 'Daftar Riwayat Hidup');
-          mainDocList += processDocs(data.doc_coc, 'Code of Conduct');
-          mainDocList += processDocs(data.doc_surat_tugas, 'Surat Tugas');
-          otherDocList = processDocs(data.doc_lainnya, null); // Untuk doc_lainnya, label adalah nama file
-
-          if (mainDocList || otherDocList) {
-            docHtmlColumns =
-              `<div class="col-12"><hr class="my-1"></div><div class="col-md-6"><strong class="d-block mb-2">Dokumen Pendukung:</strong><div class="list-group list-group-flush">${mainDocList || '<div class="list-group-item text-muted small">Tidak ada</div>'}</div></div><div class="col-md-6"><strong class="d-block mb-2">Dokumen Lainnya:</strong><div class="list-group list-group-flush">${otherDocList || '<div class="list-group-item text-muted small">Tidak ada</div>'}</div></div>`;
+          if (allDocs.length > 0) {
+            allDocs.forEach(file => {
+              const displayName = file.nama_asli_file;
+              const path = `<?= base_url() ?>${file.path_file}`;
+              docList +=
+                `<div class="list-group-item d-flex justify-content-between align-items-center"><a href="${path}" target="_blank" class="file-name-display text-decoration-none text-dark" title="Lihat: ${escapeHtml(displayName)}">${displayName}</a><a href="${path}" download="${escapeHtml(displayName)}" class="text-secondary" title="Unduh: ${escapeHtml(displayName)}"><i class="bi bi-download"></i></a></div>`;
+            });
+            docHtml =
+              `<div class="col-12"><hr class="my-3"></div><div class="col-12"><strong class="d-block mb-2">Dokumen Terkait:</strong><div class="list-group list-group-flush">${docList}</div></div>`;
           }
 
           // [PERBAIKAN] Mengganti col-md-* menjadi col-lg-* untuk layout yang lebih responsif
           contentArea.innerHTML =
-            `<div class="row g-4 px-4"><div class="col-lg-4 text-center mb-3 mb-lg-0"><img src="${imageUrl}" alt="${data.nama || 'Personel'}" /></div><div class="col-lg-8"><table class="biodata-table"><tr><td>Nama Lengkap & Gelar</td><td>:</td><td>${data.nama || '-'}</td></tr><tr><td>Jabatan</td><td>:</td><td>${data.jabatan || '-'}</td></tr><tr><td>Penempatan</td><td>:</td><td>${data.penempatan || '-'}</td></tr><tr><td>NIP/NIPK</td><td>:</td><td>${data.nip || '-'}</td></tr><tr><td>Tempat, Tanggal Lahir</td><td>:</td><td>${(data.tempat_lahir || '') + (data.tempat_lahir && data.tanggal_lahir ? ', ' : '') + formatTanggal(data.tanggal_lahir)}</td></tr><tr><td>Jenis Kelamin</td><td>:</td><td>${data.jenis_kelamin || '-'}</td></tr><tr><td>Kebangsaan</td><td>:</td><td>${data.kebangsaan || '-'}</td></tr><tr><td>Alamat</td><td>:</td><td>${data.alamat || '-'}</td></tr><tr><td>No. Handphone</td><td>:</td><td>${data.no_handphone || '-'}</td></tr><tr><td>Email</td><td>:</td><td>${data.email || '-'}</td></tr></table></div>${docHtmlColumns}</div>`;
+            `<div class="row g-4 px-4"><div class="col-lg-4 text-center mb-3 mb-lg-0"><img src="${imageUrl}" alt="${data.nama || 'Personel'}" /></div><div class="col-lg-8"><table class="biodata-table"><tr><td>Nama Lengkap & Gelar</td><td>:</td><td>${data.nama || '-'}</td></tr><tr><td>Jabatan</td><td>:</td><td>${data.jabatan || '-'}</td></tr><tr><td>Penempatan</td><td>:</td><td>${data.penempatan || '-'}</td></tr><tr><td>NIP/NIPK</td><td>:</td><td>${data.nip || '-'}</td></tr><tr><td>Tempat, Tanggal Lahir</td><td>:</td><td>${(data.tempat_lahir || '') + (data.tempat_lahir && data.tanggal_lahir ? ', ' : '') + formatTanggal(data.tanggal_lahir)}</td></tr><tr><td>Jenis Kelamin</td><td>:</td><td>${data.jenis_kelamin || '-'}</td></tr><tr><td>Kebangsaan</td><td>:</td><td>${data.kebangsaan || '-'}</td></tr><tr><td>Alamat</td><td>:</td><td>${data.alamat || '-'}</td></tr><tr><td>No. Handphone</td><td>:</td><td>${data.no_handphone || '-'}</td></tr><tr><td>Email</td><td>:</td><td>${data.email || '-'}</td></tr></table></div>${docHtml}</div>`;
         })
         .catch(error => {
           console.error('Error fetching biodata:', error);

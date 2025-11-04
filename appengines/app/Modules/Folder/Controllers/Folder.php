@@ -128,6 +128,7 @@ class Folder extends BaseController
       $allFiles[$f->id_files] = $f;
     }
 
+    // [LOGIKA KUNCI] Bagian ini bertanggung jawab untuk memasukkan file ke dalam folder yang sesuai.
     // masukkan file ke folder via file_links 
     foreach ($fileLinks as $link) {
       $fileId = $link->child_file;
@@ -205,7 +206,7 @@ class Folder extends BaseController
     // ambil daftar personel dengan dokumen
     $personelWithDocs = $db->table('personel as p')
       ->select('p.id_personel, p.nama')
-      ->where('EXISTS (SELECT 1 FROM dokumen d WHERE d.id_personel = p.id_personel)')
+      ->where('EXISTS (SELECT 1 FROM personel_files pf WHERE pf.id_personel = p.id_personel)')
       ->orderBy('p.nama', 'ASC')
       ->get()
       ->getResult();
@@ -379,11 +380,12 @@ class Folder extends BaseController
     return $this->response->setJSON($response_data);
   }
 
-  private function _deleteFolderRecursive($folderId, $isPersonelFolder = false)
+  public function _deleteFolderRecursive($folderId, $isPersonelFolder = false)
   {
     $linkModel = new MyModel('folder_links');
     $fileLinkModel = new MyModel('file_links'); // [BARU]
     $folderModel = new MyModel('folder');
+    $fileModel = new MyModel('files'); // [PERBAIKAN] Tambahkan model files
     $otorFileModel = new MyModel('otoritas_file'); // [BARU]
 
     // 1. Cari semua child folder dari tabel folder_links dan hapus secara rekursif
@@ -735,28 +737,18 @@ class Folder extends BaseController
         }
       }
 
-      // [PERBAIKAN TOTAL] Ambil semua dokumen milik personel dari tabel 'dokumen'.
-      // Ini adalah sumber kebenaran yang menghubungkan personel dengan file-filenya.
-      $modelDokumen = new MyModel('dokumen');
-      $dokumenPersonel = $modelDokumen->getAllDataByWhere(['id_personel' => $id_personel]);
+      // [PERUBAHAN ALUR] Ambil semua file milik personel langsung dari tabel 'files'.
+      // [FIX] Ambil file dari tabel pivot `personel_files` yang terhubung ke tabel `files`.
+      $modelPersonelFiles = new MyModel('personel_files');
+      $filesPersonel = $modelPersonelFiles->getAllDataByJoin(
+        ['files' => 'files.id_files = personel_files.id_files'],
+        ['personel_files.id_personel' => $id_personel]
+      );
 
-      // 3. [PERBAIKAN] Buat TAUTAN untuk setiap file yang ada, JANGAN buat file baru.
-      foreach ($dokumenPersonel as $doc) {
-        // [PERBAIKAN] Lebih robust mencari id_files dengan JOIN ke dokumen
-        // Menggunakan id_dokumen sebagai kunci unik untuk memastikan file master yang benar ditemukan.
-        $fileMasterWithId = $db->table('files')
-          ->select('files.id_files')
-          ->join('dokumen', 'dokumen.nama_file_tersimpan = files.berkas', 'inner')
-          ->where('dokumen.id_dokumen', $doc->id_dokumen)
-          ->get()->getRow();
 
-        if (!$fileMasterWithId) {
-          // Jika file master tidak ditemukan (misalnya sudah dihapus dari Data File),
-          // lewati iterasi ini untuk mencegah error dan folder kosong.
-          log_message('debug', 'Skipping file for dokumen ID ' . $doc->id_dokumen . ' because master not found via JOIN.');
-          continue;
-        }
-        $fileId = $fileMasterWithId->id_files;
+      // Buat tautan untuk setiap file yang ditemukan.
+      foreach ($filesPersonel as $file) {
+        $fileId = $file->id_files;
 
         if ($fileId) {
           // Cek apakah link sudah ada untuk mencegah duplikasi
@@ -768,10 +760,10 @@ class Folder extends BaseController
           if (!$isLinkExist) {
             // Buat link antara file yang SUDAH ADA dan folder personel yang baru dibuat
             $modelFileLinks->insertData([
-              'parent_folder' => $folderId, // ID folder personel yang baru dibuat
-              'child_file' => $fileId, // [FIX] Gunakan $fileId dari dokumen, bukan $newFileId
+              'parent_folder' => $folderId,
+              'child_file' => $fileId,
               // 'sort_order' bisa ditambahkan jika diperlukan
-            ]);
+            ]); // [FIX] Hapus update id_personel karena sudah tidak relevan
 
             // [PERBAIKAN] Pastikan otorisasi untuk file ini ada, terutama untuk Super Admin.
             // Ini menyelesaikan masalah file tidak muncul setelah folder dihapus dan dibuat ulang.
@@ -826,10 +818,13 @@ class Folder extends BaseController
 
     $db = \Config\Database::connect();
 
-    // 1. Ambil daftar personel yang punya dokumen
+    // 1. [PERUBAHAN ALUR BARU] Ambil daftar personel yang SUDAH punya dokumen
+    //    TAPI BELUM punya folder personel.
     $personelWithDocs = $db->table('personel as p')
       ->select('p.id_personel, p.nama')
-      ->where('EXISTS (SELECT 1 FROM dokumen d WHERE d.id_personel = p.id_personel)')
+      ->where('EXISTS (SELECT 1 FROM personel_files pf WHERE pf.id_personel = p.id_personel)') // [FIX] Cek dari tabel pivot personel_files
+      ->where("NOT EXISTS (SELECT 1 FROM folder fol WHERE fol.nama = p.nama AND fol.flag = 1)", null, false) // Memastikan personel belum memiliki folder personel
+      ->orderBy('p.nama', 'ASC') // Mengurutkan berdasarkan nama, ASC
       ->orderBy('p.nama', 'ASC')
       ->get()
       ->getResult();
