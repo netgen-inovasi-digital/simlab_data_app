@@ -457,6 +457,29 @@ class Folder extends BaseController
           return $this->response->setStatusCode(403)->setJSON(['res' => 'error', 'message' => 'Folder Personel tidak dapat diubah namanya.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
         }
 
+        // [FIX] Validasi duplikasi nama folder di lokasi yang sama saat EDIT
+        $modelLinks = new MyModel('folder_links');
+        $linkData = $modelLinks->getDataByWhere(['child_id' => $decryptedId]);
+        $currentParentId = $linkData ? $linkData->parent_id : null;
+
+        $builder = $db->table('folder');
+        if ($currentParentId) {
+          // Cek duplikat di dalam parent folder yang spesifik
+          $builder->join('folder_links', 'folder_links.child_id = folder.id_folder')
+            ->where('folder_links.parent_id', $currentParentId);
+        } else {
+          // Cek duplikat hanya di level root
+          $builder->where("NOT EXISTS (SELECT 1 FROM folder_links fl WHERE fl.child_id = folder.id_folder AND fl.parent_id IS NOT NULL)", null, false);
+        }
+        // Pastikan tidak membandingkan dengan dirinya sendiri dan cek nama yang sama
+        $isDuplicate = $builder->where('folder.nama', $namaFolder)
+          ->where('folder.id_folder !=', $decryptedId)
+          ->countAllResults() > 0;
+
+        if ($isDuplicate) {
+          return $this->response->setJSON(['res' => 'error', 'message' => "Folder dengan nama '{$namaFolder}' sudah ada di lokasi ini.", 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
+        }
+
 
         // [FIX] Cek duplikasi slug saat edit, pastikan slug unik.
         $modelFolder = new MyModel('folder');
