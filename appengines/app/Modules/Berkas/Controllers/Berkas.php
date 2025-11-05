@@ -387,7 +387,7 @@ class Berkas extends BaseController
           if (!$otorFiles) {
             $roles = array_unique(array_merge($role_ids));
             foreach ($roles as $r) {
-              if ($r == 2 || $r == 9) {
+              if ($r == 2 || $r == 9 || $r == 1) {
                 $modelOtorisasiFile->insertData([
                   'id_file' => (int)$fileId,
                   'id_role' => (int)$r,
