@@ -679,11 +679,6 @@
         const fileDropdown = document.getElementById('fileDropdown');
         const selectedOption = fileDropdown.options[fileDropdown.selectedIndex];
 
-        if (!selectedOption || !selectedOption.value) {
-          sayAlert('infoModal', 'Info', 'Silakan pilih file terlebih dahulu.', 'info');
-          return;
-        }
-
         const fileId = selectedOption.value;
         const fileName = selectedOption.text;
 
@@ -695,6 +690,9 @@
 
         // Reset dropdown ke opsi default
         fileDropdown.selectedIndex = 0;
+
+        // [PERBAIKAN] Inisialisasi ulang dropdown agar plugin pencarian diperbarui
+        reinitFileDropdownSearch();
 
         // Cek apakah ada file yang dipilih
         checkSelectedFiles();
