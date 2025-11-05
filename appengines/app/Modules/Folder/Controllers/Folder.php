@@ -1116,8 +1116,12 @@ class Folder extends BaseController
         $link = $db->table('folder_links')->where('child_id', $id)->get()->getRow();
         if ($link) $oldParentId = $link->parent_id;
       } elseif ($item['type'] === 'file') {
-        $link = $db->table('file_links')->where('child_file', $id)->get()->getRow();
-        if ($link) $oldParentId = $link->parent_folder;
+        // [FIX] Cari link berdasarkan parent_id yang dikirim dari frontend untuk file yang tidak dipindah
+        // Ini mencegah kesalahan jika ada file duplikat di folder lain.
+        $currentParentIdForFile = !empty($item['parent_id']) ? $this->encrypter->decrypt(hex2bin($item['parent_id'])) : null;
+        $link = $db->table('file_links')->where(['child_file' => $id, 'parent_folder' => $currentParentIdForFile])->get()->getRow();
+        // Jika link ditemukan, berarti file ini tidak berpindah parent, jadi kita set oldParentId sama dengan parentId baru.
+        if ($link) $oldParentId = $parentId;
       }
 
       // Hanya lakukan validasi jika parent_id berubah DAN parent_id baru tidak kosong
