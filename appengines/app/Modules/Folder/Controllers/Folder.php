@@ -450,6 +450,37 @@ class Folder extends BaseController
       try {
         $decryptedId = $this->encrypter->decrypt(hex2bin($idFolderEdit));
 
+        // [MODIFIKASI] Cek apakah folder ini adalah folder personel. Jika ya, tolak edit.
+        $modelFolder = new MyModel('folder');
+        $folderToEdit = $modelFolder->getDataById('id_folder', $decryptedId);
+        if ($folderToEdit && isset($folderToEdit->flag) && $folderToEdit->flag == 1) {
+          return $this->response->setStatusCode(403)->setJSON(['res' => 'error', 'message' => 'Folder Personel tidak dapat diubah namanya.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
+        }
+
+        // [FIX] Validasi duplikasi nama folder di lokasi yang sama saat EDIT
+        $modelLinks = new MyModel('folder_links');
+        $linkData = $modelLinks->getDataByWhere(['child_id' => $decryptedId]);
+        $currentParentId = $linkData ? $linkData->parent_id : null;
+
+        $builder = $db->table('folder');
+        if ($currentParentId) {
+          // Cek duplikat di dalam parent folder yang spesifik
+          $builder->join('folder_links', 'folder_links.child_id = folder.id_folder')
+            ->where('folder_links.parent_id', $currentParentId);
+        } else {
+          // Cek duplikat hanya di level root
+          $builder->where("NOT EXISTS (SELECT 1 FROM folder_links fl WHERE fl.child_id = folder.id_folder AND fl.parent_id IS NOT NULL)", null, false);
+        }
+        // Pastikan tidak membandingkan dengan dirinya sendiri dan cek nama yang sama
+        $isDuplicate = $builder->where('folder.nama', $namaFolder)
+          ->where('folder.id_folder !=', $decryptedId)
+          ->countAllResults() > 0;
+
+        if ($isDuplicate) {
+          return $this->response->setJSON(['res' => 'error', 'message' => "Folder dengan nama '{$namaFolder}' sudah ada di lokasi ini.", 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
+        }
+
+
         // [FIX] Cek duplikasi slug saat edit, pastikan slug unik.
         $modelFolder = new MyModel('folder');
         $slug = url_title($namaFolder, '-', true);
@@ -1085,8 +1116,12 @@ class Folder extends BaseController
         $link = $db->table('folder_links')->where('child_id', $id)->get()->getRow();
         if ($link) $oldParentId = $link->parent_id;
       } elseif ($item['type'] === 'file') {
-        $link = $db->table('file_links')->where('child_file', $id)->get()->getRow();
-        if ($link) $oldParentId = $link->parent_folder;
+        // [FIX] Cari link berdasarkan parent_id yang dikirim dari frontend untuk file yang tidak dipindah
+        // Ini mencegah kesalahan jika ada file duplikat di folder lain.
+        $currentParentIdForFile = !empty($item['parent_id']) ? $this->encrypter->decrypt(hex2bin($item['parent_id'])) : null;
+        $link = $db->table('file_links')->where(['child_file' => $id, 'parent_folder' => $currentParentIdForFile])->get()->getRow();
+        // Jika link ditemukan, berarti file ini tidak berpindah parent, jadi kita set oldParentId sama dengan parentId baru.
+        if ($link) $oldParentId = $parentId;
       }
 
       // Hanya lakukan validasi jika parent_id berubah DAN parent_id baru tidak kosong
