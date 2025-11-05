@@ -27,6 +27,7 @@ class Auth extends Controller
     helper('form');
     $session = session();
     $model = new AuthModel();
+    $modelRoles = new MyModel('roles');
 
     $username = $this->request->getPost('usr');
     $password = $this->request->getPost('pwd');
@@ -40,11 +41,14 @@ class Auth extends Controller
           $datenow = date('Y-m-d H:i:s');
           $model->update(array('id_user' => $data['id_user']), array('last_login' => $datenow));
 
+          $role = $modelRoles->where('id_role', $data['role_id'])->first();
+
           $ses_data = [
             'id_user'        => $data['id_user'],
             'username'      => $data['username'],
             'nama'      => $data['nama'],
             'role_id'        => $data['role_id'],
+            'nama_role' => $role['nama_role'],
             'logged_in'     => TRUE
           ];
 

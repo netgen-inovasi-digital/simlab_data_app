@@ -24,11 +24,6 @@ class CreateFiles extends Migration
         'constraint' => 11,
         'null' => false
       ],
-      'id_folder' => [
-        'type' => 'INT',
-        'constraint' => 11,
-        'null' => true
-      ],
       'nomor_dokumen' => [
         'type' => 'VARCHAR',
         'constraint' => 255,
@@ -67,7 +62,6 @@ class CreateFiles extends Migration
     $this->forge->addKey('id_files', true);
 
     $this->forge->addForeignKey('user_id', 'users', 'id_user', 'CASCADE', 'CASCADE');
-    $this->forge->addForeignKey('id_folder', 'folder', 'id_folder', 'CASCADE', 'CASCADE');
     $this->forge->addKey('slug');
 
 

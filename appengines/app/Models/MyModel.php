@@ -495,10 +495,18 @@ class MyModel extends Model
     }
   }
 
-  function deleteData($where, $id)
+  function deleteData($where, $id = null)
   {
     $this->db->transBegin();
-    $this->builder->where($where, $id);
+
+    if (is_array($where)) {
+      // Jika $where adalah array, gunakan sebagai multiple where conditions
+      $this->builder->where($where);
+    } else {
+      // Jika bukan array, gunakan cara lama (membutuhkan $id)
+      $this->builder->where($where, $id);
+    }
+
     $this->builder->delete();
     if ($this->db->transStatus() === FALSE) {
       $this->db->transRollback();

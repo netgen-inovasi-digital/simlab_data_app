@@ -92,17 +92,20 @@
       echo view('menu');
       ?>
     </nav>
-    <!-- <div class="sidebar-footer">
-            &copy;2025 All Right Reserved.
-        </div> -->
   </div>
   <!-- Main Content -->
   <div class="container-fluid">
     <nav class="navbar navbar-light bg-light">
-      <span class="navbar-toggler ms-4" id="sidebarToggle">
+      <span class="navbar-toggler ms-2 ms-md-4" id="sidebarToggle">
         <span class="navbar-toggler-icon"></span>
       </span>
-      <div class="me-4 d-flex">
+      <div class="me-4 d-flex align-items-center">
+        <?php
+        $session = session();
+        $nama = esc($session->get('nama') ?? '-');
+        $nama_role = esc($session->get('nama_role') ?? '-');
+        ?>
+        <span class="fw-bold me-3 d-none d-sm-block"><?= "{$nama} ({$nama_role})" ?></span>
         <a href="profil" class="header-link nav-link" title="Profil">
           <button aria-label="button" type="button" class="btn btn-icon p-0 text-secondary">
             <i class="bi bi-person-fill" style="font-size: 1.3rem;"></i> </button>
