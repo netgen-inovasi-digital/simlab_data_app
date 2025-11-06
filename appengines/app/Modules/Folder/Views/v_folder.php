@@ -1041,36 +1041,21 @@
     });
 
     function isValidFolderDrop(draggedItem, elementAbove, elementBelow) {
-      const dragLevel = parseInt(draggedItem.dataset.count);
-      const dragCollapsed = draggedItem.querySelector(".bi-caret-down")
-      if (dragCollapsed) {
-        const contained = dragCollapsed.classList.contains("collapsed");
-      }
+      // const caret = draggedItem.querySelector(".bi-caret-down");
+      // const dragCollapsed = caret ? caret.classList.contains("collapsed") : false;
+      // const dragLevel = parseInt(draggedItem.dataset.count);
 
       const aboveIsFolder = elementAbove && elementAbove.dataset.type === 'folder' && elementAbove.style.display !== 'none';
-      const belowIsFolder = elementBelow && elementBelow.dataset.type === 'folder' && elementBelow.style.display !== 'none';
       const belowIsFile = elementBelow && elementBelow.dataset.type === 'file' && elementBelow.style.display !== 'none';
+      // const belowIsFolder = elementBelow && elementBelow.dataset.type === 'folder' && elementBelow.style.display !== 'none';
 
-      const aboveLevel = aboveIsFolder ? parseInt(elementAbove.dataset.count) : null;
-      const belowLevel = belowIsFolder ? parseInt(elementBelow.dataset.count) : null;
-      const aboveCollapsed = aboveIsFolder && elementAbove.querySelector(".bi-caret-down").classList.contains("collapsed");
+      // const aboveLevel = aboveIsFolder ? parseInt(elementAbove.dataset.count) : null;
+      // const belowLevel = belowIsFolder ? parseInt(elementBelow.dataset.count) : null;
 
-      // RULE A: Dragged collapsed tapi ditempatkan di atas folder open sejajar → tidak boleh
-      if (aboveIsFolder && aboveLevel === dragLevel && dragCollapsed && !aboveCollapsed) return false;
-
-      // RULE B: Atas folder & bawah file → blok hanya jika dragged open
-      if (aboveIsFolder && belowIsFile && !dragCollapsed) return false;
-
-      // RULE C: Atas folder & level sama, bawah folder level beda → tidak boleh
-      if (aboveIsFolder && aboveLevel === dragLevel && belowIsFolder && belowLevel !== dragLevel) return false;
-
-      // // RULE D (baru): Dragged collapsed, above folder not collapsed
-      // // → hanya boleh jika below folder/file level sama dengan dragged folder
-      // if (dragCollapsed && aboveIsFolder && !aboveCollapsed) {
-      //   if ((belowIsFolder && belowLevel !== dragLevel) || (belowIsFile && belowLevel !== dragLevel)) {
-      //     return false;
-      //   }
-      // }
+      if (aboveIsFolder && belowIsFile) {
+        revertDrag(item);
+        return;
+      }
 
       // Default → boleh
       return true;
