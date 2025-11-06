@@ -1157,7 +1157,7 @@
         })
         .then(res => res.json())
         .then(data => {
-          fileDropdown.innerHTML = '<option value="">-- Pilih File --</option>';
+          fileDropdown.innerHTML = '<option value="">-- pilih data --</option>';
           categoryFilter.innerHTML = '<option value="">Semua Kategori</option>';
 
           // Isi filter kategori
@@ -1200,7 +1200,7 @@
 
       function filterFiles() {
         const categoryId = categoryFilter.value;
-        fileDropdown.innerHTML = '<option value="">-- Pilih File --</option>'; // Reset dropdown
+        fileDropdown.innerHTML = '<option value="">-- pilih data --</option>'; // Reset dropdown
 
         allFileOptions.forEach(option => {
           const categoryMatch = !categoryId || option.dataset.category === categoryId;

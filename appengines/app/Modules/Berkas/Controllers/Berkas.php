@@ -387,7 +387,7 @@ class Berkas extends BaseController
           if (!$otorFiles) {
             $roles = array_unique(array_merge($role_ids));
             foreach ($roles as $r) {
-              if ($r == 2 || $r == 9) {
+              if ($r == 2 || $r == 9 || $r == 1) {
                 $modelOtorisasiFile->insertData([
                   'id_file' => (int)$fileId,
                   'id_role' => (int)$r,
@@ -611,7 +611,6 @@ class Berkas extends BaseController
       // $fileUrl = base_url('uploads/' . $row->berkas);
 
       $response = array();
-      $response[] = esc($row->nomor_dokumen != null) ? esc($row->nomor_dokumen) : 'Tidak ada';
       $response[] = $titleBlock;
       $response[] = esc($row->nama_kategori) ?? 'Tidak Berkategori';
       $response[] = '<span class="fw-medium ">' . esc($row->created_at != null ? date('d-m-Y', strtotime($row->created_at)) : date('d-m-Y', strtotime($row->updated_at))) . '</span>';
