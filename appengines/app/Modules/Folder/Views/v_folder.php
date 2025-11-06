@@ -1002,7 +1002,7 @@
         }
 
         /* ✅ VALIDASI BARU: FILE TIDAK BOLEH JADI ROOT */
-        if (draggedItem.dataset.type === 'file' && !parentFolder) {
+        if ((draggedItem.dataset.type === 'file' && !parentFolder) || (draggedItem.dataset.type === 'file' && parentFolder.querySelector('.bi-caret-down.collapsed'))) {
           revertDrag(item);
           return;
         }
