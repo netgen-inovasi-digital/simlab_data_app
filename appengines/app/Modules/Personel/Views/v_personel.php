@@ -243,8 +243,8 @@
                 draggable="<?= $can_add ? 'true' : 'false' ?>" data-code="<?= $row->urutan ?>"
                 data-nama="<?= esc(strtolower($row->nama)) ?>"
                 data-jabatan="<?= esc(strtolower($row->jabatan)) ?>"
-                data-penempatan="<?= esc($row->penempatan) ?>" onclick="showBiodata(event)">
-                <div class="card h-100 text-center shadow-sm">
+                data-penempatan="<?= esc($row->penempatan) ?>">
+                <div class="card h-100 text-center shadow-sm" onclick="showBiodata(event)" id="<?= $id ?>">
                   <img src="<?= $row->foto ? base_url('uploads/' . $row->foto) : 'https://placehold.co/200x300?text=Foto+2x3' ?>"
                     class="card-img-top" alt="<?= esc($row->nama) ?>">
                   <div class="card-body">
