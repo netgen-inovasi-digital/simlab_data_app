@@ -1020,6 +1020,15 @@
         item.style.opacity = "1";
         if (placeholder.parentNode) placeholder.remove();
 
+        if (parentFolder) {
+          folderState[parentFolder.id] = true;
+
+          const caret = parentFolder.querySelector(".bi-caret-down");
+          if (caret) caret.classList.remove("collapsed");
+
+          toggleChildren(parentFolder.id, false); // anak-anak muncul
+        }
+
         moveChildren(draggedItem, childrenOfDraggedItem, originalLevel);
         updateKodeFolder();
         saveAll();
@@ -1041,18 +1050,18 @@
     });
 
     function isValidFolderDrop(draggedItem, elementAbove, elementBelow) {
-      // const caret = draggedItem.querySelector(".bi-caret-down");
-      // const dragCollapsed = caret ? caret.classList.contains("collapsed") : false;
-      // const dragLevel = parseInt(draggedItem.dataset.count);
 
       const aboveIsFolder = elementAbove && elementAbove.dataset.type === 'folder' && elementAbove.style.display !== 'none';
+      const aboveIsFile = elementAbove && elementAbove.dataset.type === 'file' && elementAbove.style.display !== 'none';
       const belowIsFile = elementBelow && elementBelow.dataset.type === 'file' && elementBelow.style.display !== 'none';
-      // const belowIsFolder = elementBelow && elementBelow.dataset.type === 'folder' && elementBelow.style.display !== 'none';
-
-      // const aboveLevel = aboveIsFolder ? parseInt(elementAbove.dataset.count) : null;
-      // const belowLevel = belowIsFolder ? parseInt(elementBelow.dataset.count) : null;
+      const belowIsFolder = elementBelow && elementBelow.dataset.type === 'folder' && elementBelow.style.display !== 'none';
 
       if (aboveIsFolder && belowIsFile) {
+        revertDrag(item);
+        return;
+      }
+
+      if (belowIsFile && aboveIsFile) {
         revertDrag(item);
         return;
       }
