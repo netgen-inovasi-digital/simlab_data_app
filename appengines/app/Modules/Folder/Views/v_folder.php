@@ -946,28 +946,27 @@
 
     item.addEventListener("dragend", (e) => {
       try {
-        // [FIX] Validasi khusus untuk folder: hanya bisa drop di bawah file
-        if (draggedItem.dataset.type === 'folder') {
-          const placeholderIndex = [...folderMenu.children].indexOf(placeholder);
-
-          const elementAbove = placeholderIndex > 0 ? folderMenu.children[placeholderIndex - 1] : null;
-          const elementBelow = placeholderIndex < folderMenu.children.length - 1 ?
-            folderMenu.children[placeholderIndex + 1] :
-            null;
-
-          if (!isValidFolderDrop(draggedItem, elementAbove, elementBelow)) {
-            revertDrag(item);
-            return;
-          }
-        }
-
-        // 1. Hitung indentasi baru berdasarkan pergerakan mouse
+        // 1. Hitung indentasi baru dulu
         let count = parseInt(item.dataset.count) || 0;
         let deltaX = e.clientX - dragStartX;
         let change = deltaX > 0 ? Math.floor(deltaX / 30) : Math.ceil(deltaX / 30);
         count += change;
         if (count < 0) count = 0;
         if (draggedItem.dataset.type === "file" && count === 0) count = 1;
+
+        // update level sementara sebelum validasi
+        draggedItem.dataset.count = count;
+
+        // 2. Tentukan elementAbove & elementBelow
+        const placeholderIndex = [...folderMenu.children].indexOf(placeholder);
+        const elementAbove = placeholderIndex > 0 ? folderMenu.children[placeholderIndex - 1] : null;
+        const elementBelow = placeholderIndex < folderMenu.children.length - 1 ? folderMenu.children[placeholderIndex + 1] : null;
+
+        // 3. Validasi drop
+        if (draggedItem.dataset.type === 'folder' && !isValidFolderDrop(draggedItem, elementAbove, elementBelow)) {
+          revertDrag(item);
+          return;
+        }
 
         // 2. Tentukan calon folder induk (parent) berdasarkan posisi placeholder
         let parentFolder = null;
@@ -1020,7 +1019,17 @@
         item.style.opacity = "1";
         if (placeholder.parentNode) placeholder.remove();
 
+        if (parentFolder) {
+          folderState[parentFolder.id] = true;
+
+          const caret = parentFolder.querySelector(".bi-caret-down");
+          if (caret) caret.classList.remove("collapsed");
+
+          toggleChildren(parentFolder.id, false); // anak-anak muncul
+        }
+
         moveChildren(draggedItem, childrenOfDraggedItem, originalLevel);
+
         updateKodeFolder();
         saveAll();
         updateCarets();
@@ -1041,24 +1050,23 @@
     });
 
     function isValidFolderDrop(draggedItem, elementAbove, elementBelow) {
-      // const caret = draggedItem.querySelector(".bi-caret-down");
-      // const dragCollapsed = caret ? caret.classList.contains("collapsed") : false;
-      // const dragLevel = parseInt(draggedItem.dataset.count);
+      const dragLevel = parseInt(draggedItem.dataset.count);
 
       const aboveIsFolder = elementAbove && elementAbove.dataset.type === 'folder' && elementAbove.style.display !== 'none';
+      const aboveLevel = aboveIsFolder ? parseInt(elementAbove.dataset.count) : null;
+
       const belowIsFile = elementBelow && elementBelow.dataset.type === 'file' && elementBelow.style.display !== 'none';
-      // const belowIsFolder = elementBelow && elementBelow.dataset.type === 'folder' && elementBelow.style.display !== 'none';
 
-      // const aboveLevel = aboveIsFolder ? parseInt(elementAbove.dataset.count) : null;
-      // const belowLevel = belowIsFolder ? parseInt(elementBelow.dataset.count) : null;
-
+      // RULE: bisa masuk di atas file dan di bawah folder
+      // → jika folder di atas tidak sejajar level dengan folder yg di-drag
       if (aboveIsFolder && belowIsFile) {
-        revertDrag(item);
-        return;
+        if (aboveLevel === dragLevel) {
+          return false; // sejajar → batal
+        }
+        return true; // level beda → boleh
       }
 
-      // Default → boleh
-      return true;
+      return true; // default → boleh
     }
 
 
