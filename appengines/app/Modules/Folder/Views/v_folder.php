@@ -1073,13 +1073,31 @@ function addDragEvents(item) {
             item.style.opacity = "1";
             if (placeholder.parentNode) placeholder.remove();
 
+            // [PERBAIKAN] Logika untuk membuka folder induk setelah item dipindahkan ke dalamnya.
             if (parentFolder) {
-                folderState[parentFolder.id] = true;
+                const caret = parentFolder.querySelector(".bi-caret-down"); // Cari ikon caret
+                if (caret && caret.classList.contains("collapsed")) {
+                    // Jika folder induk dalam keadaan tertutup (collapsed)
+                    caret.classList.remove("collapsed"); // Hapus kelas 'collapsed' untuk mengubah ikon
+                    folderState[parentFolder.id] = true; // Update state menjadi terbuka
+                    toggleChildren(parentFolder.id, false); // Panggil fungsi untuk menampilkan anak-anaknya
+                }
+            }
 
-                const caret = parentFolder.querySelector(".bi-caret-down");
-                if (caret) caret.classList.remove("collapsed");
+            // [FIX] Logika untuk membuka folder yang di-drag jika ia menjadi parent baru.
+            // Ini menangani kasus "Folder B di-drag menjadi induk dari Folder C".
+            if (draggedItem.dataset.type === 'folder') {
+                const draggedItemCaret = draggedItem.querySelector(".bi-caret-down");
+                // Cek apakah folder yang dipindahkan memiliki anak setelah dipindahkan
+                const hasChildrenAfterMove = findChildrenRecursive(draggedItem).length > 0;
 
-                toggleChildren(parentFolder.id, false); // anak-anak muncul
+                if (hasChildrenAfterMove && draggedItemCaret && draggedItemCaret.classList.contains(
+                    "collapsed")) {
+                    // Jika punya anak dan sedang tertutup, buka collapse-nya
+                    draggedItemCaret.classList.remove("collapsed");
+                    folderState[draggedItem.id] = true;
+                    toggleChildren(draggedItem.id, false);
+                }
             }
 
             moveChildren(draggedItem, childrenOfDraggedItem, originalLevel);
