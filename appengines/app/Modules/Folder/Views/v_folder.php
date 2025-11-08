@@ -1031,32 +1031,37 @@ function addDragEvents(item) {
             if (count > maxLevel) count = maxLevel;
 
             // [MODIFIKASI] Logika untuk merapikan posisi drop folder dan anak-anaknya
-            let finalDropTarget = placeholder;
-            if (draggedItem.dataset.type === 'folder' && parentFolder) {
-                // Cari anak terakhir dari parentFolder untuk menentukan titik drop
-                let lastChild = parentFolder;
-                let nextElement = parentFolder.nextElementSibling;
-                const parentLevel = parseInt(parentFolder.dataset.count, 10);
+            let finalDropTarget = placeholder; // Defaultnya adalah posisi placeholder
 
-                // Lewati placeholder saat mencari anak terakhir
-                while (nextElement && nextElement === placeholder) {
-                    nextElement = nextElement.nextElementSibling;
-                }
-                if (nextElement && nextElement === draggedItem) {
-                    nextElement = nextElement.nextElementSibling;
-                }
+            // [PERBAIKAN] Jika folder di-drop ke dalam folder lain, letakkan di paling bawah.
+            // Kondisi ini aktif jika item yang di-drag adalah 'folder', memiliki 'parentFolder' baru,
+            // dan level indentasinya lebih besar dari level parent-nya.
+            if (draggedItem.dataset.type === 'folder' && parentFolder && count > parseInt(parentFolder.dataset
+                    .count)) {
+                let lastChildOfParent = parentFolder;
+                let currentElement = parentFolder.nextElementSibling;
+                const parentLevel = parseInt(parentFolder.dataset.count);
 
-                while (nextElement) {
-                    const nextLevel = parseInt(nextElement.dataset.count, 10);
-                    if (nextLevel > parentLevel) {
-                        lastChild = nextElement; // Terus update anak terakhir
-                        nextElement = nextElement.nextElementSibling;
+                // Iterasi untuk mencari elemen anak terakhir dari parentFolder
+                while (currentElement) {
+                    // Lewati placeholder dan item yang sedang di-drag itu sendiri
+                    if (currentElement === placeholder || currentElement === draggedItem) {
+                        currentElement = currentElement.nextElementSibling;
+                        continue;
+                    }
+
+                    const currentLevel = parseInt(currentElement.dataset.count);
+                    if (currentLevel > parentLevel) {
+                        lastChildOfParent = currentElement; // Update anak terakhir yang ditemukan
+                        currentElement = currentElement.nextElementSibling;
                     } else {
-                        break; // Keluar loop jika level sudah tidak lebih besar
+                        break; // Berhenti jika level tidak lagi lebih besar (sudah keluar dari lingkup anak)
                     }
                 }
-                finalDropTarget = lastChild.nextElementSibling; // Target drop adalah setelah anak terakhir
+                // Target drop adalah elemen setelah anak terakhir yang ditemukan.
+                finalDropTarget = lastChildOfParent.nextElementSibling;
             }
+
             item.dataset.count = count;
             item.style.marginLeft = (count * 30) + "px";
 
@@ -1092,7 +1097,7 @@ function addDragEvents(item) {
                 const hasChildrenAfterMove = findChildrenRecursive(draggedItem).length > 0;
 
                 if (hasChildrenAfterMove && draggedItemCaret && draggedItemCaret.classList.contains(
-                    "collapsed")) {
+                        "collapsed")) {
                     // Jika punya anak dan sedang tertutup, buka collapse-nya
                     draggedItemCaret.classList.remove("collapsed");
                     folderState[draggedItem.id] = true;
