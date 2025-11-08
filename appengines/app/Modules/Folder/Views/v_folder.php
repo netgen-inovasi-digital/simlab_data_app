@@ -103,7 +103,7 @@
 
       <div class="card-body border-bottom">
         <div class="row g-3">
-          <div class="d-flex flex-column gap-3 col-8 col-md-8 col-lg-10">
+          <div class="d-flex flex-column gap-3 col-12 col-md-10">
             <div class="col-10 d-flex gap-3">
               <div class=" gap-2 col-lg-4 col-md-6 align-items-center" id="otorisasiRole"
                 style="display: none;">
@@ -153,7 +153,7 @@
             </div>
 
             <!-- FILTER GROUP -->
-            <div class="col-12 col-md-6 col-lg-5 d-flex gap-2" id="filter-group">
+            <div class="col-12 col-md-6 col-lg-8 d-flex gap-2" id="filter-group">
 
               <div class="flex-fill" id="filter-tipe">
                 <select id="filterTipe" class="form-select">
@@ -179,24 +179,22 @@
                   <?php endforeach; ?>
                 </select>
               </div>
-
-            </div>
-
-            <!-- MODE OTORISASI -->
-            <div class="col-auto ms-auto" id="otorisasi">
-              <?= $user->role_id == 8 || $user->role_id == 10 ? '
-      <div class="d-flex gap-2 justify-content-center align-items-center mt-2 mt-md-0">
-        <label class="m-0 fw-medium text-nowrap">Mode Otorisasi</label>
-        <div class="form-check form-switch m-0">
-          <input class="form-check-input toggle-status" type="checkbox"
-            role="switch" id="toggleOtorisasi"
-            data-bs-toggle="tooltip" title="Aktif / Nonaktif">
-        </div>
-      </div>' : '' ?>
             </div>
 
           </div>
 
+          <!-- MODE OTORISASI -->
+          <div class="col-auto ms-md-auto " id="otorisasi">
+            <?= $user->role_id == 8 || $user->role_id == 10 ? '
+    <div class="d-flex gap-2 justify-content-center align-items-center mt-2 mt-md-0">
+      <label class="m-0 fw-medium text-nowrap">Mode Otorisasi</label>
+      <div class="form-check form-switch m-0">
+        <input class="form-check-input toggle-status" type="checkbox"
+          role="switch" id="toggleOtorisasi"
+          data-bs-toggle="tooltip" title="Aktif / Nonaktif">
+      </div>
+    </div>' : '' ?>
+          </div>
 
         </div>
       </div>
@@ -1443,7 +1441,6 @@
         });
       }
     });
-
   }
 
 
