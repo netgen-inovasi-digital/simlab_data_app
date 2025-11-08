@@ -933,6 +933,26 @@ function addDragEvents(item) {
         dragStartX = e.clientX;
         item.dataset.oldCount = item.dataset.count;
         item.dataset.prevId = item.previousElementSibling ? item.previousElementSibling.id : 'none';
+        // Simpan posisi awal untuk deteksi "no-op" (drop pada posisi sama)
+        item.dataset.startIndex = [...folderMenu.children].indexOf(item);
+        item.dataset.startParent = item.dataset.parent || '0';
+        // Hitung indeks di antara sibling pada parent awal
+        try {
+            const startParent = item.dataset.startParent;
+            const siblings = [...folderMenu.children].filter(el => el !== item && el !== placeholder && ((el
+                .dataset.parent || (el.dataset.type === 'folder' ? '0' : '0')) === startParent));
+            // Posisi relatif di antara siblings: hitung berapa sibling dengan parent sama yang ada sebelum item
+            let startSiblingIndex = 0;
+            for (let i = 0; i < [...folderMenu.children].length; i++) {
+                const el = folderMenu.children[i];
+                if (el === item) break;
+                if ((el.dataset.parent || (el.dataset.type === 'folder' ? '0' : '0')) === startParent)
+                    startSiblingIndex++;
+            }
+            item.dataset.startSiblingIndex = startSiblingIndex;
+        } catch (err) {
+            item.dataset.startSiblingIndex = '0';
+        }
 
         childrenOfDraggedItem = [];
         originalLevel = parseInt(item.dataset.count, 10);
@@ -968,17 +988,16 @@ function addDragEvents(item) {
             const elementBelow = placeholderIndex < folderMenu.children.length - 1 ? folderMenu.children[
                 placeholderIndex + 1] : null;
 
-            // [VALIDASI BARU] Mencegah folder di-drop di antara file-file dalam parent yang sama.
+            // [VALIDASI DIPERBAIKI] Mencegah folder di-drop di antara file-file dalam parent yang sama.
             if (draggedItem.dataset.type === 'folder' && elementAbove && elementBelow) {
-                const originalParentId = draggedItem.dataset.parent;
-                const aboveParentId = elementAbove.dataset.parent;
-                const belowParentId = elementBelow.dataset.parent;
+                const isAboveFile = elementAbove.dataset.type === 'file';
+                const isBelowFile = elementBelow.dataset.type === 'file';
+                const isSameParent = (draggedItem.dataset.parent || '0') === (elementAbove.dataset.parent ||
+                        '0') &&
+                    (draggedItem.dataset.parent || '0') === (elementBelow.dataset.parent || '0');
 
-                // Jika folder diletakkan di antara dua item (file/folder) yang memiliki parent yang sama dengan folder itu sendiri
-                if (originalParentId && originalParentId === aboveParentId && originalParentId ===
-                    belowParentId) {
-                    ;
-                    revertDrag(item); // Kembalikan folder ke posisi semula
+                if (isAboveFile && isBelowFile && isSameParent) {
+                    revertDrag(item);
                     return; // Hentikan eksekusi lebih lanjut
                 }
             }
@@ -1002,6 +1021,36 @@ function addDragEvents(item) {
                         break;
                     }
                 }
+            }
+
+            // DETEKSI NO-OP: jika parent, level dan urutan sibling tidak berubah, batalkan operasi
+            try {
+                const originalParentId = draggedItem.dataset.startParent || '0';
+                const originalLevel = parseInt(draggedItem.dataset.oldCount || 0, 10);
+                const newParentId = parentFolder ? parentFolder.id : '0';
+                const newLevel = count;
+
+                if (originalParentId === newParentId && originalLevel === newLevel) {
+                    // Ambil posisi sibling awal yang sudah tersimpan saat dragstart
+                    const originalSiblingIndex = parseInt(draggedItem.dataset.startSiblingIndex || 0, 10);
+                    // tentukan posisi tujuan di antara siblings pada parent baru (jumlah sibling dengan parent sama sebelum placeholder)
+                    let destSiblingIndex = 0;
+                    for (let i = 0; i < currentIndex; i++) {
+                        const el = folderMenu.children[i];
+                        if (el === draggedItem || el === placeholder) continue;
+                        const p = el.dataset.parent || (el.dataset.type === 'folder' ? '0' : '0');
+                        if (String(p) === String(newParentId)) destSiblingIndex++;
+                    }
+
+                    if (originalSiblingIndex === destSiblingIndex) {
+                        // Tidak ada perubahan posisi nyata
+                        revertDrag(item);
+                        return;
+                    }
+                }
+            } catch (err) {
+                // jika ada error pada deteksi no-op, lanjutkan saja (tidak kritis)
+                console.warn('No-op detection failed:', err);
             }
 
             // 3. Validasi SEBELUM menerapkan perubahan
