@@ -326,16 +326,22 @@
 
             <div class="card-body">
                 <small id="info" style="display: none;"><em>-- Silahkan pilih role terlebih dahulu.</em></small>
-                <div id="folder" class="d-flex flex-column">
-                    <?php
-                    if (!empty($tree)) {
-                        renderTree($tree, 0, null, $user);
-                    } else {
-                        echo '<div class="col-12 text-center p-5" id="noDataMessage">
+                <!-- [BARU] Wrapper untuk viewport zoom -->
+                <div id="zoom-viewport" style="transition: height 0.2s ease-out;">
+                    <div id="folder" class="d-flex flex-column">
+                        <?php
+                        if (!empty($tree)) {
+                            // [MODIFIKASI] Pindahkan style ke sini dan tambahkan transisi untuk 'width'
+                            echo '<style>#folder { transform-origin: top left; transition: transform 0.2s ease-out, width 0.2s ease-out; }</style>';
+
+                            renderTree($tree, 0, null, $user);
+                        } else {
+                            echo '<div class="col-12 text-center p-5" id="noDataMessage">
             <h4 class="text-muted">Dokumen belum ditambahkan</h4>
             </div>';
-                    }
-                    ?>
+                        }
+                        ?>
+                    </div>
                 </div>
                 <div id="noResultsMessage" class="col-12 text-center p-5" style="display: none;">
                     <h4 class="text-muted">Tidak Ditemukan</h4>
@@ -448,12 +454,110 @@
  * dan menjalankan kode inisialisasi saat konten dimuat.
  */
 // Fungsi ini akan dieksekusi setiap kali halaman ini dimuat melalui AJAX
+
+/**
+ * [BARU] Logika untuk fitur Zoom Slider.
+ */
+function initializeZoomSlider() {
+    const zoomSlider = document.getElementById('zoom-slider');
+    const folderContainer = document.getElementById('folder');
+    const zoomViewport = document.getElementById('zoom-viewport');
+    // [BARU] Ambil elemen tombol zoom in dan out
+    const zoomOutButton = document.getElementById('zoom-out-button');
+    const zoomInButton = document.getElementById('zoom-in-button');
+    const zoomPercentageDisplay = document.getElementById('zoom-percentage-display'); // [BARU]
+    const zoomResetButton = document.getElementById('zoom-reset-button'); // [BARU]
+    const storageKey = 'folderViewZoomLevel'; // Kunci untuk localStorage
+
+    if (!zoomSlider || !folderContainer || !zoomViewport || !zoomOutButton || !zoomInButton || !
+        zoomPercentageDisplay || !zoomResetButton) return;
+
+    /**
+     * Fungsi terpusat untuk menerapkan nilai zoom ke UI.
+     * @param {number|string} scaleValue - Nilai skala (misal: 1, 0.8, 1.2).
+     */
+    function applyZoom(scaleValue) {
+        // Terapkan skala transformasi
+        folderContainer.style.transform = `scale(${scaleValue})`;
+
+        // Atur lebar kontainer secara terbalik agar tetap fit
+        folderContainer.style.width = `${100 / scaleValue}%`;
+
+        // Atur tinggi viewport agar sesuai dengan tinggi konten yang telah di-zoom.
+        // Diberi sedikit timeout agar browser sempat menghitung ulang layout.
+        setTimeout(() => {
+            const scaledHeight = folderContainer.scrollHeight * scaleValue;
+            zoomViewport.style.height = `${scaledHeight}px`;
+        }, 50);
+    }
+
+    /**
+     * [BARU] Fungsi untuk menangani perubahan nilai zoom, baik dari slider maupun tombol.
+     * @param {number|string} newScaleValue - Nilai skala baru.
+     */
+    function handleZoomChange(newScaleValue) {
+        // Pastikan nilai berada dalam rentang min/max
+        const min = parseFloat(zoomSlider.min);
+        const max = parseFloat(zoomSlider.max);
+        const value = Math.max(min, Math.min(max, parseFloat(newScaleValue)));
+
+        // Update posisi slider
+        zoomSlider.value = value;
+        // Terapkan zoom
+        applyZoom(value);
+        // Simpan ke localStorage
+        localStorage.setItem(storageKey, value);
+
+        // [BARU] Update tampilan persentase
+        const percentage = Math.round(value * 100);
+        zoomPercentageDisplay.textContent = `${percentage}%`;
+    }
+
+    // Event listener untuk slider input
+    zoomSlider.addEventListener('input', function() {
+        handleZoomChange(this.value);
+    });
+
+    // [BARU] Event listener untuk tombol zoom out (-)
+    zoomOutButton.addEventListener('click', function() {
+        const currentValue = parseFloat(zoomSlider.value);
+        const step = parseFloat(zoomSlider.step);
+        handleZoomChange(currentValue - step);
+    });
+
+    // [BARU] Event listener untuk tombol zoom in (+)
+    zoomInButton.addEventListener('click', function() {
+        const currentValue = parseFloat(zoomSlider.value);
+        const step = parseFloat(zoomSlider.step);
+        handleZoomChange(currentValue + step);
+    });
+
+    // [BARU] Event listener untuk tombol reset zoom
+    zoomResetButton.addEventListener('click', function() {
+        handleZoomChange(1); // Atur zoom kembali ke 100%
+    });
+
+    // [BARU] Saat inisialisasi, cek apakah ada nilai zoom yang tersimpan
+    const savedZoom = localStorage.getItem(storageKey);
+    if (savedZoom) {
+        // Gunakan fungsi terpusat untuk menerapkan zoom yang tersimpan
+        // Ini akan mengatur slider dan tampilan secara bersamaan.
+        // Diberi sedikit delay untuk memastikan semua elemen DOM siap.
+        setTimeout(() => {
+            handleZoomChange(savedZoom);
+        }, 100);
+    }
+}
+
 (function() {
     const addFolderModalEl = document.getElementById('modalForm');
     if (!addFolderModalEl) return;
     const addFolderModal = new bootstrap.Modal(addFolderModalEl);
     let allTemplateFolders = []; // [BARU] Variabel untuk menyimpan semua data template
     const addFolderButton = document.getElementById('addFolderButton');
+
+    // [BARU] Inisialisasi slider zoom
+    initializeZoomSlider();
 
     /**
      * Event listener untuk tombol "Tambah Folder" yang akan mereset dan menampilkan modal.
@@ -2011,6 +2115,24 @@ function removeFileItem(fileId) {
 
 <?php echo form_open('', ['id' => 'myAuthorizationForm', 'novalidate' => '']); ?>
 <?php echo form_close(); ?>
+
+<!-- [BARU] Kontrol Zoom Slider -->
+<div id="zoom-slider-container"
+    class="position-fixed bottom-0 end-0 p-2 d-flex align-items-center gap-2 bg-white shadow-sm"
+    style="z-index: 1050; border-radius: 8px; margin-right: 1.6rem; border: 1px solid #e9ecef;">
+    <button id="zoom-out-button" type="button" class="btn btn-light btn-sm" title="Perkecil">
+        <i class="bi bi-dash-lg"></i>
+    </button>
+    <input type="range" class="form-range" min="0.5" max="1.5" step="0.05" value="1" id="zoom-slider"
+        style="width: 150px;" title="Geser untuk Zoom">
+    <button id="zoom-in-button" type="button" class="btn btn-light btn-sm" title="Perbesar">
+        <i class="bi bi-plus-lg"></i>
+    </button>
+    <!-- [MODIFIKASI] Tampilan Persentase Zoom, sekarang bisa di-klik untuk reset -->
+    <button id="zoom-reset-button" type="button" class="btn btn-light btn-sm" title="Reset Zoom ke 100%">
+        <span id="zoom-percentage-display" class="text-nowrap fw-medium" style="width: 45px;">100%</span>
+    </button>
+</div>
 
 
 <!-- Modal Tambah Folder Baru -->
