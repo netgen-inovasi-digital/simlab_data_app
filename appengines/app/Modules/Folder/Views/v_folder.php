@@ -84,9 +84,7 @@
   }
 </style>
 
-<!-- <button id="refresh" class="btn btn-success">
-            <i class="bi bi-arrow-clockwise"></i> Refresh
-          </button> -->
+
 
 <div class="row">
   <div class="col-md-12">
@@ -901,15 +899,8 @@
 
 
   folderState = {}; // Menyimpan state collapsed/expanded folder
-  // var refreshButton = document.getElementById("refresh");
 
   addAction();
-
-  // if (refreshButton) {
-  //   refreshButton.addEventListener("click", function() {
-  //     loadContent('folder');
-  //   });
-  // }
 
   document.querySelectorAll(".file-item").forEach(item => {
     item.addEventListener("click", function(e) {
@@ -976,10 +967,27 @@
         // 2. Tentukan elementAbove & elementBelow
         const placeholderIndex = [...folderMenu.children].indexOf(placeholder);
         const elementAbove = placeholderIndex > 0 ? folderMenu.children[placeholderIndex - 1] : null;
-        const elementBelow = placeholderIndex < folderMenu.children.length - 1 ? folderMenu.children[placeholderIndex + 1] : null;
+        const elementBelow = placeholderIndex < folderMenu.children.length - 1 ? folderMenu.children[
+          placeholderIndex + 1] : null;
+
+        // [VALIDASI BARU] Mencegah folder di-drop di antara file-file dalam parent yang sama.
+        if (draggedItem.dataset.type === 'folder' && elementAbove && elementBelow) {
+          const originalParentId = draggedItem.dataset.parent;
+          const aboveParentId = elementAbove.dataset.parent;
+          const belowParentId = elementBelow.dataset.parent;
+
+          // Jika folder diletakkan di antara dua item (file/folder) yang memiliki parent yang sama dengan folder itu sendiri
+          if (originalParentId && originalParentId === aboveParentId && originalParentId ===
+            belowParentId) {
+            ;
+            revertDrag(item); // Kembalikan folder ke posisi semula
+            return; // Hentikan eksekusi lebih lanjut
+          }
+        }
 
         // 3. Validasi drop
-        if (draggedItem.dataset.type === 'folder' && !isValidFolderDrop(draggedItem, elementAbove, elementBelow)) {
+        if (draggedItem.dataset.type === 'folder' && !isValidFolderDrop(draggedItem, elementAbove,
+            elementBelow)) {
           revertDrag(item);
           return;
         }
@@ -1001,7 +1009,8 @@
         // 3. Validasi SEBELUM menerapkan perubahan
         // Validasi #1: Mencegah pemindahan ke dalam Folder Personel
         if (parentFolder && parentFolder.dataset.flag === '1') {
-          sayAlert('errorModal', 'Operasi Dibatalkan', 'Folder atau file tidak dapat dipindahkan ke dalam Folder Personel.', 'warning');
+          sayAlert('errorModal', 'Operasi Dibatalkan',
+            'Folder atau file tidak dapat dipindahkan ke dalam Folder Personel.', 'warning');
           revertDrag(item);
           return;
         }
@@ -1010,14 +1019,16 @@
         if (draggedItem.dataset.type === 'folder' && parentFolder) {
           const isMovingIntoOwnChild = childrenOfDraggedItem.some(child => child.id === parentFolder.id);
           if (isMovingIntoOwnChild) {
-            sayAlert('errorModal', 'Operasi Dibatalkan', 'Folder tidak bisa dipindahkan ke dalam sub-foldernya sendiri.', 'warning');
+            sayAlert('errorModal', 'Operasi Dibatalkan',
+              'Folder tidak bisa dipindahkan ke dalam sub-foldernya sendiri.', 'warning');
             revertDrag(item);
             return;
           }
         }
 
         /* ✅ VALIDASI BARU: FILE TIDAK BOLEH JADI ROOT */
-        if ((draggedItem.dataset.type === 'file' && !parentFolder) || (draggedItem.dataset.type === 'file' && parentFolder.querySelector('.bi-caret-down.collapsed'))) {
+        if ((draggedItem.dataset.type === 'file' && !parentFolder) || (draggedItem.dataset.type ===
+            'file' && parentFolder.querySelector('.bi-caret-down.collapsed'))) {
           revertDrag(item);
           return;
         }
@@ -1026,22 +1037,79 @@
         let maxLevel = parentFolder ? parseInt(parentFolder.dataset.count) + 1 : 0;
         if (count > maxLevel) count = maxLevel;
 
+        // [MODIFIKASI] Logika untuk merapikan posisi drop folder dan anak-anaknya
+        let finalDropTarget = placeholder; // Defaultnya adalah posisi placeholder
+
+        // [PERBAIKAN] Jika folder di-drop ke dalam folder lain, letakkan di paling bawah.
+        // Kondisi ini aktif jika item yang di-drag adalah 'folder', memiliki 'parentFolder' baru,
+        // dan level indentasinya lebih besar dari level parent-nya.
+        if (draggedItem.dataset.type === 'folder' && parentFolder && count > parseInt(parentFolder.dataset
+            .count)) {
+          let lastChildOfParent = parentFolder;
+          let currentElement = parentFolder.nextElementSibling;
+          const parentLevel = parseInt(parentFolder.dataset.count);
+
+          // Iterasi untuk mencari elemen anak terakhir dari parentFolder
+          while (currentElement) {
+            // Lewati placeholder dan item yang sedang di-drag itu sendiri
+            if (currentElement === placeholder || currentElement === draggedItem) {
+              currentElement = currentElement.nextElementSibling;
+              continue;
+            }
+
+            const currentLevel = parseInt(currentElement.dataset.count);
+            if (currentLevel > parentLevel) {
+              lastChildOfParent = currentElement; // Update anak terakhir yang ditemukan
+              currentElement = currentElement.nextElementSibling;
+            } else {
+              break; // Berhenti jika level tidak lagi lebih besar (sudah keluar dari lingkup anak)
+            }
+          }
+          // Target drop adalah elemen setelah anak terakhir yang ditemukan.
+          finalDropTarget = lastChildOfParent.nextElementSibling;
+        }
+
         item.dataset.count = count;
         item.style.marginLeft = (count * 30) + "px";
 
-        // 5. Finalisasi: Pindahkan item, hapus placeholder, dan simpan
-        folderMenu.insertBefore(draggedItem, placeholder);
+        // 5. Finalisasi: Pindahkan item utama, lalu pindahkan anak-anaknya, hapus placeholder, dan simpan
+        folderMenu.insertBefore(draggedItem, finalDropTarget); // Pindahkan item utama
+
+        // [PERBAIKAN] Pindahkan juga semua anak dari item yang di-drag ke posisi setelahnya
+        let lastMovedItem = draggedItem;
+        childrenOfDraggedItem.forEach(child => {
+          folderMenu.insertBefore(child, lastMovedItem.nextSibling);
+          lastMovedItem = child; // Update item terakhir yang dipindah
+        });
         item.style.display = "flex";
         item.style.opacity = "1";
         if (placeholder.parentNode) placeholder.remove();
 
+        // [PERBAIKAN] Logika untuk membuka folder induk setelah item dipindahkan ke dalamnya.
         if (parentFolder) {
-          folderState[parentFolder.id] = true;
+          const caret = parentFolder.querySelector(".bi-caret-down"); // Cari ikon caret
+          if (caret && caret.classList.contains("collapsed")) {
+            // Jika folder induk dalam keadaan tertutup (collapsed)
+            caret.classList.remove("collapsed"); // Hapus kelas 'collapsed' untuk mengubah ikon
+            folderState[parentFolder.id] = true; // Update state menjadi terbuka
+            toggleChildren(parentFolder.id, false); // Panggil fungsi untuk menampilkan anak-anaknya
+          }
+        }
 
-          const caret = parentFolder.querySelector(".bi-caret-down");
-          if (caret) caret.classList.remove("collapsed");
+        // [FIX] Logika untuk membuka folder yang di-drag jika ia menjadi parent baru.
+        // Ini menangani kasus "Folder B di-drag menjadi induk dari Folder C".
+        if (draggedItem.dataset.type === 'folder') {
+          const draggedItemCaret = draggedItem.querySelector(".bi-caret-down");
+          // Cek apakah folder yang dipindahkan memiliki anak setelah dipindahkan
+          const hasChildrenAfterMove = findChildrenRecursive(draggedItem).length > 0;
 
-          toggleChildren(parentFolder.id, false); // anak-anak muncul
+          if (hasChildrenAfterMove && draggedItemCaret && draggedItemCaret.classList.contains(
+              "collapsed")) {
+            // Jika punya anak dan sedang tertutup, buka collapse-nya
+            draggedItemCaret.classList.remove("collapsed");
+            folderState[draggedItem.id] = true;
+            toggleChildren(draggedItem.id, false);
+          }
         }
 
         moveChildren(draggedItem, childrenOfDraggedItem, originalLevel);
@@ -1068,10 +1136,12 @@
     function isValidFolderDrop(draggedItem, elementAbove, elementBelow) {
       const dragLevel = parseInt(draggedItem.dataset.count);
 
-      const aboveIsFolder = elementAbove && elementAbove.dataset.type === 'folder' && elementAbove.style.display !== 'none';
+      const aboveIsFolder = elementAbove && elementAbove.dataset.type === 'folder' && elementAbove.style.display !==
+        'none';
       const aboveLevel = aboveIsFolder ? parseInt(elementAbove.dataset.count) : null;
 
-      const belowIsFile = elementBelow && elementBelow.dataset.type === 'file' && elementBelow.style.display !== 'none';
+      const belowIsFile = elementBelow && elementBelow.dataset.type === 'file' && elementBelow.style.display !==
+        'none';
 
       // RULE: bisa masuk di atas file dan di bawah folder
       // → jika folder di atas tidak sejajar level dengan folder yg di-drag
@@ -1343,7 +1413,6 @@
   if (toggleOtorisasi) {
     toggleOtorisasi.addEventListener('change', function() {
       var addFolderBtn = document.getElementById("addFolderButton");
-      // var refreshBtn = document.getElementById("refresh");
       var otorisasiRole = document.getElementById("otorisasiRole");
       var checkboxes = document.querySelectorAll(".checkbox-otorisasi-folder, .checkbox-otorisasi-file");
       var lihatFolderOtorisasi = document.querySelectorAll(".lihat-folder-otorisasi");
@@ -1353,7 +1422,6 @@
 
       if (this.checked) {
         addFolderBtn.style.display = "none";
-        // refreshBtn.style.display = "none";
         otorisasiRole.style.display = "flex";
         checkboxes.forEach(cb => cb.style.display = "inline-block");
         lihatFolderOtorisasi.forEach(el => el.style.display = "inline-block");

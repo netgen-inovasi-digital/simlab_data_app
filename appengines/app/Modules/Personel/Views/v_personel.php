@@ -1,13 +1,19 @@
 <style>
+  .personel-item {
+    /* [PERBAIKAN] Hapus properti width karena ukuran akan diatur oleh grid container. */
+    /* width: 280px; */
+    min-width: 0;
+    /* Mencegah item meluap dari grid cell */
+  }
+
   .personel-item .card {
     cursor: pointer;
     transition: all 0.2s ease-in-out;
     display: flex;
     flex-direction: column;
     align-items: center;
-    /* Tetap diperlukan untuk konten di dalam card */
-    max-width: 240px;
-    /* [UBAH] Kartu diperkecil */
+    width: 100%;
+    /* [PERBAIKAN] Kartu akan mengisi penuh .personel-item */
     margin: 0 auto;
   }
 
@@ -21,7 +27,8 @@
   }
 
   .personel-item .card-img-top {
-    width: 85%;
+    /* [PERBAIKAN] Menggunakan lebar tetap agar ukuran foto profil tidak berubah saat zoom */
+    width: 200px;
     height: 240px;
     object-fit: cover;
     background-color: #f8f9fa;
@@ -229,9 +236,22 @@
           </div>
         </div>
 
+        <!-- [PERBAIKAN BARU] Atur container agar item terdistribusi merata -->
+        <style>
+          #personel-container {
+            /* [SOLUSI BARU] Menggunakan CSS Grid untuk layout yang lebih kuat */
+            display: grid;
+            /* Tetap gunakan Grid */
+            /* [SOLUSI FINAL] Kembali menggunakan auto-fill dengan minmax berbasis piksel.
+                       - `minmax(280px, 1fr)`: Ini adalah cara paling andal. Browser akan membuat kolom sebanyak mungkin yang lebarnya minimal 280px. Saat di-zoom out, ruang menjadi lebih banyak, dan kolom baru akan otomatis ditambahkan. */
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            /* Jarak antar kartu, sesuai dengan kelas g-4 dari Bootstrap */
+            gap: 1.5rem;
+          }
+        </style>
         <hr class="my-3">
         <!-- Kontainer Personel -->
-        <div id="personel-container" class="row g-4">
+        <div id="personel-container" class="g-4">
           <?php if (!empty($getPersonel)) : ?>
             <?php
             $encrypter = \Config\Services::encrypter();
@@ -239,12 +259,12 @@
               $id = bin2hex($encrypter->encrypt($row->id_personel));
             ?>
               <!-- [PERBAIKAN] Atribut draggable hanya aktif jika pengguna memiliki izin -->
-              <div id="<?= $id ?>" class="col-12 col-sm-6 col-md-6 col-lg-4 col-xl-3 personel-item"
-                draggable="<?= $can_add ? 'true' : 'false' ?>" data-code="<?= $row->urutan ?>"
-                data-nama="<?= esc(strtolower($row->nama)) ?>"
+              <!-- [PERBAIKAN] Kelas 'personel-item' sekarang menjadi grid item, bukan flex item -->
+              <div id="<?= $id ?>" class="personel-item" draggable="<?= $can_add ? 'true' : 'false' ?>"
+                data-code="<?= $row->urutan ?>" data-nama="<?= esc(strtolower($row->nama)) ?>"
                 data-jabatan="<?= esc(strtolower($row->jabatan)) ?>"
                 data-penempatan="<?= esc($row->penempatan) ?>">
-                <div class="card h-100 text-center shadow-sm" onclick="showBiodata(event)" id="<?= $id ?>">
+                <div class="card h-100 text-center shadow-sm" onclick="showBiodata(event)">
                   <img src="<?= $row->foto ? base_url('uploads/' . $row->foto) : 'https://placehold.co/200x300?text=Foto+2x3' ?>"
                     class="card-img-top" alt="<?= esc($row->nama) ?>">
                   <div class="card-body">
@@ -1219,7 +1239,7 @@
      * @param {Event} event - Event object dari elemen card personel yang diklik.
      */
     function showBiodata(event) {
-      const id = event.currentTarget.id;
+      const id = event.currentTarget.closest('.personel-item').id;
       contentArea.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
       modalAksiContainer.innerHTML = '';
       biodataModal.show();
