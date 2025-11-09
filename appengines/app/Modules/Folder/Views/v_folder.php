@@ -98,102 +98,106 @@
     <i class="bi bi-plus-circle-dotted"></i> Tambah
 </button>' : '' ?>
 
-                </div>
+        </div>
+      </div>
+
+      <div class="card-body border-bottom">
+        <div class="row g-3">
+          <div class="d-flex flex-column gap-3 col-12 col-md-10">
+            <div class="col-10 d-flex gap-3">
+              <div class=" gap-2 col-lg-4 col-md-6 align-items-center" id="otorisasiRole"
+                style="display: none;">
+                <label class="m-0 fw-medium">Role</label>
+                <select id="role" name="role" class="form-select" required>
+                  <option value="">-- pilih role --</option>
+                  <?php foreach ($role as $i => $row) {
+                    if ($row->id_role == 8 || $row->id_role == 10 || $row->id_role == 1) continue;
+                  ?>
+                    <option value="<?= $row->id_role ?>">
+                      <?= $row->nama_role ?>
+                    </option>
+                  <?php } ?>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="row align-items-center g-2" id="findSection">
+
+            <!-- SORT -->
+            <div class="col-auto" id="sorting">
+              <div class="dropdown">
+                <button class="btn btn-outline-secondary border-0"
+                  style="border-radius: 0 !important;" type="button"
+                  id="sortDropdown" data-bs-toggle="dropdown"
+                  aria-expanded="false" title="Urutkan">
+                  <i class="bi bi-sort-down"></i>
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="sortDropdown">
+                  <li><a class="dropdown-item <?= ($current_sort ?? 'default') == 'default' ? 'active' : '' ?>"
+                      href="#" data-sort="default">Urutan Default</a></li>
+                  <li><a class="dropdown-item <?= ($current_sort ?? '') == 'updated_desc' ? 'active' : '' ?>"
+                      href="#" data-sort="updated_desc">Terakhir Diupdate</a></li>
+                  <li><a class="dropdown-item <?= ($current_sort ?? '') == 'created_desc' ? 'active' : '' ?>"
+                      href="#" data-sort="created_desc">Terakhir Dibuat</a></li>
+                  <li><a class="dropdown-item <?= ($current_sort ?? '') == 'created_asc' ? 'active' : '' ?>"
+                      href="#" data-sort="created_asc">Paling Terdahulu</a></li>
+                </ul>
+              </div>
             </div>
 
-            <div class="card-body border-bottom">
-                <div class="row g-3">
-                    <div class="d-flex flex-column gap-3 col-8 col-md-8 col-lg-10">
-                        <div class="col-10 d-flex gap-3">
-                            <div class=" gap-2 col-lg-4 col-md-6 align-items-center" id="otorisasiRole"
-                                style="display: none;">
-                                <label class="m-0 fw-medium">Role</label>
-                                <select id="role" name="role" class="form-select" required>
-                                    <option value="">-- pilih role --</option>
-                                    <?php foreach ($role as $i => $row) {
-                                        if ($row->id_role == 8 || $row->id_role == 10 || $row->id_role == 1) continue;
-                                    ?>
-                                    <option value="<?= $row->id_role ?>">
-                                        <?= $row->nama_role ?>
-                                    </option>
-                                    <?php } ?>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
+            <!-- SEARCH -->
+            <div class="col-12 col-md-4 col-lg-3" id="searching-folder-file">
+              <input type="text" class="form-control" id="search"
+                placeholder="Cari nama folder/file...">
+            </div>
 
-                    <div class="row align-items-center g-2" id="findSection">
+            <!-- FILTER GROUP -->
+            <div class="col-12 col-md-6 col-lg-8 d-flex gap-2" id="filter-group">
 
-                        <!-- SORT -->
-                        <div class="col-auto" id="sorting">
-                            <div class="dropdown">
-                                <button class="btn btn-outline-secondary border-0" style="border-radius: 0 !important;"
-                                    type="button" id="sortDropdown" data-bs-toggle="dropdown" aria-expanded="false"
-                                    title="Urutkan">
-                                    <i class="bi bi-sort-down"></i>
-                                </button>
-                                <ul class="dropdown-menu" aria-labelledby="sortDropdown">
-                                    <li><a class="dropdown-item <?= ($current_sort ?? 'default') == 'default' ? 'active' : '' ?>"
-                                            href="#" data-sort="default">Urutan Default</a></li>
-                                    <li><a class="dropdown-item <?= ($current_sort ?? '') == 'updated_desc' ? 'active' : '' ?>"
-                                            href="#" data-sort="updated_desc">Terakhir Diupdate</a></li>
-                                    <li><a class="dropdown-item <?= ($current_sort ?? '') == 'created_desc' ? 'active' : '' ?>"
-                                            href="#" data-sort="created_desc">Terakhir Dibuat</a></li>
-                                    <li><a class="dropdown-item <?= ($current_sort ?? '') == 'created_asc' ? 'active' : '' ?>"
-                                            href="#" data-sort="created_asc">Paling Terdahulu</a></li>
-                                </ul>
-                            </div>
-                        </div>
+              <div class="flex-fill" id="filter-tipe">
+                <select id="filterTipe" class="form-select">
+                  <option value="semua" selected>Semua Tipe</option>
+                  <option value="folder">Hanya Folder</option>
+                  <option value="file">Hanya File</option>
+                </select>
+              </div>
 
-                        <!-- SEARCH -->
-                        <div class="col-12 col-md-4 col-lg-3" id="searching-folder-file">
-                            <input type="text" class="form-control" id="search" placeholder="Cari nama folder/file...">
-                        </div>
+              <div class="flex-fill" id="filter-jenis">
+                <select id="filterJenisFile" class="form-select" style="display:none;">
+                  <option value="semua">Jenis File</option>
+                  <option value="pdf">PDF</option>
+                  <option value="doc">DOC/DOCX</option>
+                </select>
+              </div>
 
-                        <!-- FILTER GROUP -->
-                        <div class="col-12 col-md-6 col-lg-5 d-flex gap-2" id="filter-group">
+              <div class="flex-fill" id="filter-kategori">
+                <select id="filterKategori" class="form-select" style="display:none;">
+                  <option value="semua">Semua Kategori</option>
+                  <?php foreach ($categories as $kategori): ?>
+                    <option value="<?= $kategori->id_categories ?>"><?= esc($kategori->nama) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+            </div>
 
-                            <div class="flex-fill" id="filter-tipe">
-                                <select id="filterTipe" class="form-select">
-                                    <option value="semua" selected>Semua Tipe</option>
-                                    <option value="folder">Hanya Folder</option>
-                                    <option value="file">Hanya File</option>
-                                </select>
-                            </div>
+          </div>
 
-                            <div class="flex-fill" id="filter-jenis">
-                                <select id="filterJenisFile" class="form-select" style="display:none;">
-                                    <option value="semua">Jenis File</option>
-                                    <option value="pdf">PDF</option>
-                                    <option value="doc">DOC/DOCX</option>
-                                </select>
-                            </div>
+          <!-- MODE OTORISASI -->
+          <div class="col-auto ms-md-auto " id="otorisasi">
+            <?= $user->role_id == 8 || $user->role_id == 10 ? '
+    <div class="d-flex gap-2 justify-content-center align-items-center mt-2 mt-md-0">
+      <label class="m-0 fw-medium text-nowrap">Mode Otorisasi</label>
+      <div class="form-check form-switch m-0">
+        <input class="form-check-input toggle-status" type="checkbox"
+          role="switch" id="toggleOtorisasi"
+          data-bs-toggle="tooltip" title="Aktif / Nonaktif">
+      </div>
+    </div>' : '' ?>
+          </div>
 
-                            <div class="flex-fill" id="filter-kategori">
-                                <select id="filterKategori" class="form-select" style="display:none;">
-                                    <option value="semua">Semua Kategori</option>
-                                    <?php foreach ($categories as $kategori): ?>
-                                    <option value="<?= $kategori->id_categories ?>"><?= esc($kategori->nama) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-
-                        </div>
-
-                        <!-- MODE OTORISASI -->
-                        <div class="col-auto ms-lg-auto ms-2" id="otorisasi">
-                            <?= $user->role_id == 8 || $user->role_id == 10 ? '
-      <div class="d-flex gap-2 justify-content-center align-items-center mt-2 mt-md-0">
-        <label class="m-0 fw-medium text-nowrap">Mode Otorisasi</label>
-        <div class="form-check form-switch m-0">
-          <input class="form-check-input toggle-status" type="checkbox"
-            role="switch" id="toggleOtorisasi"
-            data-bs-toggle="tooltip" title="Aktif / Nonaktif">
         </div>
-      </div>' : '' ?>
-                        </div>
-
-                    </div>
+      </div>
 
 
                 </div>
@@ -1594,8 +1598,7 @@ if (toggleOtorisasi) {
             });
         }
     });
-
-}
+  }
 
 
 function initTooltips() {
