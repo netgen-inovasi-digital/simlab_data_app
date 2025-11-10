@@ -892,6 +892,9 @@
                 noResultsMessage.style.display = 'none';
                 if (noDataMessage) noDataMessage.style.display = 'block';
             }
+
+            // [PERBAIKAN] Panggil penyesuaian tinggi setelah filter diterapkan.
+            setTimeout(adjustZoomViewportHeight, 50);
         }
 
         /**
