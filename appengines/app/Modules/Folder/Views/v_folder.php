@@ -1600,8 +1600,8 @@ if (toggleOtorisasi) {
         var addFolderBtn = document.getElementById("addFolderButton");
         var otorisasiRole = document.getElementById("otorisasiRole");
         var checkboxes = document.querySelectorAll(".checkbox-otorisasi-folder, .checkbox-otorisasi-file");
-        var lihatFolderOtorisasi = document.querySelectorAll(".lihat-folder-otorisasi");
-        var sortButton = document.getElementById("sorting");
+        var lihatFolderOtorisasi = document.querySelectorAll(".lihat-folder-otorisasi"); 
+        var sortDropdown = document.querySelector('.dropdown'); // Target the dropdown container
         var divider = document.querySelectorAll(".divider-crud");
 
         if (this.checked) {
@@ -1612,7 +1612,7 @@ if (toggleOtorisasi) {
             infoText.style.display = "block";
 
             manageDocument.classList.add("d-none");
-            sortButton.style.display = "none";
+            if (sortDropdown) sortDropdown.style.display = "none"; // Hide the entire sort dropdown
             filterJenis.style.display = "none";
             searchInput.style.display = "none";
             filterTipe.style.display = "none";
