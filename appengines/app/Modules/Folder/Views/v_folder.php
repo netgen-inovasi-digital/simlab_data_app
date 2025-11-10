@@ -103,29 +103,27 @@
             </div>
 
             <div class="card-body border-bottom">
-                <div class="row g-3">
-                    <div class="d-flex flex-column gap-3 col-12 col-md-10">
-                        <div class="col-10 d-flex gap-3">
-                            <div class=" gap-2 col-lg-4 col-md-6 align-items-center" id="otorisasiRole"
-                                style="display: none;">
-                                <label class="m-0 fw-medium">Role</label>
-                                <select id="role" name="role" class="form-select" required>
-                                    <option value="">-- pilih role --</option>
-                                    <?php foreach ($role as $i => $row) {
-                                        if ($row->id_role == 8 || $row->id_role == 10 || $row->id_role == 1) continue;
-                                    ?>
-                                        <option value="<?= $row->id_role ?>">
-                                            <?= $row->nama_role ?>
-                                        </option>
-                                    <?php } ?>
-                                </select>
-                            </div>
+                <div class="row g-3 align-items-center">
+                    <!-- [FIX] Dropdown Role dipindahkan ke sini dengan struktur yang lebih sederhana -->
+                    <div class="col-lg-4 col-md-6" id="otorisasiRole" style="display: none;">
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="m-0 fw-medium text-nowrap">Pilih Role</label>
+                            <select id="role" name="role" class="form-select" required>
+                                <option value="">-- pilih role --</option>
+                                <?php foreach ($role as $i => $row) {
+                                    if ($row->id_role == 8 || $row->id_role == 10 || $row->id_role == 1) continue;
+                                ?>
+                                    <option value="<?= $row->id_role ?>"><?= $row->nama_role ?></option>
+                                <?php } ?>
+                            </select>
                         </div>
                     </div>
-                    <div class="row align-items-center g-3 justify-content-between" id="findSection">
-                        <div class="col-lg-8 col-md-12">
-                            <!-- SORT -->
+                    <!-- [FIX] Bungkus filter dan toggle dalam satu row -->
+                    <div class="row align-items-center g-3 justify-content-between">
+                        <!-- [FIX] Pindahkan ID findSection ke sini agar hanya filter yang disembunyikan -->
+                        <div class="col-lg-8 col-md-12" id="findSection">
                             <div class="d-flex align-items-center gap-2">
+                                <!-- SORT -->
                                 <div class="dropdown">
                                     <button class="btn btn-outline-secondary border-0"
                                         style="border-radius: 0 !important;" type="button" id="sortDropdown"
@@ -178,18 +176,17 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- MODE OTORISASI -->
+                        <!-- [FIX] Toggle Otorisasi sekarang berada di luar #findSection tapi di dalam .row -->
                         <div class="col-lg-4 col-md-12 d-flex justify-content-md-end" id="otorisasi">
                             <?= $user->role_id == 8 || $user->role_id == 10 ? '
-    <div class="d-flex gap-2 justify-content-center align-items-center mt-2 mt-md-0">
-      <label class="m-0 fw-medium text-nowrap">Mode Otorisasi</label>
-      <div class="form-check form-switch m-0">
-        <input class="form-check-input toggle-status" type="checkbox"
-          role="switch" id="toggleOtorisasi"
-          data-bs-toggle="tooltip" title="Aktif / Nonaktif">
-      </div>
-    </div>' : '' ?>
+                        <div class="d-flex gap-2 justify-content-center align-items-center mt-2 mt-md-0">
+                            <label class="m-0 fw-medium text-nowrap">Mode Otorisasi</label>
+                            <div class="form-check form-switch m-0">
+                            <input class="form-check-input toggle-status" type="checkbox"
+                                role="switch" id="toggleOtorisasi"
+                                data-bs-toggle="tooltip" title="Aktif / Nonaktif">
+                            </div>
+                        </div>' : '' ?>
                         </div>
                     </div>
                 </div>
@@ -324,7 +321,9 @@
             ?>
 
             <div class="card-body">
-                <small id="info" style="display: none;"><em>-- Silahkan pilih role terlebih dahulu.</em></small>
+                <div id="info" class="text-center p-5" style="display: none;">
+                    <h4 class="text-muted">Silahkan pilih role terlebih dahulu.</h4>
+                </div>
                 <!-- [BARU] Wrapper untuk viewport zoom -->
                 <div id="zoom-viewport" style="transition: height 0.2s ease-out;">
                     <div id="folder" class="d-flex flex-column">
@@ -1650,7 +1649,10 @@
                 lihatFolderOtorisasi.forEach(el => el.style.display = "inline-block");
                 infoText.style.display = "block";
 
+                findSection.parentElement.classList.replace('justify-content-between', 'justify-content-end');
+                findSection.classList.add("d-none");
                 manageDocument.classList.add("d-none");
+                document.getElementById('zoom-viewport').style.display = 'none'; // [FIX] Sembunyikan viewport zoom
                 if (sortDropdown) sortDropdown.style.display = "none"; // Hide the entire sort dropdown
                 filterJenis.style.display = "none";
                 searchInput.style.display = "none";
@@ -1689,6 +1691,8 @@
             filterTipe.style.display = "none";
             filterKategori.style.display = "none";
             findSection.classList.add("d-none");
+            document.getElementById('zoom-viewport').style.display =
+                'none'; // [FIX] Sembunyikan viewport saat tidak ada role dipilih
             keteranganAksi.forEach(el => el.style.display = "none");
 
         } else if (role != "") {
@@ -1699,7 +1703,12 @@
             filterTipe.style.display = "block";
             filterKategori.style.display = "block";
             keteranganAksi.forEach(el => el.style.display = "inline");
+            document.getElementById('zoom-viewport').style.display =
+                'block'; // [FIX] Tampilkan kembali viewport zoom
             findSection.classList.remove("d-none");
+
+            // [FIX] Panggil adjustZoomViewportHeight setelah folder ditampilkan untuk memperbaiki bug layout saat zoom.
+            setTimeout(adjustZoomViewportHeight, 100);
 
             fetch(`otoritas/show?s=${role}`)
                 .then(res => res.json())
