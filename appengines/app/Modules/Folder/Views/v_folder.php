@@ -329,18 +329,19 @@
                     <div id="folder" class="d-flex flex-column">
                         <?php
                         if (!empty($tree)) {
-                            // [MODIFIKASI] Pindahkan style ke sini dan tambahkan transisi untuk 'width'
                             echo '<style>#folder { transform-origin: top left; transition: transform 0.2s ease-out, width 0.2s ease-out; }</style>';
-
                             renderTree($tree, 0, null, $user);
-                        } else {
-                            echo '<div class="col-12 text-center p-5" id="noDataMessage">
-            <h4 class="text-muted">Dokumen belum ditambahkan</h4>
-            </div>';
                         }
                         ?>
                     </div>
                 </div>
+
+                <?php if (empty($tree)) : ?>
+                <div id="noDataMessage" class="col-12 text-center p-5">
+                    <h4 class="text-muted">Dokumen belum ditambahkan</h4>
+                </div>
+                <?php endif; ?>
+
                 <div id="noResultsMessage" class="col-12 text-center p-5" style="display: none;">
                     <h4 class="text-muted">Tidak Ditemukan</h4>
                     <p class="text-muted">Tidak ada folder atau file yang cocok dengan kriteria filter Anda.</p>
