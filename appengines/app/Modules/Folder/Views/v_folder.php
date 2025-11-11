@@ -324,7 +324,6 @@
         <div id="info" class="text-center p-5" style="display: none;">
           <h4 class="text-muted">Silahkan pilih role terlebih dahulu.</h4>
         </div>
-
         <!-- [BARU] Wrapper untuk viewport zoom -->
         <div id="zoom-viewport" style="transition: height 0.2s ease-out;">
           <div id="folder" class="d-flex flex-column">
@@ -1236,9 +1235,14 @@
 
         // [PERBAIKAN] Jika folder di-drop ke dalam folder lain, letakkan di paling bawah.
         // Kondisi ini aktif jika item yang di-drag adalah 'folder', memiliki 'parentFolder' baru,
-        // dan level indentasinya lebih besar dari level parent-nya.
-        if (draggedItem.dataset.type === 'folder' && parentFolder && count > parseInt(parentFolder.dataset
-            .count)) {
+        // dan folder tersebut benar-benar pindah ke parent yang BARU.
+        const originalParentId = draggedItem.dataset.startParent || '0';
+        const newParentId = parentFolder ? parentFolder.id : '0';
+
+        if (draggedItem.dataset.type === 'folder' &&
+          parentFolder &&
+          count > parseInt(parentFolder.dataset.count) &&
+          originalParentId !== newParentId) {
           let lastChildOfParent = parentFolder;
           let currentElement = parentFolder.nextElementSibling;
           const parentLevel = parseInt(parentFolder.dataset.count);
@@ -1308,6 +1312,19 @@
 
         moveChildren(draggedItem, childrenOfDraggedItem, originalLevel);
 
+        updateKodeFolder(); // This updates the `dataset.parent` attributes.
+
+        // FIX: Re-apply the visibility state for the dragged folder's children
+        if (draggedItem.dataset.type === 'folder') {
+          const folderId = draggedItem.id;
+          // Determine the target collapsed state based on folderState.
+          // If folderState[folderId] is true (expanded), we want to show children (isCollapsed = false).
+          // If folderState[folderId] is false (collapsed), we want to hide children (isCollapsed = true).
+          // If folderState[folderId] is undefined (never toggled), default to expanded (isCollapsed = false).
+          const shouldBeCollapsed = folderState[folderId] === false;
+          toggleChildren(folderId, shouldBeCollapsed);
+        }
+
         updateKodeFolder();
         saveAll();
         updateCarets();
@@ -1318,6 +1335,9 @@
           draggedItem.style.opacity = "1";
           delete draggedItem.dataset.prevId;
           delete draggedItem.dataset.oldCount;
+          delete draggedItem.dataset.startParent; // Clean up this dataset property
+          delete draggedItem.dataset.startSiblingIndex; // Clean up this dataset property
+          delete draggedItem.dataset.startIndex; // Clean up this dataset property
         }
         if (placeholder.parentNode) {
           placeholder.remove();
@@ -1634,7 +1654,6 @@
   filterTipe = document.getElementById("filter-tipe");
   filterKategori = document.getElementById("filter-kategori");
   keteranganAksi = document.querySelectorAll(".aksi-text");
-  noData = document.getElementById("noDataMessage");
 
   // Event listener untuk toggle otorisasi
   toggleOtorisasi = document.getElementById('toggleOtorisasi');
@@ -1648,7 +1667,6 @@
       var sortDropdown = document.querySelector('.dropdown'); // Target the dropdown container
       var divider = document.querySelectorAll(".divider-crud");
 
-
       if (this.checked) {
         addFolderBtn.style.display = "none";
         otorisasiRole.style.display = "flex";
@@ -1660,7 +1678,6 @@
         findSection.classList.add("d-none");
         manageDocument.classList.add("d-none");
         document.getElementById('zoom-viewport').style.display = 'none'; // [FIX] Sembunyikan viewport zoom
-        noData.style.display = "none";
         if (sortDropdown) sortDropdown.style.display = "none"; // Hide the entire sort dropdown
         filterJenis.style.display = "none";
         searchInput.style.display = "none";
@@ -1702,7 +1719,6 @@
       document.getElementById('zoom-viewport').style.display =
         'none'; // [FIX] Sembunyikan viewport saat tidak ada role dipilih
       keteranganAksi.forEach(el => el.style.display = "none");
-      noData.style.display = "none";
 
     } else if (role != "") {
       document.querySelector('#info').classList.add('d-none');
@@ -1715,7 +1731,6 @@
       document.getElementById('zoom-viewport').style.display =
         'block'; // [FIX] Tampilkan kembali viewport zoom
       findSection.classList.remove("d-none");
-      noData.style.display = "block";
 
       // [FIX] Panggil adjustZoomViewportHeight setelah folder ditampilkan untuk memperbaiki bug layout saat zoom.
       setTimeout(adjustZoomViewportHeight, 100);
