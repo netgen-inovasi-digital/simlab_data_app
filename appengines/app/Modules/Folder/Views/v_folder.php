@@ -143,8 +143,9 @@
                 </div>
 
                 <!-- SEARCH -->
-                <div class="col-12 col-md-4 col-lg-3" id="searching-folder-file">
-                  <input type="text" class="form-control" id="search" placeholder="Cari nama folder/file...">
+                <div id="searching-folder-file" style="max-width: 250px;">
+                  <input type="text" class="form-control" id="search"
+                    placeholder="Cari nama folder/file...">
                 </div>
 
                 <!-- FILTER GROUP -->
@@ -323,23 +324,25 @@
         <div id="info" class="text-center p-5" style="display: none;">
           <h4 class="text-muted">Silahkan pilih role terlebih dahulu.</h4>
         </div>
+
         <!-- [BARU] Wrapper untuk viewport zoom -->
         <div id="zoom-viewport" style="transition: height 0.2s ease-out;">
           <div id="folder" class="d-flex flex-column">
             <?php
             if (!empty($tree)) {
-              // [MODIFIKASI] Pindahkan style ke sini dan tambahkan transisi untuk 'width'
               echo '<style>#folder { transform-origin: top left; transition: transform 0.2s ease-out, width 0.2s ease-out; }</style>';
-
               renderTree($tree, 0, null, $user);
-            } else {
-              echo '<div class="col-12 text-center p-5" id="noDataMessage">
-            <h4 class="text-muted">Dokumen belum ditambahkan</h4>
-            </div>';
             }
             ?>
           </div>
         </div>
+
+        <?php if (empty($tree)) : ?>
+          <div id="noDataMessage" class="col-12 text-center p-5">
+            <h4 class="text-muted">Dokumen belum ditambahkan</h4>
+          </div>
+        <?php endif; ?>
+
         <div id="noResultsMessage" class="col-12 text-center p-5" style="display: none;">
           <h4 class="text-muted">Tidak Ditemukan</h4>
           <p class="text-muted">Tidak ada folder atau file yang cocok dengan kriteria filter Anda.</p>
@@ -1631,6 +1634,7 @@
   filterTipe = document.getElementById("filter-tipe");
   filterKategori = document.getElementById("filter-kategori");
   keteranganAksi = document.querySelectorAll(".aksi-text");
+  noData = document.getElementById("noDataMessage");
 
   // Event listener untuk toggle otorisasi
   toggleOtorisasi = document.getElementById('toggleOtorisasi');
@@ -1644,6 +1648,7 @@
       var sortDropdown = document.querySelector('.dropdown'); // Target the dropdown container
       var divider = document.querySelectorAll(".divider-crud");
 
+
       if (this.checked) {
         addFolderBtn.style.display = "none";
         otorisasiRole.style.display = "flex";
@@ -1655,6 +1660,7 @@
         findSection.classList.add("d-none");
         manageDocument.classList.add("d-none");
         document.getElementById('zoom-viewport').style.display = 'none'; // [FIX] Sembunyikan viewport zoom
+        noData.style.display = "none";
         if (sortDropdown) sortDropdown.style.display = "none"; // Hide the entire sort dropdown
         filterJenis.style.display = "none";
         searchInput.style.display = "none";
@@ -1696,6 +1702,7 @@
       document.getElementById('zoom-viewport').style.display =
         'none'; // [FIX] Sembunyikan viewport saat tidak ada role dipilih
       keteranganAksi.forEach(el => el.style.display = "none");
+      noData.style.display = "none";
 
     } else if (role != "") {
       document.querySelector('#info').classList.add('d-none');
@@ -1708,6 +1715,7 @@
       document.getElementById('zoom-viewport').style.display =
         'block'; // [FIX] Tampilkan kembali viewport zoom
       findSection.classList.remove("d-none");
+      noData.style.display = "block";
 
       // [FIX] Panggil adjustZoomViewportHeight setelah folder ditampilkan untuk memperbaiki bug layout saat zoom.
       setTimeout(adjustZoomViewportHeight, 100);
