@@ -1312,6 +1312,19 @@ function addDragEvents(item) {
 
             moveChildren(draggedItem, childrenOfDraggedItem, originalLevel);
 
+            updateKodeFolder(); // This updates the `dataset.parent` attributes.
+
+            // FIX: Re-apply the visibility state for the dragged folder's children
+            if (draggedItem.dataset.type === 'folder') {
+                const folderId = draggedItem.id;
+                // Determine the target collapsed state based on folderState.
+                // If folderState[folderId] is true (expanded), we want to show children (isCollapsed = false).
+                // If folderState[folderId] is false (collapsed), we want to hide children (isCollapsed = true).
+                // If folderState[folderId] is undefined (never toggled), default to expanded (isCollapsed = false).
+                const shouldBeCollapsed = folderState[folderId] === false;
+                toggleChildren(folderId, shouldBeCollapsed);
+            }
+
             updateKodeFolder();
             saveAll();
             updateCarets();
@@ -1322,6 +1335,9 @@ function addDragEvents(item) {
                 draggedItem.style.opacity = "1";
                 delete draggedItem.dataset.prevId;
                 delete draggedItem.dataset.oldCount;
+                delete draggedItem.dataset.startParent; // Clean up this dataset property
+                delete draggedItem.dataset.startSiblingIndex; // Clean up this dataset property
+                delete draggedItem.dataset.startIndex; // Clean up this dataset property
             }
             if (placeholder.parentNode) {
                 placeholder.remove();
