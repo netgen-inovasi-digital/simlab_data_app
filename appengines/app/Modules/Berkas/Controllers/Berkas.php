@@ -611,7 +611,6 @@ class Berkas extends BaseController
       // $fileUrl = base_url('uploads/' . $row->berkas);
 
       $response = array();
-      $response[] = esc($row->nomor_dokumen != null) ? esc($row->nomor_dokumen) : 'Tidak ada';
       $response[] = $titleBlock;
       $response[] = esc($row->nama_kategori) ?? 'Tidak Berkategori';
       $response[] = '<span class="fw-medium ">' . esc($row->created_at != null ? date('d-m-Y', strtotime($row->created_at)) : date('d-m-Y', strtotime($row->updated_at))) . '</span>';
