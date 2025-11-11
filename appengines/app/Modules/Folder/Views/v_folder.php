@@ -94,7 +94,9 @@
         <label class="card-title mb-0"><?= $title ?></label>
         <div class="d-flex align-items-end gap-1">
           <?= $user->role_id == 8 || $user->role_id == 10 ? '
-
+          <button id="refresh" class="btn btn-success">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+          </button>
           <button id="addFolderButton" class="btn btn-primary">
     <i class="bi bi-plus-circle-dotted"></i> Tambah
 </button>' : '' ?>
@@ -1003,8 +1005,15 @@
 
 
   folderState = {}; // Menyimpan state collapsed/expanded folder
+  refreshButton = document.getElementById("refresh");
 
   addAction();
+
+  if (refreshButton) {
+    refreshButton.addEventListener("click", function() {
+      loadContent('folder');
+    });
+  }
 
   document.querySelectorAll(".file-item").forEach(item => {
     item.addEventListener("click", function(e) {
@@ -1655,6 +1664,7 @@
   filterKategori = document.getElementById("filter-kategori");
   keteranganAksi = document.querySelectorAll(".aksi-text");
   noData = document.getElementById("noDataMessage");
+  refreshBtn = document.getElementById("refresh");
 
   // Event listener untuk toggle otorisasi
   toggleOtorisasi = document.getElementById('toggleOtorisasi');
@@ -1670,6 +1680,7 @@
 
       if (this.checked) {
         addFolderBtn.style.display = "none";
+        refreshBtn.style.display = "none";
         otorisasiRole.style.display = "flex";
         checkboxes.forEach(cb => cb.style.display = "inline-block");
         lihatFolderOtorisasi.forEach(el => el.style.display = "inline-block");
