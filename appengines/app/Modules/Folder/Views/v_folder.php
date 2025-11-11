@@ -1654,6 +1654,7 @@
   filterTipe = document.getElementById("filter-tipe");
   filterKategori = document.getElementById("filter-kategori");
   keteranganAksi = document.querySelectorAll(".aksi-text");
+  noData = document.getElementById("noDataMessage");
 
   // Event listener untuk toggle otorisasi
   toggleOtorisasi = document.getElementById('toggleOtorisasi');
@@ -1678,6 +1679,7 @@
         findSection.classList.add("d-none");
         manageDocument.classList.add("d-none");
         document.getElementById('zoom-viewport').style.display = 'none'; // [FIX] Sembunyikan viewport zoom
+        if (noData) noData.style.display = "none";
         if (sortDropdown) sortDropdown.style.display = "none"; // Hide the entire sort dropdown
         filterJenis.style.display = "none";
         searchInput.style.display = "none";
@@ -1719,6 +1721,7 @@
       document.getElementById('zoom-viewport').style.display =
         'none'; // [FIX] Sembunyikan viewport saat tidak ada role dipilih
       keteranganAksi.forEach(el => el.style.display = "none");
+      if (noData) noData.style.display = "none";
 
     } else if (role != "") {
       document.querySelector('#info').classList.add('d-none');
@@ -1731,6 +1734,7 @@
       document.getElementById('zoom-viewport').style.display =
         'block'; // [FIX] Tampilkan kembali viewport zoom
       findSection.classList.remove("d-none");
+      if (noData) noData.style.display = "block";
 
       // [FIX] Panggil adjustZoomViewportHeight setelah folder ditampilkan untuk memperbaiki bug layout saat zoom.
       setTimeout(adjustZoomViewportHeight, 100);
