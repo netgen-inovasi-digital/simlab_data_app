@@ -126,6 +126,7 @@ class Berkas extends BaseController
   {
     $idenc = $this->request->getPost('idFile');
     $isEdit = !empty($idenc) && ctype_xdigit($idenc) && strlen($idenc) % 2 === 0;
+    $confirmDuplicate = $this->request->getPost('confirm_duplicate') === 'true'; // [BARU] Flag konfirmasi duplikat
 
     // $modelOtorisasiFile = new MyModel('otoritas_file');
     // $modelUser = new MyModel('users');
@@ -191,13 +192,23 @@ class Berkas extends BaseController
       if ($isEdit) {
         $oldData = $model->getDataById($this->id, $this->encrypter->decrypt(hex2bin($idenc)));
 
-        if (
-          ($cekDuplikat && $cekDuplikat->id_files != $oldData->id_files) ||
-          ($cekNoDok && $cekNoDok->id_files != $oldData->id_files)
-        ) {
+        // [UBAH] Hanya tolak jika file duplikat (nama file yang sama), nomor dokumen duplikat boleh dengan konfirmasi
+        if ($cekDuplikat && $cekDuplikat->id_files != $oldData->id_files) {
           return $this->response->setJSON([
             'res' => 'duplicate',
-            'message' => 'File atau nomor dokumen sudah ada diupload.',
+            'type' => 'file',
+            'message' => 'File dengan nama yang sama sudah ada diupload.',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+          ]);
+        }
+
+        // [BARU] Jika nomor dokumen duplikat dan belum dikonfirmasi, minta konfirmasi
+        if ($cekNoDok && $cekNoDok->id_files != $oldData->id_files && !$confirmDuplicate) {
+          return $this->response->setJSON([
+            'res' => 'duplicate_nomor_dokumen',
+            'type' => 'nomor_dokumen',
+            'message' => 'No. Dokumen sudah ada. Apakah Anda ingin melanjutkan?',
             'xname' => csrf_token(),
             'xhash' => csrf_hash()
           ]);
@@ -208,10 +219,23 @@ class Berkas extends BaseController
           unlink($path . '/' . $oldData->berkas);
         }
       } else {
-        if ($cekDuplikat || $cekNoDok) {
+        // [UBAH] Untuk tambah baru, file duplikat tidak boleh, tapi nomor dokumen duplikat boleh dengan konfirmasi
+        if ($cekDuplikat) {
           return $this->response->setJSON([
             'res' => 'duplicate',
-            'message' => 'File atau nomor dokumen sudah ada diupload.',
+            'type' => 'file',
+            'message' => 'File dengan nama yang sama sudah ada diupload.',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+          ]);
+        }
+
+        // [BARU] Jika nomor dokumen duplikat dan belum dikonfirmasi, minta konfirmasi
+        if ($cekNoDok && !$confirmDuplicate) {
+          return $this->response->setJSON([
+            'res' => 'duplicate_nomor_dokumen',
+            'type' => 'nomor_dokumen',
+            'message' => 'No. Dokumen sudah ada. Apakah Anda ingin melanjutkan?',
             'xname' => csrf_token(),
             'xhash' => csrf_hash()
           ]);
@@ -266,13 +290,23 @@ class Berkas extends BaseController
           ]);
         }
 
-        if (
-          ($cekDuplikat && $cekDuplikat->id_files != $oldData->id_files) ||
-          ($cekNoDok && $cekNoDok->id_files != $oldData->id_files)
-        ) {
+        // [UBAH] Hanya tolak jika file duplikat (nama file yang sama), nomor dokumen duplikat boleh dengan konfirmasi
+        if ($cekDuplikat && $cekDuplikat->id_files != $oldData->id_files) {
           return $this->response->setJSON([
             'res' => 'duplicate',
-            'message' => 'File atau nomor dokumen sudah ada diupload.',
+            'type' => 'file',
+            'message' => 'File dengan nama yang sama sudah ada diupload.',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+          ]);
+        }
+
+        // [BARU] Jika nomor dokumen duplikat dan belum dikonfirmasi, minta konfirmasi
+        if ($cekNoDok && $cekNoDok->id_files != $oldData->id_files && !$confirmDuplicate) {
+          return $this->response->setJSON([
+            'res' => 'duplicate_nomor_dokumen',
+            'type' => 'nomor_dokumen',
+            'message' => 'No. Dokumen sudah ada. Apakah Anda ingin melanjutkan?',
             'xname' => csrf_token(),
             'xhash' => csrf_hash()
           ]);
