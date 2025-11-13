@@ -40,6 +40,7 @@ class Personel extends BaseController
     $modelPersonel = new MyModel($this->table);
     $modelUser = new MyModel('users');
     $modelRoles = new MyModel('roles');
+    $modelPenempatan = new MyModel('penempatan_categories'); // [BARU] Model penempatan
     // $modelOtorPersonel = new MyModel('otoritas_personel'); // [NONAKTIFKAN] Otorisasi belum digunakan
 
     // Ambil data user dan role-nya
@@ -47,6 +48,18 @@ class Personel extends BaseController
 
     // Ambil semua data personel, diurutkan berdasarkan 'urutan'
     $getPersonel = $modelPersonel->getAllData('urutan', 'asc');
+
+    // Ambil daftar penempatan untuk digunakan di view (filter + form)
+    $penempatanList = $modelPenempatan->getAllData('nama', 'asc');
+    $penempatanMap = [];
+    foreach ($penempatanList as $p) {
+      $penempatanMap[$p->id_penempatan] = $p->nama;
+    }
+
+    // Sisipkan nama penempatan ke setiap objek personel untuk memudahkan view
+    foreach ($getPersonel as $personel) {
+      $personel->penempatan = isset($personel->id_penempatan) && isset($penempatanMap[$personel->id_penempatan]) ? $penempatanMap[$personel->id_penempatan] : '';
+    }
 
     // [UBAH] Terapkan otorisasi hardcode
     // Tombol hanya akan muncul jika pengguna adalah superadmin atau admin
@@ -66,6 +79,7 @@ class Personel extends BaseController
       'user' => $user,
       'role' => $modelRoles->getAllData(),
       'can_add' => $isAuthorized, // [BARU] Kirim status otorisasi ke view
+      'penempatanList' => $penempatanList, // [BARU] Daftar penempatan untuk select/filter
     ];
     return view('Modules\Personel\Views\v_personel', $data);
   }
@@ -101,6 +115,14 @@ class Personel extends BaseController
       $modelPersonelFiles = new MyModel('personel_files'); // [BARU] Model untuk tabel pivot
       $all_docs = [];
 
+      // Ambil nama penempatan (jika ada) untuk dikembalikan ke frontend sebagai nama dan id
+      $modelPenempatan = new MyModel('penempatan_categories');
+      $penempatanName = '';
+      if (!empty($get->id_penempatan)) {
+        $pen = $modelPenempatan->getDataById('id_penempatan', $get->id_penempatan);
+        $penempatanName = $pen ? $pen->nama : '';
+      }
+
       // 1. [UBAH] Ambil semua file yang tertaut melalui tabel pivot `personel_files`.
       $personelFiles = $modelPersonelFiles->getAllDataByJoin(
         ['files' => 'files.id_files = personel_files.id_files'], // Asumsi nama kolom child_file
@@ -124,7 +146,9 @@ class Personel extends BaseController
         'id' => $idenc,
         'nama' => $get->nama ?? '',
         'jabatan' => $get->jabatan ?? '',
-        'penempatan' => $get->penempatan ?? '',
+        // kirimkan id_penempatan agar form select bisa memilih opsi yang benar
+        'penempatan' => $get->id_penempatan ?? '',
+        'penempatan_name' => $penempatanName,
         'nip' => $get->nip ?? '',
         'tempat_lahir' => $get->tempat_lahir ?? '',
         'tanggal_lahir' => $get->tanggal_lahir ?? '',
@@ -269,7 +293,8 @@ class Personel extends BaseController
       $rules = [
         'nama' => 'required',
         'jabatan' => 'required',
-        'penempatan' => 'required',
+        // Expect penempatan as selected id from penempatan_categories
+        'penempatan' => 'required|is_natural_no_zero',
         'tempat_lahir' => 'required',
         'tanggal_lahir' => 'required',
         'jenis_kelamin' => 'required',
@@ -368,7 +393,8 @@ class Personel extends BaseController
       $data = [
         'nama' => $this->request->getPost('nama'),
         'jabatan' => $this->request->getPost('jabatan'),
-        'penempatan' => $this->request->getPost('penempatan'),
+        // Simpan sebagai FK id_penempatan di database
+        'id_penempatan' => (int)$this->request->getPost('penempatan'),
         'nip' => $this->request->getPost('nip'),
         'tempat_lahir' => $this->request->getPost('tempat_lahir'),
         'tanggal_lahir' => $this->request->getPost('tanggal_lahir'),
