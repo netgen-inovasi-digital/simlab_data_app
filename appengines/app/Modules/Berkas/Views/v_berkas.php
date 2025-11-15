@@ -624,9 +624,54 @@
           window.location.href = data.link;
         } else if (data.res == 'check') {
           sayAlert('errorModal', 'Error', data.link, 'warning');
-        } else if (data.res == 'duplicate') {
-          sayAlert('errorModal', 'Error', data.message, 'warning');
+        } else if (data.res == 'duplicate_nomor_dokumen') {
+          // [BARU] Konfirmasi untuk duplikat nomor dokumen dengan warna info (biru muda) dan tanpa timer
+          sayAlert('confirmModal', 'Konfirmasi', data.message, 'info', true, () => {
+            // User klik "Lanjutkan", kirim ulang dengan confirm_duplicate = true
+            const newFormData = new FormData(form);
+            newFormData.append('confirm_duplicate', 'true');
+            fetch(url, {
+                method: 'POST',
+                body: newFormData
+              })
+              .then(response => response.json())
+              .then(resultData => {
+                $('[name=' + resultData.xname + ']').val(resultData.xhash);
+                if ($('#modalFormFile').hasClass('show')) $('#modalFormFile').modal('hide');
+
+                if (resultData.res == true) {
+                  if (table) table.fetchData({
+                    reload: true
+                  });
+                  sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+                } else if (resultData.res == 'reload') {
+                  if (table) table.fetchData({
+                    reload: true
+                  });
+                  sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+                } else if (resultData.res == 'refresh') {
+                  if (table) table.fetchData({
+                    reload: true
+                  });
+                  sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+                } else if (resultData.res == 'redirect') {
+                  window.location.href = resultData.link;
+                } else if (resultData.res == 'refresh-print') {
+                  loadContent(resultData.link);
+                  window.open(resultData.print, "_blank");
+                } else {
+                  sayAlert('errorModal', 'Error', resultData.message || 'Data gagal disimpan.', 'warning');
+                }
+              })
+              .catch(error => {
+                sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
+              }).finally(() => {
+                hideLoading();
+              });
+          }, 'Lanjutkan');
         } else if (data.res == 'empty') {
+          sayAlert('errorModal', 'Error', data.message, 'warning');
+        } else if (data.res == 'duplicate') {
           sayAlert('errorModal', 'Error', data.message, 'warning');
         } else if (data.res == 'refresh-print') {
           loadContent(data.link);
