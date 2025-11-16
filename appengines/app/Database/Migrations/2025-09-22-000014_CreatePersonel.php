@@ -23,8 +23,8 @@ class CreatePersonel extends Migration
         'constraint' => 255,
         'null'       => true,
       ],
-      'penempatan' => [
-        'type' => "ENUM('Lab Terpadu','Mutu dan Administrasi','Lab Tanah','Lab Kualitas Air','Lab Udara(PPLH)','Lab Struktur dan Material')",
+      'id_penempatan' => [
+        'type' => 'INT',
         'null' => true,
       ],
       'foto' => [
@@ -99,6 +99,9 @@ class CreatePersonel extends Migration
     ]);
     $this->forge->addKey('id_personel', true);
     $this->forge->addUniqueKey('email');
+    $this->forge->addForeignKey('id_penempatan', 'penempatan_categories', 'id_penempatan', 'CASCADE', 'CASCADE');
+
+
     $this->forge->createTable('personel');
   }
 
