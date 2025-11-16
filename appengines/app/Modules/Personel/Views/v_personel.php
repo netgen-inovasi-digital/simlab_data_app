@@ -37,10 +37,10 @@
     }
 
     .drag-placeholder {
-        height: 100%;
-        min-height: 300px;
         border: 2px dashed #0d6efd;
         border-radius: 0.25rem;
+        /* [PERBAIKAN] Membuat placeholder meregang sesuai tinggi baris grid */
+        align-self: stretch;
     }
 
     .biodata-table {
@@ -294,12 +294,13 @@
                             </div>
                         <?php } ?>
                     <?php else : ?>
-                        <div id="noDataMessage" class="col-12 text-center p-5">
+                        <!-- [PERBAIKAN] Tambahkan style agar div ini membentang selebar grid container -->
+                        <div id="noDataMessage" class="text-center p-5" style="grid-column: 1 / -1;">
                             <h4 class="text-muted">Personel belum ditambahkan</h4>
                         </div>
                     <?php endif; ?>
 
-                    <div id="noResultsMessage" class="col-12 text-center p-5" style="display: none;">
+                    <div id="noResultsMessage" class="text-center p-5" style="display: none; grid-column: 1 / -1;">
                         <h4 class="text-muted">Data Tidak Ditemukan</h4>
                         <p class="text-muted">Tidak ada personel yang cocok dengan kriteria pencarian atau filter
                             Anda.
@@ -529,7 +530,8 @@
         container = document.getElementById("personel-container");
         placeholder = document.createElement("div");
         loadingIndicator = document.getElementById('loading-indicator');
-        placeholder.classList.add("col-12", "col-sm-6", "col-md-4", "col-lg-3", "drag-placeholder");
+        // [PERBAIKAN] Hapus kelas kolom Bootstrap karena tidak relevan untuk container grid.
+        placeholder.classList.add("drag-placeholder");
         // [BARU] Variabel global untuk menyimpan token CSRF terbaru
         csrfStore = {
             name: '<?= csrf_token() ?>',
@@ -1409,6 +1411,9 @@
              */
             container.addEventListener("dragover", (e) => {
                 e.preventDefault();
+                // [PERBAIKAN] Hanya jalankan logika jika item yang di-drag adalah personel item yang valid.
+                // Ini mencegah placeholder muncul saat men-drag teks atau elemen lain.
+                if (!draggedItem) return;
                 const afterElement = getDragAfterElement(container, e.clientX, e.clientY);
                 if (afterElement == null) {
                     container.appendChild(placeholder);
