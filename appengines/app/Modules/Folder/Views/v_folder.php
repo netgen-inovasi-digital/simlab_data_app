@@ -1531,7 +1531,8 @@
     item.addEventListener("dragover", (e) => {
       e.preventDefault();
       
-      // [BARU] Logika Hover-to-Expand
+      // [DISABLED] Logika Hover-to-Expand - Dinonaktifkan sesuai permintaan user agar folder tidak terbuka otomatis saat di-drag
+      /*
       const hoveredFolder = e.target.closest('.folder-item');
       if (hoveredFolder && hoveredFolder !== draggedItem) {
         const folderId = hoveredFolder.id;
@@ -1561,6 +1562,7 @@
         clearTimeout(dragHoverTimeout);
         lastHoveredFolderId = null;
       }
+      */
 
       var after = getDragAfterElement(folderMenu, e.clientY);
       if (after == null) folderMenu.appendChild(placeholder);
