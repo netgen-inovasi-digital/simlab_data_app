@@ -108,7 +108,7 @@ class Berkas extends BaseController
 
     $db->transComplete();
     if ($db->transStatus() === false) {
-      return $this->response->setStatusCode(500)->setJSON(['res' => 'error', 'message' => 'Gagal menghapus data dari database.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
+      return $this->response->setJSON(['res' => false, 'message' => 'Gagal menghapus data dari database.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
     }
     if ($res) {
       $res = 'refresh';

@@ -552,7 +552,6 @@
               $('[name=' + data.xname + ']').val(data.xhash);
               sayAlert('successModal', 'Success', 'Data berhasil dihapus.', 'success');
             } else {
-              // [FIX] Tampilkan pesan error dari server
               sayAlert('errorModal', 'Error', data.message || 'Data gagal dihapus.', 'warning');
             }
           })
