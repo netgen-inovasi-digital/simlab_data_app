@@ -331,7 +331,7 @@
           <div id="folder" class="d-flex flex-column">
             <?php
             if (!empty($tree)) {
-              echo '<style>#folder { transform-origin: top left; transition: transform 0.2s ease-out, width 0.2s ease-out; }</style>';
+              echo '<style>#folder { transform-origin: top left; transition: transform 0.2s ease-out, width 0.2s ease-out, opacity 0.2s ease-in; opacity: 0; }</style>';
               renderTree($tree, 0, null, $user);
             }
             ?>
@@ -1004,7 +1004,70 @@
   });
 
 
-  folderState = {}; // Menyimpan state collapsed/expanded folder
+  // [MODIFIKASI] Inisialisasi folderState dari localStorage
+  try {
+    const savedState = localStorage.getItem('folderState');
+    folderState = savedState ? JSON.parse(savedState) : {};
+  } catch (e) {
+    console.error("Gagal memuat state folder:", e);
+    folderState = {};
+  }
+
+  /**
+   * [BARU] Fungsi untuk menyimpan state folder ke localStorage
+   */
+  function saveFolderState() {
+    try {
+      localStorage.setItem('folderState', JSON.stringify(folderState));
+    } catch (e) {
+      console.error("Gagal menyimpan state folder:", e);
+    }
+  }
+
+  /**
+   * [BARU] Fungsi untuk mengembalikan tampilan folder sesuai state yang tersimpan.
+   * Dijalankan saat halaman dimuat.
+   * [UPDATE] Menggunakan data-id (ID database asli) yang stabil, bukan ID elemen (terenkripsi) yang berubah-ubah.
+   */
+  function restoreFolderState() {
+    const allFolders = document.querySelectorAll('.folder-item');
+    
+    allFolders.forEach(folderEl => {
+      const rawId = folderEl.dataset.id; // Ambil ID asli dari data-id
+      if (!rawId) return;
+
+      // Cek apakah ada state tersimpan untuk folder ini
+      // Default: jika tidak ada di state, anggap expanded (true) atau collapsed (false)?
+      // Berdasarkan keluhan user "semua folder terbuka", sepertinya defaultnya terbuka.
+      // Kita ingin mengembalikan status "collapsed" jika user menutupnya.
+      
+      // Jika state tersimpan adalah FALSE (collapsed), maka kita tutup.
+      // Jika TRUE atau undefined, biarkan terbuka (default).
+      const isExpanded = folderState[rawId];
+
+      if (isExpanded === false) {
+        const caret = folderEl.querySelector(".bi-caret-down");
+        if (caret) {
+          caret.classList.add("collapsed");
+        }
+        // Sembunyikan anak-anaknya
+        toggleChildren(folderEl.id, true); 
+      }
+    });
+    
+    // [FIX] Sesuaikan tinggi viewport setelah restore selesai
+    setTimeout(() => {
+      adjustZoomViewportHeight();
+      // [BARU] Tampilkan folder setelah state dipulihkan untuk mencegah flickering
+      const folderContainer = document.getElementById('folder');
+      if (folderContainer) {
+        folderContainer.style.opacity = '1';
+      }
+    }, 100);
+  }
+
+  // Panggil restoreFolderState setelah DOM siap (di akhir script ini)
+  setTimeout(restoreFolderState, 50);
   refreshButton = document.getElementById("refresh");
 
   addAction();
@@ -1543,9 +1606,16 @@
     if (e.target.classList.contains("bi-caret-down")) {
       const folder = e.target.closest(".folder-item");
       const folderId = folder.id;
+      const rawId = folder.dataset.id; // [UPDATE] Ambil ID asli
+      
       e.target.classList.toggle("collapsed");
       const isCollapsed = e.target.classList.contains("collapsed");
-      folderState[folderId] = !isCollapsed;
+      
+      if (rawId) {
+        folderState[rawId] = !isCollapsed; // [UPDATE] Simpan state pakai ID asli
+        saveFolderState();
+      }
+      
       toggleChildren(folderId, isCollapsed);
     }
 
