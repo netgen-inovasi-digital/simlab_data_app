@@ -523,7 +523,7 @@
       sayAlert('confirmModal', 'Confirm!', 'Apakah yakin menghapus data ini?' + msg, 'danger', true, () => {
         showLoading();
         const id = closest.getAttribute('id');
-        const url = "<?= base_url('berkas/delete') ?>/" + id;
+        const url = "<?= base_url('berkas/delete') ?>";
 
         fetch(url, {
             method: 'POST',
@@ -531,6 +531,9 @@
               'Content-Type': 'application/x-www-form-urlencoded',
               'X-CSRF-TOKEN': document.querySelector('[name="<?= csrf_token() ?>"]').value
             },
+            body: JSON.stringify({
+              id
+            })
           })
           .then(response => response.json())
           .then(data => {

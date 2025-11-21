@@ -11,7 +11,7 @@ $routes->group('berkas', ['namespace' => 'Modules\Berkas\Controllers'], function
   $subroutes->post('submitLinks', 'Berkas::submitLinks');
   $subroutes->post('deleteLinks/(:any)', 'Berkas::deleteLinks/$1');
   $subroutes->get('edit', 'Berkas::edit');
-  $subroutes->post('delete/(:any)', 'Berkas::delete/$1');
+  $subroutes->post('delete', 'Berkas::delete');
   $subroutes->post('upload', 'Berkas::upload');
   $subroutes->get('(:any)', 'Berkas::$1');
 });

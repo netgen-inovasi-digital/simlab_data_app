@@ -51,9 +51,13 @@ class Berkas extends BaseController
     return $this->response->setJSON($data);
   }
 
-  function delete($id)
+  function delete()
   {
+    $json = $this->request->getJSON();
+    $id = $json->id ?? null;
+
     $idenc = $this->encrypter->decrypt(hex2bin($id));
+
     $model = new MyModel($this->table);
     $file = $model->getDataById($this->id, $idenc);
 
