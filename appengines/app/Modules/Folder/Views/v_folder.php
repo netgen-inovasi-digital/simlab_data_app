@@ -331,7 +331,7 @@
           <div id="folder" class="d-flex flex-column">
             <?php
             if (!empty($tree)) {
-              echo '<style>#folder { transform-origin: top left; transition: transform 0.2s ease-out, width 0.2s ease-out; }</style>';
+              echo '<style>#folder { transform-origin: top left; transition: transform 0.2s ease-out, width 0.2s ease-out, opacity 0.2s ease-in; opacity: 0; }</style>';
               renderTree($tree, 0, null, $user);
             }
             ?>
@@ -1004,7 +1004,70 @@
   });
 
 
-  folderState = {}; // Menyimpan state collapsed/expanded folder
+  // [MODIFIKASI] Inisialisasi folderState dari localStorage
+  try {
+    const savedState = localStorage.getItem('folderState');
+    folderState = savedState ? JSON.parse(savedState) : {};
+  } catch (e) {
+    console.error("Gagal memuat state folder:", e);
+    folderState = {};
+  }
+
+  /**
+   * [BARU] Fungsi untuk menyimpan state folder ke localStorage
+   */
+  function saveFolderState() {
+    try {
+      localStorage.setItem('folderState', JSON.stringify(folderState));
+    } catch (e) {
+      console.error("Gagal menyimpan state folder:", e);
+    }
+  }
+
+  /**
+   * [BARU] Fungsi untuk mengembalikan tampilan folder sesuai state yang tersimpan.
+   * Dijalankan saat halaman dimuat.
+   * [UPDATE] Menggunakan data-id (ID database asli) yang stabil, bukan ID elemen (terenkripsi) yang berubah-ubah.
+   */
+  function restoreFolderState() {
+    const allFolders = document.querySelectorAll('.folder-item');
+    
+    allFolders.forEach(folderEl => {
+      const rawId = folderEl.dataset.id; // Ambil ID asli dari data-id
+      if (!rawId) return;
+
+      // Cek apakah ada state tersimpan untuk folder ini
+      // Default: jika tidak ada di state, anggap expanded (true) atau collapsed (false)?
+      // Berdasarkan keluhan user "semua folder terbuka", sepertinya defaultnya terbuka.
+      // Kita ingin mengembalikan status "collapsed" jika user menutupnya.
+      
+      // Jika state tersimpan adalah FALSE (collapsed), maka kita tutup.
+      // Jika TRUE atau undefined, biarkan terbuka (default).
+      const isExpanded = folderState[rawId];
+
+      if (isExpanded === false) {
+        const caret = folderEl.querySelector(".bi-caret-down");
+        if (caret) {
+          caret.classList.add("collapsed");
+        }
+        // Sembunyikan anak-anaknya
+        toggleChildren(folderEl.id, true); 
+      }
+    });
+    
+    // [FIX] Sesuaikan tinggi viewport setelah restore selesai
+    setTimeout(() => {
+      adjustZoomViewportHeight();
+      // [BARU] Tampilkan folder setelah state dipulihkan untuk mencegah flickering
+      const folderContainer = document.getElementById('folder');
+      if (folderContainer) {
+        folderContainer.style.opacity = '1';
+      }
+    }, 100);
+  }
+
+  // Panggil restoreFolderState setelah DOM siap (di akhir script ini)
+  setTimeout(restoreFolderState, 50);
   refreshButton = document.getElementById("refresh");
 
   addAction();
@@ -1038,6 +1101,7 @@
   function addDragEvents(item) {
     let childrenOfDraggedItem = [];
     let originalLevel = 0;
+    let dragStartTimeout; // [FIX] Prevent race condition
 
     item.addEventListener("dragstart", (e) => {
       if (item.getAttribute('draggable') === 'false') {
@@ -1078,7 +1142,7 @@
 
       item.style.opacity = "0.7";
 
-      setTimeout(() => {
+      dragStartTimeout = setTimeout(() => {
         folderMenu.insertBefore(placeholder, item.nextSibling);
         item.style.display = "none";
         // [FIX] Sembunyikan juga semua anak dari item yang di-drag
@@ -1090,6 +1154,15 @@
     });
 
     item.addEventListener("dragend", (e) => {
+      clearTimeout(dragStartTimeout); // [FIX] Clear timeout immediately
+      
+      // [FIX] Jika placeholder belum masuk DOM, berarti drag belum visual (terlalu cepat)
+      // Kembalikan opacity dan batalkan logika dragend
+      if (!placeholder.parentNode) {
+        item.style.opacity = "1";
+        return;
+      }
+
       try {
         // 1. Hitung indentasi baru dulu
         let count = parseInt(item.dataset.count) || 0;
@@ -1294,11 +1367,16 @@
 
         // [PERBAIKAN] Logika untuk membuka folder induk setelah item dipindahkan ke dalamnya.
         if (parentFolder) {
+          const rawParentId = parentFolder.dataset.id; // [FIX] Gunakan ID asli
+          if (rawParentId) {
+             folderState[rawParentId] = true; // [FIX] Force open state
+             saveFolderState();
+          }
+          
           const caret = parentFolder.querySelector(".bi-caret-down"); // Cari ikon caret
           if (caret && caret.classList.contains("collapsed")) {
             // Jika folder induk dalam keadaan tertutup (collapsed)
             caret.classList.remove("collapsed"); // Hapus kelas 'collapsed' untuk mengubah ikon
-            folderState[parentFolder.id] = true; // Update state menjadi terbuka
             toggleChildren(parentFolder.id, false); // Panggil fungsi untuk menampilkan anak-anaknya
           }
         }
@@ -1310,6 +1388,7 @@
           // Cek apakah folder yang dipindahkan memiliki anak setelah dipindahkan
           const hasChildrenAfterMove = findChildrenRecursive(draggedItem).length > 0;
 
+          /* [MODIFIKASI] User meminta agar folder yang di-drag TIDAK otomatis terbuka.
           if (hasChildrenAfterMove && draggedItemCaret && draggedItemCaret.classList.contains(
               "collapsed")) {
             // Jika punya anak dan sedang tertutup, buka collapse-nya
@@ -1317,6 +1396,7 @@
             folderState[draggedItem.id] = true;
             toggleChildren(draggedItem.id, false);
           }
+          */
         }
 
         moveChildren(draggedItem, childrenOfDraggedItem, originalLevel);
@@ -1326,12 +1406,23 @@
         // FIX: Re-apply the visibility state for the dragged folder's children
         if (draggedItem.dataset.type === 'folder') {
           const folderId = draggedItem.id;
+          const rawId = draggedItem.dataset.id; // [FIX] Gunakan ID asli untuk lookup state
           // Determine the target collapsed state based on folderState.
-          // If folderState[folderId] is true (expanded), we want to show children (isCollapsed = false).
-          // If folderState[folderId] is false (collapsed), we want to hide children (isCollapsed = true).
-          // If folderState[folderId] is undefined (never toggled), default to expanded (isCollapsed = false).
-          const shouldBeCollapsed = folderState[folderId] === false;
+          // If folderState[rawId] is true (expanded), we want to show children (isCollapsed = false).
+          // If folderState[rawId] is false (collapsed), we want to hide children (isCollapsed = true).
+          // If folderState[rawId] is undefined (never toggled), default to expanded (isCollapsed = false).
+          const shouldBeCollapsed = folderState[rawId] === false;
           toggleChildren(folderId, shouldBeCollapsed);
+
+          // [FIX] Update caret icon to match state
+          const caret = draggedItem.querySelector(".bi-caret-down");
+          if (caret) {
+            if (shouldBeCollapsed) {
+              caret.classList.add("collapsed");
+            } else {
+              caret.classList.remove("collapsed");
+            }
+          }
         }
 
         updateKodeFolder();
@@ -1394,24 +1485,94 @@
           folderMenu.appendChild(item);
         }
       } else {
-        folderMenu.insertBefore(item, folderMenu.firstChild);
+        // [FIX] Jangan gunakan firstChild karena bisa jadi itu adalah <style> tag.
+        // Cari elemen pertama yang merupakan folder/file item.
+        const firstItem = [...folderMenu.children].find(el => el.classList.contains('folder-item') || el.classList.contains('file-item'));
+        if (firstItem) {
+          folderMenu.insertBefore(item, firstItem);
+        } else {
+          folderMenu.appendChild(item); // Jika kosong, append saja
+        }
       }
 
       item.style.display = "flex";
       item.style.opacity = "1";
-      // [FIX] Pastikan anak-anaknya juga ditampilkan kembali jika drag dibatalkan
-      const children = findChildrenRecursive(item);
-      children.forEach(child => {
-        child.style.display = "flex";
-      });
+      
       if (placeholder.parentNode) placeholder.remove();
+
+      // [FIX] Gunakan toggleChildren untuk mengembalikan status visibilitas anak-anak
+      // sesuai dengan state yang tersimpan (buka jika open, tutup jika closed)
+      if (item.dataset.type === 'folder') {
+          const rawId = item.dataset.id;
+          // Default expanded if undefined, otherwise follow state
+          const shouldBeCollapsed = folderState[rawId] === false;
+          toggleChildren(item.id, shouldBeCollapsed);
+          
+          // Update icon
+          const caret = item.querySelector(".bi-caret-down");
+          if (caret) {
+            if (shouldBeCollapsed) {
+              caret.classList.add("collapsed");
+            } else {
+              caret.classList.remove("collapsed");
+            }
+          }
+      } else {
+          // Jika file, pastikan ditampilkan (karena tidak punya anak)
+          // Tapi toggleChildren sebenarnya handle file juga jika dipanggil di parent
+          // Cuma di sini kita revert item itu sendiri.
+      }
     }
+
+    // [BARU] Variabel global untuk timeout hover
+    let dragHoverTimeout;
+    let lastHoveredFolderId = null;
 
     item.addEventListener("dragover", (e) => {
       e.preventDefault();
+      
+      // [DISABLED] Logika Hover-to-Expand - Dinonaktifkan sesuai permintaan user agar folder tidak terbuka otomatis saat di-drag
+      /*
+      const hoveredFolder = e.target.closest('.folder-item');
+      if (hoveredFolder && hoveredFolder !== draggedItem) {
+        const folderId = hoveredFolder.id;
+        
+        // Jika pindah ke folder lain, reset timeout
+        if (lastHoveredFolderId !== folderId) {
+          clearTimeout(dragHoverTimeout);
+          lastHoveredFolderId = folderId;
+          
+          // Cek apakah folder tertutup
+          const caret = hoveredFolder.querySelector(".bi-caret-down");
+          if (caret && caret.classList.contains("collapsed")) {
+            // Set timeout untuk membuka folder
+            dragHoverTimeout = setTimeout(() => {
+              caret.classList.remove("collapsed");
+              const rawId = hoveredFolder.dataset.id;
+              if (rawId) {
+                folderState[rawId] = true;
+                saveFolderState();
+              }
+              toggleChildren(folderId, false);
+            }, 800); // Waktu tunggu 800ms
+          }
+        }
+      } else {
+        // Jika tidak di atas folder, reset
+        clearTimeout(dragHoverTimeout);
+        lastHoveredFolderId = null;
+      }
+      */
+
       var after = getDragAfterElement(folderMenu, e.clientY);
       if (after == null) folderMenu.appendChild(placeholder);
       else folderMenu.insertBefore(placeholder, after);
+    });
+
+    // [BARU] Reset timeout saat meninggalkan elemen
+    item.addEventListener("dragleave", (e) => {
+       // Kita tidak langsung clear di sini karena dragleave sering terpanggil saat masuk ke child element
+       // Logika utama ada di dragover yang mendeteksi perubahan target
     });
 
     function moveChildren(folderEl, childrenToMove, originalParentLevel) {
@@ -1439,6 +1600,12 @@
       let nextEl = parentEl.nextElementSibling;
 
       while (nextEl) {
+        // [FIX] Skip non-item elements (like <style> tags or placeholders)
+        if (!nextEl.classList.contains('folder-item') && !nextEl.classList.contains('file-item')) {
+          nextEl = nextEl.nextElementSibling;
+          continue;
+        }
+
         if (nextEl === placeholder) {
           nextEl = nextEl.nextElementSibling;
           continue;
@@ -1494,7 +1661,8 @@
         if (iconContainer && !iconContainer.querySelector(".bi-caret-down")) {
           let caret = document.createElement("i");
           caret.className = "bi bi-caret-down";
-          if (folderState[folderId] === false) {
+          const rawId = folder.dataset.id; // [FIX] Gunakan ID asli
+          if (folderState[rawId] === false) {
             caret.classList.add("collapsed");
           }
           iconContainer.prepend(caret);
@@ -1543,9 +1711,16 @@
     if (e.target.classList.contains("bi-caret-down")) {
       const folder = e.target.closest(".folder-item");
       const folderId = folder.id;
+      const rawId = folder.dataset.id; // [UPDATE] Ambil ID asli
+      
       e.target.classList.toggle("collapsed");
       const isCollapsed = e.target.classList.contains("collapsed");
-      folderState[folderId] = !isCollapsed;
+      
+      if (rawId) {
+        folderState[rawId] = !isCollapsed; // [UPDATE] Simpan state pakai ID asli
+        saveFolderState();
+      }
+      
       toggleChildren(folderId, isCollapsed);
     }
 
