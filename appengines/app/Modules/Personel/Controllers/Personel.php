@@ -26,7 +26,7 @@ class Personel extends BaseController
     if (!$user_role_id) return false;
 
     // [UBAH] Cek apakah role ID adalah superadmin (8) atau admin (1)
-    return in_array($user_role_id, [8, 1]);
+    return in_array($user_role_id, [8, 1, 10]);
   }
 
   public function index()

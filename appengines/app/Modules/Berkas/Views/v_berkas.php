@@ -22,7 +22,7 @@
               <th show width="8%">No.</th>
               <th show>Judul</th>
               <th show>Kategori</th>
-              <th>Tanggal Upload</th>
+              <th>Tanggal Terbit</th>
               <th show class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
             </tr>
           </thead>
@@ -523,7 +523,7 @@
       sayAlert('confirmModal', 'Confirm!', 'Apakah yakin menghapus data ini?' + msg, 'danger', true, () => {
         showLoading();
         const id = closest.getAttribute('id');
-        const url = "<?= base_url('berkas/delete') ?>/" + id;
+        const url = "<?= base_url('berkas/delete') ?>";
 
         fetch(url, {
             method: 'POST',
@@ -531,6 +531,9 @@
               'Content-Type': 'application/x-www-form-urlencoded',
               'X-CSRF-TOKEN': document.querySelector('[name="<?= csrf_token() ?>"]').value
             },
+            body: JSON.stringify({
+              id
+            })
           })
           .then(response => response.json())
           .then(data => {
@@ -552,7 +555,6 @@
               $('[name=' + data.xname + ']').val(data.xhash);
               sayAlert('successModal', 'Success', 'Data berhasil dihapus.', 'success');
             } else {
-              // [FIX] Tampilkan pesan error dari server
               sayAlert('errorModal', 'Error', data.message || 'Data gagal dihapus.', 'warning');
             }
           })

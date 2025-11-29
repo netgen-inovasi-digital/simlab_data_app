@@ -579,19 +579,19 @@ class Folder extends BaseController
       // Insert otorisasi untuk folder utama
       $roles = array_unique(array_merge($role_id));
       foreach ($roles as $r) {
-        if ($r == 2 || $r == 9 || $r == 1) {
+        if ($r == 8 || $r == 10) {
           $modelOtorFolder->insertData([
             'id_folder' => $folderUtamaId,
             'id_role' => $r,
             'can_view' => 1,
-            'can_crud' => 0,
+            'can_crud' => 1,
           ]);
         } else {
           $modelOtorFolder->insertData([
             'id_folder' => $folderUtamaId,
             'id_role' => $r,
             'can_view' => 1,
-            'can_crud' => 1,
+            'can_crud' => 0,
           ]);
         }
       }
@@ -635,19 +635,20 @@ class Folder extends BaseController
           ]);
           foreach ($roles as $r) {
             // $modelOtorFolder->insertData(['id_folder' => $subfolderId, 'id_role' => $r, 'can_view' => 1, 'can_crud' => 1]);
-            if ($r == 2 || $r == 9 || $r == 1) {
-              $modelOtorFolder->insertData([
-                'id_folder' => $subfolderId,
-                'id_role' => $r,
-                'can_view' => 1,
-                'can_crud' => 0,
-              ]);
-            } else {
+            if ($r == 8 || $r == 10) {
               $modelOtorFolder->insertData([
                 'id_folder' => $subfolderId,
                 'id_role' => $r,
                 'can_view' => 1,
                 'can_crud' => 1,
+              ]);
+            } else {
+
+              $modelOtorFolder->insertData([
+                'id_folder' => $subfolderId,
+                'id_role' => $r,
+                'can_view' => 1,
+                'can_crud' => 0,
               ]);
             }
           }
@@ -751,19 +752,19 @@ class Folder extends BaseController
 
       // [BARU] Berikan otorisasi untuk folder yang baru dibuat
       foreach ($roles as $r) {
-        if ($r == 2 || $r == 9 || $r == 1) {
+        if ($r == 8 || $r == 10) {
           $modelOtorFolder->insertData([
             'id_folder' => $folderId,
             'id_role' => $r,
             'can_view' => 1,
-            'can_crud' => 0,
+            'can_crud' => 1,
           ]);
         } else {
           $modelOtorFolder->insertData([
             'id_folder' => $folderId,
             'id_role' => $r,
             'can_view' => 1,
-            'can_crud' => 1,
+            'can_crud' => 0,
           ]);
         }
       }
@@ -805,19 +806,20 @@ class Folder extends BaseController
               ]);
 
               if (!$existingOtor) {
-                if ($r == 2 || $r == 9 || $r == 1) {
-                  $modelOtorFile->insertData([
-                    'id_file' => $fileId,
-                    'id_role' => $r,
-                    'can_view' => 1,
-                    'can_crud' => 0,
-                  ]);
-                } else {
+                if ($r == 8 || $r == 10) {
                   $modelOtorFile->insertData([
                     'id_file' => $fileId,
                     'id_role' => $r,
                     'can_view' => 1,
                     'can_crud' => 1,
+                  ]);
+                } else {
+
+                  $modelOtorFile->insertData([
+                    'id_file' => $fileId,
+                    'id_role' => $r,
+                    'can_view' => 1,
+                    'can_crud' => 0,
                   ]);
                 }
               }
@@ -978,19 +980,19 @@ class Folder extends BaseController
 
     // [FIX] Tambahkan otorisasi untuk folder yang baru di-clone
     foreach ($roles as $r) {
-      if ($r == 2 || $r == 9 || $r == 1) {
+      if ($r == 8 || $r == 10) {
         $modelOtorFolder->insertData([
           'id_folder' => $newFolderId,
           'id_role' => $r,
           'can_view' => 1,
-          'can_crud' => 0,
+          'can_crud' => 1,
         ]);
       } else {
         $modelOtorFolder->insertData([
           'id_folder' => $newFolderId,
           'id_role' => $r,
           'can_view' => 1,
-          'can_crud' => 1,
+          'can_crud' => 0,
         ]);
       }
     }
@@ -1027,19 +1029,19 @@ class Folder extends BaseController
           ]);
 
           if (!$existingOtor) {
-            if ($r == 2 || $r == 9 || $r == 1) {
+            if ($r == 8 || $r == 10) {
               $modelOtorFile->insertData([
                 'id_file' => $existingFileId,
                 'id_role' => $r,
                 'can_view' => 1,
-                'can_crud' => 0,
+                'can_crud' => 1,
               ]);
             } else {
               $modelOtorFile->insertData([
                 'id_file' => $existingFileId,
                 'id_role' => $r,
                 'can_view' => 1,
-                'can_crud' => 1,
+                'can_crud' => 0,
               ]);
             }
           }

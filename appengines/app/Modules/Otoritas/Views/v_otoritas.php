@@ -16,7 +16,7 @@
             </select>
           </div>
         </div>
-        <small id="info"><em>-- Silahkan pilih role terlebih dahulu.</em></small>
+        <small id="info"><em>-- Silahkan pilih role terlebih dahulu. --</em></small>
         <div id="menu" class="row d-none">
           <?php echo form_open('#', array('id' => 'myform')) ?>
           <div class="col">

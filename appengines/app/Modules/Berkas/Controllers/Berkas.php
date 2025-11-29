@@ -51,9 +51,13 @@ class Berkas extends BaseController
     return $this->response->setJSON($data);
   }
 
-  function delete($id)
+  function delete()
   {
+    $json = $this->request->getJSON();
+    $id = $json->id ?? null;
+
     $idenc = $this->encrypter->decrypt(hex2bin($id));
+
     $model = new MyModel($this->table);
     $file = $model->getDataById($this->id, $idenc);
 
@@ -108,7 +112,7 @@ class Berkas extends BaseController
 
     $db->transComplete();
     if ($db->transStatus() === false) {
-      return $this->response->setStatusCode(500)->setJSON(['res' => 'error', 'message' => 'Gagal menghapus data dari database.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
+      return $this->response->setJSON(['res' => false, 'message' => 'Gagal menghapus data dari database.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
     }
     if ($res) {
       $res = 'refresh';
@@ -355,7 +359,6 @@ class Berkas extends BaseController
     $modelOtorisasiFile = new MyModel('otoritas_file');
     $modelRoles = new MyModel('roles');
     $modelFolder = new MyModel('folder'); // [BARU]
-    $modelFiles = new MyModel('files');   // [BARU]
 
     try {
       $id_folder = $this->request->getPost('id_folder');
@@ -421,19 +424,19 @@ class Berkas extends BaseController
           if (!$otorFiles) {
             $roles = array_unique(array_merge($role_ids));
             foreach ($roles as $r) {
-              if ($r == 2 || $r == 9 || $r == 1) {
+              if ($r == 8 || $r == 10) {
                 $modelOtorisasiFile->insertData([
                   'id_file' => (int)$fileId,
                   'id_role' => (int)$r,
                   'can_view' => 1,
-                  'can_crud' => 0,
+                  'can_crud' => 1,
                 ]);
               } else {
                 $modelOtorisasiFile->insertData([
                   'id_file' => (int)$fileId,
                   'id_role' => (int)$r,
                   'can_view' => 1,
-                  'can_crud' => 1,
+                  'can_crud' => 0,
                 ]);
               }
             }
@@ -606,6 +609,7 @@ class Berkas extends BaseController
   public function dataList()
   {
     $model = new MyModel($this->table);
+
     $data = array();
 
     // ambil parameter kategori dari query string
@@ -657,15 +661,23 @@ class Berkas extends BaseController
 
   function aksi($id)
   {
-    return '<div id="' . $id . '" class="float-end">
-    <span class="text-secondary btn-action" title="Detail File" onclick="showFileDetails(event)">
-				<i class="bi bi-eye"></i></span>
-      <span class="text-muted">|</span>
-			<span class="text-secondary btn-action" title="Ubah" onclick="editItemFile(event)">
-				<i class="bi bi-pencil-square"></i></span> 
-			<span class="text-muted">|</span>
+    $session = session();
+    $user_role = $session->get('role_id');
+
+    // tombol hapus hanya muncul jika role = 1 atau 8
+    $deleteButton = '';
+    if (in_array($user_role, [1, 8])) {
+      $deleteButton = '<span class="text-muted"> |</span>
 			<span class="text-danger btn-action" title="Hapus" onclick="deleteItemFile(event)">
-				<i class="bi bi-trash"></i></span>
+				<i class="bi bi-trash"></i></span>';
+    }
+
+    return '<div id="' . $id . '" class="float-end">
+			<span class="text-secondary btn-action" title="Detail File" onclick="showFileDetails(event)">
+			<i class="bi bi-eye"></i></span>
+			<span class="text-muted">|</span>
+			<span class="text-secondary btn-action" title="Ubah" onclick="editItemFile(event)">
+			<i class="bi bi-pencil-square"></i></span>' . $deleteButton . '
 		</div>';
   }
 }
