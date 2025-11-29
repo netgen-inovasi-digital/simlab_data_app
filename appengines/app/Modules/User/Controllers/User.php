@@ -103,6 +103,7 @@ class User extends BaseController
 
       $id = bin2hex($this->encrypter->encrypt($row->id_user));
       $response = array();
+      $response[] = $row->username;
       $response[] = $row->nama;
       $response[] = $row->email;
       $response[] = '<small class="badge bg-light text-muted">' . $row->nama_role . '</small>';
@@ -122,7 +123,7 @@ class User extends BaseController
   {
     if ($roleTarget == $roleLogin) {
       return '<div class="float-end">
-            --
+            ---
         </div>
     ';
     }
