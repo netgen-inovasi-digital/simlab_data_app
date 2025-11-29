@@ -41,7 +41,7 @@ class Role extends BaseController
 
     if ($cekUsersRole > 0) {
       return $this->response->setJSON([
-        'res' => 'exist',
+        'res' => "exist",
         'message' => 'Role tidak bisa dihapus karena masih digunakan oleh pengguna yang ada.',
         'xname' => csrf_token(),
         'xhash' => csrf_hash()
@@ -67,8 +67,8 @@ class Role extends BaseController
     if ($idenc == "") {
       if ($exist) {
         return $this->response->setJSON([
-          'res' => false,
-          'msg' => 'Nama role sudah digunakan.',
+          'res' => "duplicate",
+          'message' => 'Nama role sudah digunakan.',
           'xname' => csrf_token(),
           'xhash' => csrf_hash()
         ]);
@@ -80,8 +80,8 @@ class Role extends BaseController
       // Kalau ditemukan nama sama tapi bukan dirinya sendiri → duplikat
       if ($exist && $exist->id_role != $id) {
         return $this->response->setJSON([
-          'res' => false,
-          'msg' => 'Nama role sudah digunakan.',
+          'res' => "duplicate",
+          'message' => 'Nama role sudah digunakan.',
           'xname' => csrf_token(),
           'xhash' => csrf_hash()
         ]);
@@ -112,7 +112,7 @@ class Role extends BaseController
   {
     if (in_array($id_role, [8, 1, 2, 9, 10])) {
       return '<div class="float-end">
-			--
+			---
 		</div>';
     } else {
       return '<div id="' . $id . '" class="float-end">

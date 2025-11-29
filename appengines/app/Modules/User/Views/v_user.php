@@ -12,6 +12,7 @@
           <thead>
             <tr>
               <th show width="8%">No.</th>
+              <th show>Username<i class="fa-solid fa-sort sort-icon"></i></th>
               <th>Nama</th>
               <th>Email</th>
               <th show>Role</th>
@@ -82,7 +83,9 @@
           <div class="col">
             <select name="role" class="form-select" required>
               <option value="">-- pilih role --</option>
-              <?php foreach ($role as $row): ?>
+              <?php foreach ($role as $row):
+                if ($row->id_role == 8) continue;
+              ?>
                 <option value="<?= $row->id_role ?>">
                   <?= esc($row->nama_role) ?>
                 </option>
