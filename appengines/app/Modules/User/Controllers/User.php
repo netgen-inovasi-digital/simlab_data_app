@@ -120,20 +120,22 @@ class User extends BaseController
 
   function aksi($id, $roleTarget, $roleLogin)
   {
-    $deleteBtn = '';
-    if ($roleTarget != $roleLogin) {
-      $deleteBtn = '
-            <label class="divider">|</label>
-            <span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event)">
-                <i class="bi bi-trash"></i>
-            </span>';
+    if ($roleTarget == $roleLogin) {
+      return '<div class="float-end">
+            --
+        </div>
+    ';
     }
 
     return '
         <div id="' . $id . '" class="float-end">
             <span class="text-secondary btn-action" title="Ubah" onclick="editItem(event)">
                 <i class="bi bi-pencil-square"></i></span>
-            ' . $deleteBtn . '
+            ' . '
+            <label class="divider">|</label>
+            <span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event)">
+                <i class="bi bi-trash"></i>
+            </span>' . '
         </div>
     ';
   }

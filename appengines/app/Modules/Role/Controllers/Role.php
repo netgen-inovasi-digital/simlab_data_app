@@ -41,7 +41,8 @@ class Role extends BaseController
 
     if ($cekUsersRole > 0) {
       return $this->response->setJSON([
-        'res' => false,
+        'res' => 'exist',
+        'message' => 'Role tidak bisa dihapus karena masih digunakan oleh pengguna yang ada.',
         'xname' => csrf_token(),
         'xhash' => csrf_hash()
       ]);
@@ -54,15 +55,38 @@ class Role extends BaseController
   public function submit()
   {
     $idenc = $this->request->getPost('id');
+    $model = new MyModel($this->table);
+    $namaRole = $this->request->getPost('nama');
     $data = array(
-      'nama_role' => $this->request->getPost('nama'),
+      'nama_role' => $namaRole,
     );
 
-    $model = new MyModel($this->table);
-    if ($idenc == "")
+    $exist = $model->getDataById('nama_role', $namaRole);
+
+
+    if ($idenc == "") {
+      if ($exist) {
+        return $this->response->setJSON([
+          'res' => false,
+          'msg' => 'Nama role sudah digunakan.',
+          'xname' => csrf_token(),
+          'xhash' => csrf_hash()
+        ]);
+      }
       $res = $model->insertData($data);
-    else {
+    } else {
       $id = $this->encrypter->decrypt(hex2bin($idenc));
+
+      // Kalau ditemukan nama sama tapi bukan dirinya sendiri → duplikat
+      if ($exist && $exist->id_role != $id) {
+        return $this->response->setJSON([
+          'res' => false,
+          'msg' => 'Nama role sudah digunakan.',
+          'xname' => csrf_token(),
+          'xhash' => csrf_hash()
+        ]);
+      }
+
       $res = $model->updateData($data, $this->id, $id);
     }
     return $this->response->setJSON(array('res' => $res, 'xname' => csrf_token(), 'xhash' => csrf_hash()));
@@ -77,21 +101,27 @@ class Role extends BaseController
       $id = bin2hex($this->encrypter->encrypt($row->id_role));
       $response = array();
       $response[] = $row->nama_role;
-      $response[] = $this->aksi($id);
+      $response[] = $this->aksi($id, $row->id_role);
       $data[] = $response;
     }
     $output = array("items" => $data);
     return $this->response->setJSON($output);
   }
 
-  function aksi($id)
+  function aksi($id, $id_role)
   {
-    return '<div id="' . $id . '" class="float-end">
+    if (in_array($id_role, [8, 1, 2, 9, 10])) {
+      return '<div class="float-end">
+			--
+		</div>';
+    } else {
+      return '<div id="' . $id . '" class="float-end">
 			<span class="text-secondary btn-action" title="Ubah" onclick="editItem(event)">
 				<i class="bi bi-pencil-square"></i></span> 
 			<label class="divider">|</label>
 			<span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event)">
 				<i class="bi bi-trash"></i></span>
 		</div>';
+    }
   }
 }
