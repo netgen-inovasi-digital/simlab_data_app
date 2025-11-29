@@ -93,10 +93,10 @@
       <div class="card-header d-flex justify-content-between align-items-center">
         <label class="card-title mb-0"><?= $title ?></label>
         <div class="d-flex align-items-end gap-1">
-          <?= $user->role_id == 8 || $user->role_id == 10 ? '
           <button id="refresh" class="btn btn-success">
             <i class="bi bi-arrow-clockwise"></i> Refresh
           </button>
+          <?= $user->role_id == 8 || $user->role_id == 10 ? '
           <button id="addFolderButton" class="btn btn-primary">
     <i class="bi bi-plus-circle-dotted"></i> Tambah
 </button>' : '' ?>
@@ -235,7 +235,7 @@
 
           // [BARU] Tentukan apakah item ini bisa di-drag.
           // File tidak bisa di-drag jika berada di dalam folder personel.
-          $is_draggable = ($user->role_id != 2 && $user->role_id != 9) && !($node->type === 'file' && $is_in_personel_folder);
+          $is_draggable = ($user->role_id == 8 || $user->role_id == 10) && !($node->type === 'file' && $is_in_personel_folder);
 
       ?>
           <div id="<?= $encId ?>" class="<?= $node->type ?>-item flex"
@@ -1031,7 +1031,7 @@
    */
   function restoreFolderState() {
     const allFolders = document.querySelectorAll('.folder-item');
-    
+
     allFolders.forEach(folderEl => {
       const rawId = folderEl.dataset.id; // Ambil ID asli dari data-id
       if (!rawId) return;
@@ -1040,7 +1040,7 @@
       // Default: jika tidak ada di state, anggap expanded (true) atau collapsed (false)?
       // Berdasarkan keluhan user "semua folder terbuka", sepertinya defaultnya terbuka.
       // Kita ingin mengembalikan status "collapsed" jika user menutupnya.
-      
+
       // Jika state tersimpan adalah FALSE (collapsed), maka kita tutup.
       // Jika TRUE atau undefined, biarkan terbuka (default).
       const isExpanded = folderState[rawId];
@@ -1051,10 +1051,10 @@
           caret.classList.add("collapsed");
         }
         // Sembunyikan anak-anaknya
-        toggleChildren(folderEl.id, true); 
+        toggleChildren(folderEl.id, true);
       }
     });
-    
+
     // [FIX] Sesuaikan tinggi viewport setelah restore selesai
     setTimeout(() => {
       adjustZoomViewportHeight();
@@ -1155,7 +1155,7 @@
 
     item.addEventListener("dragend", (e) => {
       clearTimeout(dragStartTimeout); // [FIX] Clear timeout immediately
-      
+
       // [FIX] Jika placeholder belum masuk DOM, berarti drag belum visual (terlalu cepat)
       // Kembalikan opacity dan batalkan logika dragend
       if (!placeholder.parentNode) {
@@ -1369,10 +1369,10 @@
         if (parentFolder) {
           const rawParentId = parentFolder.dataset.id; // [FIX] Gunakan ID asli
           if (rawParentId) {
-             folderState[rawParentId] = true; // [FIX] Force open state
-             saveFolderState();
+            folderState[rawParentId] = true; // [FIX] Force open state
+            saveFolderState();
           }
-          
+
           const caret = parentFolder.querySelector(".bi-caret-down"); // Cari ikon caret
           if (caret && caret.classList.contains("collapsed")) {
             // Jika folder induk dalam keadaan tertutup (collapsed)
@@ -1497,30 +1497,30 @@
 
       item.style.display = "flex";
       item.style.opacity = "1";
-      
+
       if (placeholder.parentNode) placeholder.remove();
 
       // [FIX] Gunakan toggleChildren untuk mengembalikan status visibilitas anak-anak
       // sesuai dengan state yang tersimpan (buka jika open, tutup jika closed)
       if (item.dataset.type === 'folder') {
-          const rawId = item.dataset.id;
-          // Default expanded if undefined, otherwise follow state
-          const shouldBeCollapsed = folderState[rawId] === false;
-          toggleChildren(item.id, shouldBeCollapsed);
-          
-          // Update icon
-          const caret = item.querySelector(".bi-caret-down");
-          if (caret) {
-            if (shouldBeCollapsed) {
-              caret.classList.add("collapsed");
-            } else {
-              caret.classList.remove("collapsed");
-            }
+        const rawId = item.dataset.id;
+        // Default expanded if undefined, otherwise follow state
+        const shouldBeCollapsed = folderState[rawId] === false;
+        toggleChildren(item.id, shouldBeCollapsed);
+
+        // Update icon
+        const caret = item.querySelector(".bi-caret-down");
+        if (caret) {
+          if (shouldBeCollapsed) {
+            caret.classList.add("collapsed");
+          } else {
+            caret.classList.remove("collapsed");
           }
+        }
       } else {
-          // Jika file, pastikan ditampilkan (karena tidak punya anak)
-          // Tapi toggleChildren sebenarnya handle file juga jika dipanggil di parent
-          // Cuma di sini kita revert item itu sendiri.
+        // Jika file, pastikan ditampilkan (karena tidak punya anak)
+        // Tapi toggleChildren sebenarnya handle file juga jika dipanggil di parent
+        // Cuma di sini kita revert item itu sendiri.
       }
     }
 
@@ -1530,7 +1530,7 @@
 
     item.addEventListener("dragover", (e) => {
       e.preventDefault();
-      
+
       // [DISABLED] Logika Hover-to-Expand - Dinonaktifkan sesuai permintaan user agar folder tidak terbuka otomatis saat di-drag
       /*
       const hoveredFolder = e.target.closest('.folder-item');
@@ -1571,8 +1571,8 @@
 
     // [BARU] Reset timeout saat meninggalkan elemen
     item.addEventListener("dragleave", (e) => {
-       // Kita tidak langsung clear di sini karena dragleave sering terpanggil saat masuk ke child element
-       // Logika utama ada di dragover yang mendeteksi perubahan target
+      // Kita tidak langsung clear di sini karena dragleave sering terpanggil saat masuk ke child element
+      // Logika utama ada di dragover yang mendeteksi perubahan target
     });
 
     function moveChildren(folderEl, childrenToMove, originalParentLevel) {
@@ -1712,15 +1712,15 @@
       const folder = e.target.closest(".folder-item");
       const folderId = folder.id;
       const rawId = folder.dataset.id; // [UPDATE] Ambil ID asli
-      
+
       e.target.classList.toggle("collapsed");
       const isCollapsed = e.target.classList.contains("collapsed");
-      
+
       if (rawId) {
         folderState[rawId] = !isCollapsed; // [UPDATE] Simpan state pakai ID asli
         saveFolderState();
       }
-      
+
       toggleChildren(folderId, isCollapsed);
     }
 

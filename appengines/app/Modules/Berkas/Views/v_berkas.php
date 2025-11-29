@@ -22,7 +22,7 @@
               <th show width="8%">No.</th>
               <th show>Judul</th>
               <th show>Kategori</th>
-              <th>Tanggal Upload</th>
+              <th>Tanggal Terbit</th>
               <th show class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
             </tr>
           </thead>
