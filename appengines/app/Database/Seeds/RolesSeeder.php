@@ -21,6 +21,7 @@ class RolesSeeder extends Seeder
       ['id_role' => 8, 'nama_role' => 'Super Admin',  'status_role' => 1],
       ['id_role' => 9, 'nama_role' => 'Asesor',  'status_role' => 1],
       ['id_role' => 10, 'nama_role' => 'Tim Akreditasi', 'status_role' => 1],
+      ['id_role' => 11, 'nama_role' => 'Personel', 'status_role' => 1],
     ];
 
     // Insert batch

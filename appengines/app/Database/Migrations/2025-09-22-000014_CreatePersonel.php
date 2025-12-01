@@ -10,90 +10,40 @@ class CreatePersonel extends Migration
   {
     $this->forge->addField([
       'id_personel' => [
-        'type'           => 'INT',
+        'type' => 'INT',
         'auto_increment' => true,
       ],
       'nama' => [
-        'type'       => 'VARCHAR',
+        'type' => 'VARCHAR',
         'constraint' => 255,
-        'null'       => true,
+        'null' => true,
       ],
       'jabatan' => [
-        'type'       => 'VARCHAR',
+        'type' => 'VARCHAR',
         'constraint' => 255,
-        'null'       => true,
+        'null' => true,
       ],
       'id_penempatan' => [
         'type' => 'INT',
         'null' => true,
       ],
       'foto' => [
-        'type'       => 'VARCHAR',
+        'type' => 'VARCHAR',
         'constraint' => 255,
-        'null'       => true,
-      ],
-      'nip' => [
-        'type'       => 'VARCHAR',
-        'constraint' => 50,
-        'null'       => true,
-      ],
-      'tempat_lahir' => [
-        'type'       => 'VARCHAR',
-        'constraint' => 100,
-        'null'       => true,
-      ],
-      'tanggal_lahir' => [
-        'type' => 'DATE',
         'null' => true,
       ],
-      'jenis_kelamin' => [
-        'type' => "ENUM('Laki-laki','Perempuan')",
-        'null' => true,
-      ],
-      'kebangsaan' => [
-        'type'       => 'VARCHAR',
-        'constraint' => 100,
-        'default'    => 'Indonesia',
-      ],
-      'alamat' => [
-        'type' => 'TEXT',
-        'null' => true,
-      ],
-      'no_handphone' => [
-        'type'       => 'VARCHAR',
-        'constraint' => 100,
-        'null'       => true,
-      ],
+
       'email' => [
-        'type'       => 'VARCHAR',
+        'type' => 'VARCHAR',
         'constraint' => 100,
-        'null'       => true,
-      ],
-      'doc_cv' => [
-        'type'       => 'VARCHAR',
-        'constraint' => 255,
-        'null'       => true,
-      ],
-      'doc_coc' => [
-        'type'       => 'VARCHAR',
-        'constraint' => 255,
-        'null'       => true,
-      ],
-      'doc_surat_tugas' => [
-        'type'       => 'VARCHAR',
-        'constraint' => 255,
-        'null'       => true,
-      ],
-      'doc_lainnya' => [
-        'type'       => 'TEXT',
-        'null'       => true,
+        'null' => true,
       ],
       'urutan' => [
-        'type'    => 'INT',
+        'type' => 'INT',
         'default' => 0,
       ],
       'status' => [
-        'type'    => "ENUM('Y','N')",
+        'type' => "ENUM('Y','N')",
         'default' => 'Y',
       ],
     ]);

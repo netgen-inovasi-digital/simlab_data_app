@@ -359,10 +359,6 @@
               </div>
             </div>
             <div class="row">
-              <div class="col-md-6 mb-3"><label class="form-label">NIP/NIPK</label><input name="nip"
-                  type="text" class="form-control" pattern="[0-9]*" inputmode="numeric" required>
-                <div class="invalid-feedback">Wajib diisi dan hanya boleh berisi angka.</div>
-              </div>
               <div class="col-md-6 mb-3"><label class="form-label">Penempatan</label><select
                   name="penempatan" class="form-select" required>
                   <option value="">-- Pilih Penempatan --</option>
@@ -373,41 +369,6 @@
                   <?php endif; ?>
                 </select>
                 <div class="invalid-feedback">Silakan pilih penempatan.</div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-md-6 mb-3"><label class="form-label">Tempat Lahir</label><input
-                  name="tempat_lahir" type="text" class="form-control" required>
-                <div class="invalid-feedback">Kolom ini wajib diisi.</div>
-              </div>
-              <div class="col-md-6 mb-3"><label class="form-label">Tanggal Lahir</label><input
-                  name="tanggal_lahir" type="date" class="form-control" required>
-                <div class="invalid-feedback">Kolom ini wajib diisi.</div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-md-6 mb-3"><label class="form-label">Jenis Kelamin</label><select
-                  name="jenis_kelamin" class="form-select" required>
-                  <option value="">-- Pilih --</option>
-                  <option value="Laki-laki">Laki-laki</option>
-                  <option value="Perempuan">Perempuan</option>
-                </select>
-                <div class="invalid-feedback">Silakan pilih jenis kelamin.</div>
-              </div>
-              <div class="col-md-6 mb-3"><label class="form-label">Kebangsaan</label><input
-                  name="kebangsaan" type="text" class="form-control" value="Indonesia" required>
-                <div class="invalid-feedback">Kolom ini wajib diisi.</div>
-              </div>
-            </div>
-            <div class="mb-3"><label class="form-label">Alamat</label><textarea name="alamat" rows="2"
-                class="form-control" required></textarea>
-              <div class="invalid-feedback">Kolom ini wajib diisi.</div>
-            </div>
-            <div class="row">
-              <div class="col-md-6 mb-3"><label class="form-label">No. Handphone</label><input
-                  name="no_handphone" type="tel" class="form-control" pattern="[0-9]*"
-                  inputmode="numeric" required>
-                <div class="invalid-feedback">Wajib diisi dan hanya boleh berisi angka.</div>
               </div>
               <div class="col-md-6 mb-3"><label class="form-label">Email</label><input name="email"
                   type="email" class="form-control" required>
@@ -426,7 +387,7 @@
               <div class="invalid-feedback">Foto wajib diunggah.</div>
               <small class="form-text text-muted">Kosongkan jika tidak ingin mengubah. Ukuran disarankan
                 2x3
-                (Portrait), (JPG, JPEG, PNG).</small>
+                (Portrait), maksimal 5 MB (JPG, JPEG, PNG).</small>
             </div>
           </div>
           <div class="modal-footer">
@@ -597,6 +558,19 @@
         e.preventDefault();
         const saveButton = e.target.closest('#btn-save-personel');
         const form = document.getElementById('personelForm');
+        
+        // [BARU] Validasi ukuran file foto sebelum submit
+        const fotoInput = form.querySelector('input[name="foto"]');
+        if (fotoInput && fotoInput.files.length > 0) {
+          const file = fotoInput.files[0];
+          const maxSize = 5 * 1024 * 1024; // 5 MB dalam bytes
+          
+          if (file.size > maxSize) {
+            sayAlert('errorModal', 'Input Tidak Lengkap', 'File Foto Maksimal 5 MB', 'warning');
+            return; // Hentikan proses submit
+          }
+        }
+        
         if (!form.checkValidity()) {
           e.stopPropagation();
           form.classList.add('was-validated');
@@ -830,19 +804,7 @@
     /**
      * Event listener untuk input pencarian.
      */
-    document.addEventListener('input', e => {
 
-      // [BARU] Validasi real-time untuk input numerik (NIP & No. HP)
-      const numericInput = e.target.closest('input[name="nip"], input[name="no_handphone"]');
-      if (numericInput) {
-        const isValid = /^[0-9]*$/.test(numericInput.value);
-        if (!isValid) {
-          numericInput.classList.add('is-invalid');
-        } else {
-          numericInput.classList.remove('is-invalid');
-        }
-      }
-    });
 
     /**
      * Event listener untuk perubahan pada filter dan input file.
@@ -1280,7 +1242,7 @@
 
           // [PERBAIKAN] Mengganti col-md-* menjadi col-lg-* untuk layout yang lebih responsif
           contentArea.innerHTML =
-            `<div class="row g-4 px-4"><div class="col-lg-4 text-center mb-3 mb-lg-0"><img src="${imageUrl}" alt="${data.nama || 'Personel'}" /></div><div class="col-lg-8"><table class="biodata-table"><tr><td>Nama Lengkap & Gelar</td><td>:</td><td>${data.nama || '-'}</td></tr><tr><td>Jabatan</td><td>:</td><td>${data.jabatan || '-'}</td></tr><tr><td>Penempatan</td><td>:</td><td>${data.penempatan_name || '-'}</td></tr><tr><td>NIP/NIPK</td><td>:</td><td>${data.nip || '-'}</td></tr><tr><td>Tempat, Tanggal Lahir</td><td>:</td><td>${(data.tempat_lahir || '') + (data.tempat_lahir && data.tanggal_lahir ? ', ' : '') + formatTanggal(data.tanggal_lahir)}</td></tr><tr><td>Jenis Kelamin</td><td>:</td><td>${data.jenis_kelamin || '-'}</td></tr><tr><td>Kebangsaan</td><td>:</td><td>${data.kebangsaan || '-'}</td></tr><tr><td>Alamat</td><td>:</td><td>${data.alamat || '-'}</td></tr><tr><td>No. Handphone</td><td>:</td><td>${data.no_handphone || '-'}</td></tr><tr><td>Email</td><td>:</td><td>${data.email || '-'}</td></tr></table></div>${docHtml}</div>`;
+            `<div class="row g-4 px-4"><div class="col-lg-4 text-center mb-3 mb-lg-0"><img src="${imageUrl}" alt="${data.nama || 'Personel'}" /></div><div class="col-lg-8"><table class="biodata-table"><tr><td>Nama Lengkap & Gelar</td><td>:</td><td>${data.nama || '-'}</td></tr><tr><td>Jabatan</td><td>:</td><td>${data.jabatan || '-'}</td></tr><tr><td>Penempatan</td><td>:</td><td>${data.penempatan_name || '-'}</td></tr><tr><td>Email</td><td>:</td><td>${data.email || '-'}</td></tr></table></div>${docHtml}</div>`;
         })
         .catch(error => {
           console.error('Error fetching biodata:', error);

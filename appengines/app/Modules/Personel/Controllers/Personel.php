@@ -149,13 +149,6 @@ class Personel extends BaseController
         // kirimkan id_penempatan agar form select bisa memilih opsi yang benar
         'penempatan' => $get->id_penempatan ?? '',
         'penempatan_name' => $penempatanName,
-        'nip' => $get->nip ?? '',
-        'tempat_lahir' => $get->tempat_lahir ?? '',
-        'tanggal_lahir' => $get->tanggal_lahir ?? '',
-        'jenis_kelamin' => $get->jenis_kelamin ?? '',
-        'kebangsaan' => $get->kebangsaan ?? '',
-        'alamat' => $get->alamat ?? '',
-        'no_handphone' => $get->no_handphone ?? '',
         'email' => $get->email ?? '',
         'foto' => $get->foto ?? '',
         // [UBAH] Kirim data dokumen dalam format JSON
@@ -286,6 +279,37 @@ class Personel extends BaseController
     $isDokumenForm = $this->request->getPost('files') !== null || $this->request->getPost('delete_files') !== null;
 
 
+    // [BARU] Validasi awal ukuran file foto sebelum validasi CodeIgniter
+    // Ini untuk menangkap file yang sangat besar (>5MB) yang mungkin gagal upload di PHP level
+    if ($isPersonelForm) {
+      $fotoFile = $this->request->getFile('foto');
+      if ($fotoFile && $fotoFile->getName() !== '') {
+        // Cek error upload - termasuk file yang terlalu besar untuk PHP
+        $uploadError = $fotoFile->getError();
+        
+        // Error 1 = UPLOAD_ERR_INI_SIZE (file melebihi upload_max_filesize di php.ini)
+        // Error 2 = UPLOAD_ERR_FORM_SIZE (file melebihi MAX_FILE_SIZE di HTML form)
+        if ($uploadError === 1 || $uploadError === 2) {
+          return $this->response->setJSON([
+            'res'     => 'validation_error',
+            'message' => 'File Foto Maksimal 5 MB',
+            'xname'   => csrf_token(),
+            'xhash'   => csrf_hash()
+          ]);
+        }
+        
+        // Cek ukuran file jika berhasil di-upload
+        if ($fotoFile->isValid() && $fotoFile->getSize() > 5120 * 1024) {
+          return $this->response->setJSON([
+            'res'     => 'validation_error',
+            'message' => 'File Foto Maksimal 5 MB',
+            'xname'   => csrf_token(),
+            'xhash'   => csrf_hash()
+          ]);
+        }
+      }
+    }
+
     // Aturan validasi dasar
     $rules = [];
     if ($isPersonelForm) {
@@ -295,15 +319,9 @@ class Personel extends BaseController
         'jabatan' => 'required',
         // Expect penempatan as selected id from penempatan_categories
         'penempatan' => 'required|is_natural_no_zero',
-        'tempat_lahir' => 'required',
-        'tanggal_lahir' => 'required',
-        'jenis_kelamin' => 'required',
-        'kebangsaan' => 'required',
-        'alamat' => 'required',
-        'nip' => "required|is_unique[personel.nip,id_personel,{$id}]",
-        'no_handphone' => "required|is_unique[personel.no_handphone,id_personel,{$id}]",
+
         'email' => "required|valid_email|is_unique[personel.email,id_personel,{$id}]",
-        'foto' => 'max_size[foto,2048]|is_image[foto]',
+        'foto' => 'max_size[foto,5120]|is_image[foto]',
       ];
     } else if ($isDokumenForm) {
       $rules = [
@@ -318,8 +336,7 @@ class Personel extends BaseController
 
     // Pesan error kustom
     $messages = [
-      'nip' => ['is_unique' => 'NIP/NIPK ini sudah terdaftar.'],
-      'no_handphone' => ['is_unique' => 'No. Handphone ini sudah terdaftar.'],
+      'foto' => ['max_size' => 'File Foto Maksimal 5 MB'],
       'email' => ['is_unique' => 'Alamat email ini sudah terdaftar.'],
     ];
 
@@ -395,13 +412,7 @@ class Personel extends BaseController
         'jabatan' => $this->request->getPost('jabatan'),
         // Simpan sebagai FK id_penempatan di database
         'id_penempatan' => (int)$this->request->getPost('penempatan'),
-        'nip' => $this->request->getPost('nip'),
-        'tempat_lahir' => $this->request->getPost('tempat_lahir'),
-        'tanggal_lahir' => $this->request->getPost('tanggal_lahir'),
-        'jenis_kelamin' => $this->request->getPost('jenis_kelamin'),
-        'kebangsaan' => $this->request->getPost('kebangsaan'),
-        'alamat' => $this->request->getPost('alamat'),
-        'no_handphone' => $this->request->getPost('no_handphone'),
+
         'email' => $this->request->getPost('email'),
       ];
 
@@ -611,7 +622,7 @@ class Personel extends BaseController
     }
 
     // Validasi tipe dan ukuran
-    if (!in_array($file->getMimeType(), ['image/jpeg', 'image/png', 'image/gif']) || $file->getSize() > 2048 * 1024) {
+    if (!in_array($file->getMimeType(), ['image/jpeg', 'image/png', 'image/gif']) || $file->getSize() > 5120 * 1024) {
       return null; // Gagal validasi
     }
 

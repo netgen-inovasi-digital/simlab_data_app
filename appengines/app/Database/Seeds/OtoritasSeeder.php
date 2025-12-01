@@ -73,6 +73,19 @@ class OtoritasSeeder extends Seeder
       ['id_otoritas' => 58, 'role_id' => 10, 'kode_menu' => '7.3', 'status_otoritas' => 0],
       ['id_otoritas' => 59, 'role_id' => 10, 'kode_menu' => '7.4', 'status_otoritas' => 0],
       ['id_otoritas' => 60, 'role_id' => 10, 'kode_menu' => '7.5', 'status_otoritas' => 0],
+
+      ['id_otoritas' => 61, 'role_id' => 11, 'kode_menu' => '1', 'status_otoritas' => 1],
+      ['id_otoritas' => 62, 'role_id' => 11, 'kode_menu' => '2', 'status_otoritas' => 1],
+      ['id_otoritas' => 63, 'role_id' => 11, 'kode_menu' => '3', 'status_otoritas' => 0],
+      ['id_otoritas' => 64, 'role_id' => 11, 'kode_menu' => '4', 'status_otoritas' => 0],
+      ['id_otoritas' => 65, 'role_id' => 11, 'kode_menu' => '5', 'status_otoritas' => 1],
+      ['id_otoritas' => 66, 'role_id' => 11, 'kode_menu' => '6', 'status_otoritas' => 1],
+      ['id_otoritas' => 67, 'role_id' => 11, 'kode_menu' => '7', 'status_otoritas' => 0],
+      ['id_otoritas' => 68, 'role_id' => 11, 'kode_menu' => '7.1', 'status_otoritas' => 0],
+      ['id_otoritas' => 69, 'role_id' => 11, 'kode_menu' => '7.2', 'status_otoritas' => 0],
+      ['id_otoritas' => 70, 'role_id' => 11, 'kode_menu' => '7.3', 'status_otoritas' => 0],
+      ['id_otoritas' => 71, 'role_id' => 11, 'kode_menu' => '7.4', 'status_otoritas' => 0],
+      ['id_otoritas' => 72, 'role_id' => 11, 'kode_menu' => '7.5', 'status_otoritas' => 0],
     ];
 
     // Ambil semua kode_menu yang ada di tabel menus
