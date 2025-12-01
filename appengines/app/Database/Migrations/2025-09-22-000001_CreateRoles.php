@@ -12,20 +12,21 @@ class CreateRoles extends Migration
             'id_role' => [
                 'type' => 'INT',
                 'constraint' => 11,
-                'auto_increment' => true,
+                'auto_increment' => true
             ],
             'nama_role' => [
                 'type' => 'VARCHAR',
-                'constraint' => '20',
-                'null' => true,
+                'constraint' => 20,
+                'null' => true
             ],
             'status_role' => [
                 'type' => 'TINYINT',
                 'constraint' => 1,
                 'default' => 1,
-                'null' => true,
-            ],
+                'null' => true
+            ]
         ]);
+
         $this->forge->addKey('id_role', true);
         $this->forge->createTable('roles');
     }

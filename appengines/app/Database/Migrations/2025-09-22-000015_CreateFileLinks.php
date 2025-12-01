@@ -12,22 +12,26 @@ class CreateFileLinks extends Migration
             'id' => [
                 'type' => 'INT',
                 'constraint' => 11,
-                'auto_increment' => true,
+                'auto_increment' => true
             ],
             'parent_folder' => [
                 'type' => 'INT',
                 'constraint' => 11,
-                'null' => true,
+                'null' => true
             ],
             'child_file' => [
                 'type' => 'INT',
                 'constraint' => 11,
-                'null' => true,
+                'null' => true
             ],
         ]);
+
         $this->forge->addKey('id', true);
+
+        // Foreign Key
         $this->forge->addForeignKey('parent_folder', 'folder', 'id_folder', 'CASCADE', 'CASCADE');
         $this->forge->addForeignKey('child_file', 'files', 'id_files', 'CASCADE', 'CASCADE');
+
         $this->forge->createTable('file_links');
     }
 

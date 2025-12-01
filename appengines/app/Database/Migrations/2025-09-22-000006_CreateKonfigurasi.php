@@ -10,16 +10,16 @@ class CreateKonfigurasi extends Migration
     {
         $this->forge->addField([
             'id_konfigurasi' => [
-                'type' => 'INT',
-                'constraint' => 10,
-                'unsigned' => true,
+                'type'           => 'INT',
+                'unsigned'       => true,
                 'auto_increment' => true,
             ],
             'email' => [
-                'type' => 'VARCHAR',
-                'constraint' => '100',
+                'type'       => 'VARCHAR',
+                'constraint' => 100,
             ],
         ]);
+
         $this->forge->addKey('id_konfigurasi', true);
         $this->forge->createTable('konfigurasi');
     }

@@ -9,9 +9,10 @@ class KonfigurasiSeeder extends Seeder
     public function run()
     {
         $data = [
-            ['id_konfigurasi' => 1, 'email' => 'ulmsimlab@gmail.com'],
+            'id_konfigurasi'                => 1,
+            'email'                          => 'ulmsimlab@gmail.com',
         ];
 
-        $this->db->table('konfigurasi')->insertBatch($data);
+        $this->db->table('konfigurasi')->insert($data);
     }
 }
