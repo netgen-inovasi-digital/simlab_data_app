@@ -84,7 +84,7 @@
 
       <!-- Wadah untuk teks berjalan -->
       <div class="logo-text-wrapper">
-        <h2>LAB TERPADU ULM</h2>
+        <h2>SIMDAT - Sistem Manajemen Data Lab Terpadu</h2>
       </div>
     </div>
     <nav class="nav d-block pe-2 pb-5">
