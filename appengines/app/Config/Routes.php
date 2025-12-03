@@ -5,7 +5,8 @@ use CodeIgniter\Router\RouteCollection;
 /**
  * @var RouteCollection $routes
  */
-$routes->get('/', 'Website::index');
+// $routes->get('/', 'Website::index');
+$routes->get('/', 'Auth::index');
 // login route
 $routes->get('login', 'Auth::index');
 $routes->post('login/auth', 'Auth::act');
@@ -30,18 +31,18 @@ $routes->post('password/submit', 'Password::submit');
  * HMVC Routing
  * --------------------------------------------------------------------
  */
-foreach(glob(APPPATH . 'Modules/*', GLOB_ONLYDIR) as $item_dir) {
-    $moduleName = basename($item_dir);
+foreach (glob(APPPATH . 'Modules/*', GLOB_ONLYDIR) as $item_dir) {
+  $moduleName = basename($item_dir);
 
-    if (file_exists($item_dir . '/Routes.php')) {
-        if (in_array($moduleName, [ 'Dashboard', 'Hero', 'Konfigurasi', 'Layanan', 'Menu', 'Mitra', 'Navbar', 'Team', 'Landing',  'Otoritas', 'Pages', 'Pengumuman', 'Role', 'Sosmed', 'User', 'Order', 'Produk', 'Rekening', 'Motif', 'Ukuran', 'Warna' ])) {
-            // Beri filter auth hanya untuk module admin
-            $routes->group('', ['filter' => 'auth'], static function($routes) use ($item_dir) {
-                require_once $item_dir . '/Routes.php';
-            });
-        } else {
-            // Public module, tidak diberi auth
-            require_once $item_dir . '/Routes.php';
-        }
+  if (file_exists($item_dir . '/Routes.php')) {
+    if (in_array($moduleName, ['Dashboard', 'Categories', 'Berkas', 'Folder', 'Mail', 'Menu', 'Otoritas', 'Penempatan', 'Profil', 'Role', 'User', 'Personel'])) {
+      // Beri filter auth hanya untuk module admin
+      $routes->group('', ['filter' => 'auth'], static function ($routes) use ($item_dir) {
+        require_once $item_dir . '/Routes.php';
+      });
+    } else {
+      // Public module, tidak diberi auth
+      require_once $item_dir . '/Routes.php';
     }
+  }
 }

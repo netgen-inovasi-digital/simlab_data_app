@@ -101,72 +101,72 @@ abstract class BaseController extends Controller
                 // Jika parent sudah ada, masukkan sekarang
                 $lookup[$parentId]['children'][] = &$lookup[$id];
             }
-
-            // ===== model untuk sosmed ===== //
-            $modelSosmed = new MyModel('sosmed');
-            $where = [
-                'status' => 'Y',
-            ];
-
-            $order = [
-                'urutan' => 'ASC'
-            ];
-
-            $dataSosmed = $modelSosmed->getAllDataById($where, $order);
-
-            // ===== model konfigurasi ===== //
-            $modelKonfigurasi = new MyModel('konfigurasi');
-            $dataInformasi = $modelKonfigurasi->getDataById('id_konfigurasi', 1);
-
-            $modelVisitor = new MyModel('visitor');
-
-            // ---------- Hari Ini ----------
-            $today = date('Y-m-d');
-            $whereToday = ['DATE(visitDate)' => $today];
-            $totalViewsToday = $modelVisitor->getCountAllbyManyWhere($whereToday);
-            // ---------- Bulan Ini ----------
-            $thisMonth = date('m');
-            $thisYear = date('Y');
-            $whereMonth = [
-                'MONTH(visitDate)' => $thisMonth,
-                'YEAR(visitDate)' => $thisYear
-            ];
-            $totalViewsThisMonth =
-                $modelVisitor->getCountAllbyManyWhere($whereMonth);
-
-            // ---------- Sepanjang Masa ----------
-            $whereAllTime = [];
-            $totalViewsAllTime =
-                $modelVisitor->getCountAllbyManyWhere($whereAllTime);
-
-            // isUser == isCustomer
-            $session = session();
-            $user_id = $session->get('id_user');
-            $isCustomer = true; // default: bukan customer
-
-            if ($user_id) {
-                $modelUser = new MyModel('users');
-                $User = $modelUser->getDataById('id_user', $user_id);
-
-                if ($User && isset($User->role_id)) {
-                    $isCustomer = $User->role_id != 1;
-                }
-            }
-
-            $data['isCustomer'] = $isCustomer;
-            // ===== data Navbar/Header ===== //
-            $data['getNavbar'] = $menuTree;
-            // ===== data Sosmed ===== //
-            $data['getSosmed'] = $dataSosmed;
-            // ===== data Informasi ===== //
-            $data['getInformasi'] = $dataInformasi;
-            // ===== statistik hari ini ===== //
-            $data['viewsToday'] = formatAngkaSingkat($totalViewsToday);
-            // ===== statistik bulan ini ===== //
-            $data['viewsThisMonth'] = formatAngkaSingkat($totalViewsThisMonth);
-            // ===== statistik hari ini ===== //
-            $data['viewsAllTime'] = formatAngkaSingkat($totalViewsAllTime);
         }
+
+        // ===== model untuk sosmed ===== //
+        $modelSosmed = new MyModel('sosmed');
+        $where = [
+            'status' => 'Y',
+        ];
+
+        $order = [
+            'urutan' => 'ASC'
+        ];
+
+        $dataSosmed = $modelSosmed->getAllDataById($where, $order);
+
+        // ===== model konfigurasi ===== //
+        $modelKonfigurasi = new MyModel('konfigurasi');
+        $dataInformasi = $modelKonfigurasi->getDataById('id_konfigurasi', 1);
+
+        $modelVisitor = new MyModel('visitor');
+
+        // ---------- Hari Ini ----------
+        $today = date('Y-m-d');
+        $whereToday = ['DATE(visitDate)' => $today];
+        $totalViewsToday = $modelVisitor->getCountAllbyManyWhere($whereToday);
+        // ---------- Bulan Ini ----------
+        $thisMonth = date('m');
+        $thisYear = date('Y');
+        $whereMonth = [
+            'MONTH(visitDate)' => $thisMonth,
+            'YEAR(visitDate)' => $thisYear
+        ];
+        $totalViewsThisMonth =
+            $modelVisitor->getCountAllbyManyWhere($whereMonth);
+
+        // ---------- Sepanjang Masa ----------
+        $whereAllTime = [];
+        $totalViewsAllTime =
+            $modelVisitor->getCountAllbyManyWhere($whereAllTime);
+
+        // isUser == isCustomer
+        $session = session();
+        $user_id = $session->get('id_user');
+        $isCustomer = true; // default: bukan customer
+
+        if ($user_id) {
+            $modelUser = new MyModel('users');
+            $User = $modelUser->getDataById('id_user', $user_id);
+
+            if ($User && isset($User->role_id)) {
+                $isCustomer = $User->role_id != 1;
+            }
+        }
+
+        $data['isCustomer'] = $isCustomer;
+        // ===== data Navbar/Header ===== //
+        $data['getNavbar'] = $menuTree;
+        // ===== data Sosmed ===== //
+        $data['getSosmed'] = $dataSosmed;
+        // ===== data Informasi ===== //
+        $data['getInformasi'] = $dataInformasi;
+        // ===== statistik hari ini ===== //
+        $data['viewsToday'] = formatAngkaSingkat($totalViewsToday);
+        // ===== statistik bulan ini ===== //
+        $data['viewsThisMonth'] = formatAngkaSingkat($totalViewsThisMonth);
+        // ===== statistik hari ini ===== //
+        $data['viewsAllTime'] = formatAngkaSingkat($totalViewsAllTime);
     }
 
     public function parseSatuan($angka)

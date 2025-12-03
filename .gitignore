@@ -1,0 +1,87 @@
+# Environment files
+appengines/.env
+.env
+.env.local
+.env.production
+.env.staging
+
+# CodeIgniter 4 writable folder - keep structure but ignore content
+appengines/writable/cache/*
+!appengines/writable/cache/index.html
+appengines/writable/logs/*
+!appengines/writable/logs/index.html
+appengines/writable/session/*
+!appengines/writable/session/index.html
+appengines/writable/debugbar/*
+!appengines/writable/debugbar/index.html
+appengines/writable/uploads/*
+!appengines/writable/uploads/index.html
+
+# Upload directories
+uploads/*
+!uploads/.gitkeep
+
+# Cache files
+**/cache/*
+!**/cache/index.html
+
+# Log files
+**/logs/*
+!**/logs/index.html
+
+# User-specific files
+**/.htaccess
+**/user_guide_src/build/*
+**/user_guide_src/cilexer/build/*
+**/user_guide_src/cilexer/dist/*
+**/user_guide_src/cilexer/pycilexer.egg-info/*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Composer
+/vendor/
+composer.lock
+
+# Node modules
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build files
+/dist/
+/build/
+
+# Backup files
+*.backup
+*.bak
+*.sql
+
+# Temporary files
+*.tmp
+*.temp
+
+# Database files
+*.sqlite
+*.db
+
+# Configuration files that might contain sensitive data
+app/Config/Database.php.bak
+app/Config/App.php.bak
+
+# PHP specific
+*.log
+.phpunit.result.cache

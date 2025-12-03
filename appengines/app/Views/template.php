@@ -2,185 +2,136 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Template | Netx Template</title>
-    <link rel="stylesheet" href="<?php echo base_url('assets/css/bootstrap.min.css') ?>">
-    <link rel="stylesheet" href="<?php echo base_url('assets/css/bootstrap-icons.min.css') ?>">
-    <link rel="stylesheet" href="<?php echo base_url('assets/css/style.css?v=0.1112') ?>">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arsip Akreditasi</title>
+  <link rel="stylesheet" href="<?php echo base_url('assets/css/bootstrap.min.css') ?>">
+  <!-- [BARU] Menambahkan Favicon -->
+  <link rel="icon" href="<?= base_url('assets/img/ULM.png') ?>" type="image/png">
 
-    <!-- CDN Quill js -->
-    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" />
+  <link rel="stylesheet" href="<?php echo base_url('assets/css/bootstrap-icons.min.css') ?>">
+  <link rel="stylesheet" href="<?php echo base_url('assets/css/style.css?v=0.1113') ?>">
 
-    <!-- CDN Quill js resize image -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill-resize-module@2.0.4/dist/resize.min.css">
+  <!-- CDN Quill js -->
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" />
 
-    <!-- CDN Theme Quill js -->
-    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <!-- CDN Quill js resize image -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill-resize-module@2.0.4/dist/resize.min.css">
+
+  <!-- CDN Theme Quill js -->
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
 </head>
 
 <style>
-    /* CSS For Quill JS */
-    .ql-toolbar {
-        border-radius: 8px;
-        background: #f9f9f9;
-        padding: 10px;
-        border: 1px solid #ddd;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    }
+  /* CSS For Quill JS */
+  .ql-toolbar {
+    border-radius: 8px;
+    background: #f9f9f9;
+    padding: 10px;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  }
 
-    .ql-editor {
-        font-family: 'Quicksand', sans-serif;
-    }
+  .ql-editor {
+    font-family: 'Quicksand', sans-serif;
+  }
 
-    .ql-toolbar .ql-picker {
-        margin-right: 8px;
-    }
+  .ql-toolbar .ql-picker {
+    margin-right: 8px;
+  }
 
-    .ql-toolbar .ql-formats {
-        margin-right: 10px;
-    }
+  .ql-toolbar .ql-formats {
+    margin-right: 10px;
+  }
 
-    .ql-toolbar button,
-    .ql-toolbar .ql-picker-label {
-        border-radius: 6px;
-        transition: background-color 0.2s ease;
-    }
+  .ql-toolbar button,
+  .ql-toolbar .ql-picker-label {
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+  }
 
-    .ql-toolbar button:hover,
-    .ql-toolbar .ql-picker-label:hover {
-        background-color: #e6e6e6;
-    }
+  .ql-toolbar button:hover,
+  .ql-toolbar .ql-picker-label:hover {
+    background-color: #e6e6e6;
+  }
 
-    .ql-toolbar .ql-formats {
-        position: relative;
-        margin-right: 12px;
-        padding-right: 12px;
-        border-right: 1px solid #ccc;
-    }
+  .ql-toolbar .ql-formats {
+    position: relative;
+    margin-right: 12px;
+    padding-right: 12px;
+    border-right: 1px solid #ccc;
+  }
 
-    .ql-toolbar .ql-formats:last-child {
-        border-right: none;
-        margin-right: 0;
-        padding-right: 0;
-    }
+  .ql-toolbar .ql-formats:last-child {
+    border-right: none;
+    margin-right: 0;
+    padding-right: 0;
+  }
 </style>
 
 <body>
-    <div id="content-overlay" class="content-overlay"></div>
-    <!-- Sidebar -->
-    <div id="sidebar" class="sidebar pe-0">
-        <div class="sidebar-header">
-            <a href="<?php echo base_url('/') ?>">
-                <img src="https://placehold.co/500x180?text=Logo+Template"
-                    alt="Logo Ecomel"
-                    class="img-fluid rounded"
-                    style="width: 180px; object-fit: contain;" />
+  <div id="content-overlay" class="content-overlay"></div>
+  <!-- Sidebar -->
+  <div id="sidebar" class="sidebar pe-0">
+    <div class="sidebar-header">
+      <!-- Menampilkan logo ULM.png -->
+      <img src="<?= base_url('assets/img/ULM.png') ?>" alt="Logo ULM">
 
-            </a>
-        </div>
-        <nav class="nav d-block pe-2 pb-5">
-            <?php
-            $idRole = session()->get('role_id');
-            if ($idRole != 1)
-                echo view('menu');
-            else {
-            ?>
-                <a class="nav-link" href="dashboard/load">
-                    <i class="bi bi-house"></i> Dashboard </a>
-                <a class="nav-link" href="posts">
-                    <i class="bi bi-newspaper"></i> Berita </a>
-                <a class="nav-link" href="pengumuman">
-                    <i class="bi bi-megaphone"></i> Pengumuman
-                </a>
-                <a class="nav-link" href="pages">
-                    <i class="bi bi-file-text"></i> Halaman
-                </a>
-                <a class="nav-link pe-0" href="#" data-bs-toggle="collapse" id="dataMasterToggle">
-                    <i class="bi bi-columns-gap"></i> Data Master
-                    <i class="bi bi-chevron-right caret"></i>
-                </a>
-                <div class="collapse ms-4" id="dataMaster">
-                    <a class="nav-link" href="motif"><i class="bi bi-three-dots-vertical"></i> Motif</a>
-                </div>
-                <a class="nav-link pe-0" href="#" data-bs-toggle="collapse" id="tampilanToggle">
-                    <i class="bi bi-display"></i> Tampilan
-                    <i class="bi bi-chevron-right caret"></i>
-                </a>
-                <div class="collapse ms-4" id="tampilan">
-                    <a class="nav-link" href="navbar"><i class="bi bi-three-dots-vertical"></i> Menu</a>
-                    <a class="nav-link" href="hero"><i class="bi bi-three-dots-vertical"></i> Slider</a>
-                    <a class="nav-link" href="layanan"><i class="bi bi-three-dots-vertical"></i> Layanan</a>
-                    <a class="nav-link" href="mitra"><i class="bi bi-three-dots-vertical"></i> Mitra</a>
-                    <a class="nav-link" href="team"><i class="bi bi-three-dots-vertical"></i> Team</a>
-                    <a class="nav-link" href="konfigurasi"><i class="bi bi-three-dots-vertical"></i> Informasi</a>
-                    <a class="nav-link" href="sosmed"><i class="bi bi-three-dots-vertical"></i> Sosial</a>
-                </div>
-                <a class="nav-link pe-0" href="#" data-bs-toggle="collapse" id="setToggle">
-                    <i class="bi bi-gear"></i> Pengaturan
-                    <i class="bi bi-chevron-right caret"></i>
-                </a>
-                <div class="collapse ms-4" id="set">
-                    <a class="nav-link" href="user">
-                        <i class="bi bi-person"></i> Pengguna
-                    </a>
-                    <a class="nav-link" href="role">
-                        <i class="bi bi-shield-lock"></i> Role
-                    </a>
-                    <a class="nav-link" href="otoritas">
-                        <i class="bi bi-shield-check"></i> Otoritas
-                    </a>
-                    <a class="nav-link" href="menu">
-                        <i class="bi bi-people"></i> Menu
-                    </a>
-                </div>
-            <?php } ?>
-        </nav>
-        <!-- <div class="sidebar-footer">
-            &copy;2025 All Right Reserved.
-        </div> -->
+      <!-- Wadah untuk teks berjalan -->
+      <div class="logo-text-wrapper">
+        <h2>SIMDAT - Sistem Manajemen Data Lab Terpadu</h2>
+      </div>
     </div>
-    <!-- Main Content -->
-    <div class="container-fluid">
-        <nav class="navbar navbar-light bg-light">
-            <span class="navbar-toggler" id="sidebarToggle">
-                <span class="navbar-toggler-icon"></span>
-            </span>
-            <div class="me-4 d-flex">
-                <a href="profil" class="header-link nav-link" title="Profil">
-                    <button aria-label="button" type="button" class="btn btn-icon p-0 text-secondary">
-                        <i class="bi bi-person-fill" style="font-size: 1.3rem;"></i> </button>
-                </a>
-                <span class="divider vr ms-2 me-2"></span>
-                <a href="<?php echo site_url('logout') ?>" class="header-link ms-2" title="Logout">
-                    <button aria-label="button" type="button" class="btn btn-icon p-0 text-danger">
-                        <i class="bi bi-power" style="font-size: 1.3rem;"></i> </button>
-                </a>
-            </div>
-        </nav>
-        <div id="content" class="content p-1 ps-md-4 pe-md-4 pb-5">
-            <?php echo view($content) ?>
-        </div>
-        <div class="footer bg-light py-2 px-3 position-fixed bottom-0">
-            <div class="fleft position-fixed bottom-0 mb-3 me-3">&copy; Netgen 2025.</div>
-        </div>
+    <nav class="nav d-block pe-2 pb-5">
+      <?php
+      echo view('menu');
+      ?>
+    </nav>
+  </div>
+  <!-- Main Content -->
+  <div class="container-fluid">
+    <nav class="navbar navbar-light bg-light">
+      <span class="navbar-toggler ms-2 ms-md-4" id="sidebarToggle">
+        <span class="navbar-toggler-icon"></span>
+      </span>
+      <div class="me-4 d-flex align-items-center">
+        <?php
+        $session = session();
+        $nama = esc($session->get('nama') ?? '-');
+        $nama_role = esc($session->get('nama_role') ?? '-');
+        ?>
+        <span class="fw-bold me-3 d-none d-sm-block"><?= "{$nama} ({$nama_role})" ?></span>
+        <a href="profil" class="header-link nav-link" title="Profil">
+          <button aria-label="button" type="button" class="btn btn-icon p-0 text-secondary">
+            <i class="bi bi-person-fill" style="font-size: 1.3rem;"></i> </button>
+        </a>
+        <span class="divider vr ms-2 me-2"></span>
+        <a href="<?php echo site_url('logout') ?>" class="header-link ms-2" title="Logout">
+          <button aria-label="button" type="button" class="btn btn-icon p-0 text-danger">
+            <i class="bi bi-power" style="font-size: 1.3rem;"></i> </button>
+        </a>
+      </div>
+    </nav>
+    <div id="content" class="content p-1 ps-md-4 pe-md-4 pb-5">
+      <?php echo view($content) ?>
     </div>
+  </div>
 
-    <script src="<?php echo base_url('assets/js/bootstrap.bundle.min.js') ?>"></script>
-    <script src="<?php echo base_url('assets/js/rupiahFormatter.js') ?>"></script>
-    <script src="<?php echo base_url('assets/js/app.js?v=0.03') ?>"></script>
-    <script src="<?php echo base_url('assets/js/sayJS.js?v=0.02') ?>"></script>
-    <script src="<?php echo base_url('assets/js/sayTable.js?v=0.11') ?>"></script>
+  <script src="<?php echo base_url('assets/js/bootstrap.bundle.min.js') ?>"></script>
+  <script src="<?php echo base_url('assets/js/rupiahFormatter.js') ?>"></script>
+  <script src="<?php echo base_url('assets/js/app.js?v=0.03') ?>"></script>
+  <script src="<?php echo base_url('assets/js/sayJS.js?v=0.02') ?>"></script>
+  <script src="<?php echo base_url('assets/js/sayTable.js?v=0.11') ?>"></script>
 
-    <!-- Include the Quill library -->
-    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
-    <!-- quill image resize -->
-    <script src="https://cdn.jsdelivr.net/npm/quill-resize-module@2.0.4/dist/resize.min.js"></script>
+  <!-- Include the Quill library -->
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+  <!-- quill image resize -->
+  <script src="https://cdn.jsdelivr.net/npm/quill-resize-module@2.0.4/dist/resize.min.js"></script>
 
 </body>
 
