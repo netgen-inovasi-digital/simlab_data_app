@@ -7,7 +7,7 @@
   <title>Arsip Akreditasi</title>
   <link rel="stylesheet" href="<?php echo base_url('assets/css/bootstrap.min.css') ?>">
   <!-- [BARU] Menambahkan Favicon -->
-  <link rel="icon" href="<?= base_url('assets/img/ULM.png') ?>" type="image/png">
+  <link rel="icon" href="<?= base_url('assets/img/netgen_warna.png') ?>" type="image/png">
 
   <link rel="stylesheet" href="<?php echo base_url('assets/css/bootstrap-icons.min.css') ?>">
   <link rel="stylesheet" href="<?php echo base_url('assets/css/style.css?v=0.1113') ?>">
@@ -80,12 +80,12 @@
   <div id="sidebar" class="sidebar pe-0">
     <div class="sidebar-header">
       <!-- Menampilkan logo ULM.png -->
-      <img src="<?= base_url('assets/img/ULM.png') ?>" alt="Logo ULM">
+      <img src="<?= base_url('assets/img/netgen_warna.png') ?>" alt="Logo ULM" class="img-fluid" style="width: 100%; max-width: 200px;">
 
       <!-- Wadah untuk teks berjalan -->
-      <div class="logo-text-wrapper">
+      <!-- <div class="logo-text-wrapper">
         <h2>SIMDAT - Sistem Manajemen Data Lab Terpadu</h2>
-      </div>
+      </div> -->
     </div>
     <nav class="nav d-block pe-2 pb-5">
       <?php

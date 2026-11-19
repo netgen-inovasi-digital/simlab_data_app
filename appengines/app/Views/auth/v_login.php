@@ -28,7 +28,7 @@ Login
 
   <!-- Logo Section -->
   <div class="col-md-6 bg-light-gray d-flex flex-column justify-content-center align-items-center p-5">
-    <img src="<?= base_url('assets/img/logo_simdat_ulm.png') ?>" alt="Logo SIMDAT ULM"
+    <img src="<?= base_url('assets/img/netgen_warna.png') ?>" alt="Logo SIMDAT ULM"
       style="width: 100%; transform: scale(1.2);">
   </div>
 
