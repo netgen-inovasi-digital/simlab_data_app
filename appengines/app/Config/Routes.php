@@ -11,8 +11,8 @@ $routes->get('/', 'Auth::index');
 $routes->get('login', 'Auth::index');
 $routes->post('login/auth', 'Auth::act');
 // register route
-$routes->get('register', 'Auth::register');
-$routes->post('register/auth', 'Auth::actRegister');
+// $routes->get('register', 'Auth::register');
+// $routes->post('register/auth', 'Auth::actRegister');
 
 // forgot route
 $routes->get('forgot', 'Auth::forgot');

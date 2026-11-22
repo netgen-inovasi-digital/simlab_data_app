@@ -54,7 +54,7 @@ class Dashboard extends BaseController
     $totalFolders = 0;
     $totalCategories = 0;
 
-    if ($role_id != 9 || $role_id != 2) { // Melihat semua
+    if ($role_id != 9 && $role_id != 2) { // Melihat semua
       $totalFiles = $modelFiles->getCountAllbyManyWhere([]);
       $totalFolders = $modelFolders->getCountAllbyManyWhere([]);
       $totalCategories = $modelCategories->getCountAllbyManyWhere([]);
@@ -80,8 +80,6 @@ class Dashboard extends BaseController
         ->where('otoritas_file.can_view', 1)
         ->where('files.categories_id IS NOT NULL')
         ->countAllResults();
-
-      dd($totalFiles);
     }
 
     return [
