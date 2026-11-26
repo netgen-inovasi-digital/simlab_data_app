@@ -78,9 +78,12 @@
   <div id="content-overlay" class="content-overlay"></div>
   <!-- Sidebar -->
   <div id="sidebar" class="sidebar pe-0">
-    <div class="sidebar-header">
+    <div class="sidebar-header" style="flex-direction: column; align-items: flex-start; gap: 4px;">
       <!-- Menampilkan logo ULM.png -->
-      <img src="<?= base_url('assets/img/netgen_warna.png') ?>" alt="Logo ULM" class="img-fluid" style="width: 100%; max-width: 200px;">
+      <img src="<?= base_url('assets/img/netgen_warna.png') ?>" alt="Logo ULM" class="img-fluid" style="width: 100%; max-width: 180px;">
+      <div class="logo-text-wrapper" style="width: 100%;">
+        <h2 style="color: #1a8a6e; font-size: 0.95rem; font-weight: 600;">Driven by Digital. Defined by Innovation.</h2>
+      </div>
 
       <!-- Wadah untuk teks berjalan -->
       <!-- <div class="logo-text-wrapper">
